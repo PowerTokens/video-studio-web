@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Generate AI videos in your browser with Wan 3.0, Wan 3.0 Prime, Seedance 2.0 Fast, Seedance 2.5 and kling v3 via one PowerTokens API key. Works on phones and desktop.">
+<title>PowerTokens Video Studio · Web</title>
+<link rel="icon" type="image/png" href="assets/logo-88.png">
+<link rel="apple-touch-icon" href="assets/logo-88.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="mock-banner" class="mock-banner" hidden data-i18n="mock_banner"></div>
+
+<!-- Header: same structure as the desktop app (brand + language switch + Tips / subtitle + key badge + links) -->
+<header class="app-header">
+  <div class="header-row brand-row">
+    <a class="brand" href="./">
+      <img src="assets/logo-88.png" alt="" width="44" height="44">
+      <span class="brand-name">PowerTokens Video Studio</span>
+    </a>
+    <div class="top-actions">
+      <div class="lang-switch" id="lang-switch" role="group" aria-label="Language"></div>
+      <button id="tips-btn" class="link tips-btn tips-wide" type="button" data-i18n="onboard_help"></button>
+    </div>
+  </div>
+  <div class="header-row sub-row">
+    <div class="subtitle"><span data-i18n="subtitle"></span><button id="tips-btn-m" class="link tips-btn tips-narrow" type="button" data-i18n="onboard_help"></button></div>
+    <div class="header-actions">
+      <button id="key-chip" class="badge badge-btn" type="button"></button>
+      <a id="billing-chip" class="btn-credits" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text"></span></a>
+      <a id="header-get-key" class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key"></a>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" type="button" data-tab="generate" data-i18n="tab_generate"></button>
+  <button role="tab" type="button" data-tab="compare" data-i18n="tab_compare"></button>
+  <button role="tab" type="button" data-tab="batch" data-i18n="tab_batch"></button>
+  <button role="tab" type="button" data-tab="tasks"><span data-i18n="tab_tasks"></span><span id="tasks-badge" class="badge-dot" hidden></span></button>
+  <button role="tab" type="button" data-tab="key" data-i18n="tab_key"></button>
+</nav>
+
+<main class="page">
+  <!-- ============ 生成视频 ============ -->
+  <section id="panel-generate" class="panel" role="tabpanel">
+    <section id="onboard" class="card onboard" hidden>
+      <h3 class="card-title" data-i18n="onboard_title"></h3>
+      <p class="muted" data-i18n="onboard_step1"></p>
+      <p class="muted" data-i18n="onboard_step2"></p>
+      <p class="muted" data-i18n="onboard_step3"></p>
+      <div class="actions">
+        <button type="button" class="btn" id="onboard-goto-keys" data-i18n="onboard_goto_keys"></button>
+        <a class="link" id="onboard-get-key" target="_blank" rel="noopener" data-i18n="onboard_get_key" data-href="signup_url"></a>
+        <button type="button" class="btn" id="onboard-dismiss" data-i18n="onboard_dismiss"></button>
+      </div>
+    </section>
+
+    <div class="heading">
+      <h1 data-i18n="gen_title"></h1>
+      <p data-i18n="gen_desc"></p>
+    </div>
+    <div class="columns">
+      <div class="col-left">
+        <section class="card">
+          <h3 class="card-title"><label for="gen-prompt" data-i18n="prompt_card"></label></h3>
+          <textarea id="gen-prompt" rows="3" data-i18n-ph="prompt_placeholder"></textarea>
+          <p class="muted small" data-i18n="prompt_desc"></p>
+        </section>
+
+        <section class="card">
+          <h3 class="card-title" data-i18n="params_card"></h3>
+          <label class="field-label" for="gen-model" data-i18n="param_model"></label>
+          <select id="gen-model"></select>
+          <div class="model-desc-row">
+            <span id="gen-model-desc" class="muted small"></span>
+            <button type="button" class="link" id="gen-model-details"></button>
+          </div>
+          <div id="gen-model-full" class="model-full muted small" hidden></div>
+          <p id="gen-notice" class="badge badge-block" hidden></p>
+          <div class="fields">
+            <div class="field">
+              <label class="field-label" for="gen-duration" data-i18n="param_duration"></label>
+              <input type="number" id="gen-duration" inputmode="numeric" min="2" max="30" step="1" value="5">
+            </div>
+            <div class="field">
+              <label class="field-label" for="gen-res" data-i18n="param_resolution"></label>
+              <select id="gen-res"></select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="gen-ratio" data-i18n="param_ratio"></label>
+              <select id="gen-ratio"></select>
+            </div>
+          </div>
+          <p id="gen-cost" class="muted small cost"></p>
+          <div class="actions">
+            <button type="button" id="gen-submit" class="btn btn-accent" data-i18n="generate_btn"></button>
+            <button type="button" id="gen-stop" class="btn" data-i18n="stop_btn" disabled></button>
+          </div>
+          <p id="gen-error" class="error" hidden></p>
+          <p class="muted small" data-i18n="cloud_note"></p>
+        </section>
+      </div>
+
+      <div class="col-right">
+        <section class="card">
+          <h3 class="card-title" data-i18n="current_card"></h3>
+          <p id="gen-current" class="badge badge-block"></p>
+          <p id="gen-current-params" class="muted small"></p>
+          <p class="muted small" data-i18n="current_saved"></p>
+        </section>
+
+        <section class="card">
+          <h3 class="card-title" data-i18n="media_card"></h3>
+          <button type="button" class="link" id="adv-toggle" aria-expanded="false" aria-controls="adv-body"></button>
+          <div id="adv-body" class="adv-body" hidden>
+            <p class="muted small" data-i18n="media_card_desc"></p>
+            <label class="field-label" for="gen-ff-url" data-i18n="media_first_frame"></label>
+            <input type="url" id="gen-ff-url" inputmode="url" autocomplete="off" data-i18n-ph="first_frame_url_ph">
+            <div class="ff-local">
+              <label class="btn btn-small" for="gen-ff-file"><span data-i18n="first_frame_pick"></span></label>
+              <input type="file" id="gen-ff-file" accept="image/*" class="sr-only">
+              <div id="gen-ff-preview" class="ff-preview" hidden>
+                <img id="gen-ff-img" alt="">
+                <span id="gen-ff-info" class="muted small"></span>
+                <button type="button" class="link" id="gen-ff-remove" data-i18n="first_frame_remove"></button>
+              </div>
+            </div>
+            <p id="gen-ff-note" class="badge badge-block badge-warn" hidden data-i18n="first_frame_wan_note"></p>
+            <p id="gen-ff-error" class="error" hidden></p>
+          </div>
+        </section>
+
+        <p class="batch-hint"><span data-i18n="batch_hint"></span> <a href="https://github.com/PowerTokens/video-studio" target="_blank" rel="noopener"><span data-i18n="batch_hint_link"></span> ↗</a></p>
+      </div>
+    </div>
+
+    <section class="card" id="progress-card">
+      <h3 class="card-title" data-i18n="progress_card"></h3>
+      <div id="gen-result"><p class="empty" data-i18n="result_empty"></p></div>
+    </section>
+  </section>
+
+  <!-- ============ 模型对比 ============ -->
+  <section id="panel-compare" class="panel" role="tabpanel" hidden>
+    <div class="heading">
+      <h1 data-i18n="compare_title"></h1>
+      <p data-i18n="compare_desc"></p>
+    </div>
+    <div class="columns">
+      <div class="col-left">
+        <section class="card">
+          <h3 class="card-title"><label for="cmp-prompt" data-i18n="compare_prompt_card"></label></h3>
+          <p class="muted" data-i18n="compare_prompt_desc"></p>
+          <textarea id="cmp-prompt" rows="4" data-i18n-ph="prompt_placeholder"></textarea>
+        </section>
+        <section class="card">
+          <h3 class="card-title" data-i18n="compare_params_card"></h3>
+          <div class="fields">
+            <div class="field">
+              <label class="field-label" for="cmp-duration" data-i18n="param_duration"></label>
+              <input type="number" id="cmp-duration" inputmode="numeric" min="2" max="30" step="1" value="5">
+            </div>
+            <div class="field">
+              <label class="field-label" for="cmp-res" data-i18n="param_resolution"></label>
+              <select id="cmp-res"></select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="cmp-ratio" data-i18n="param_ratio"></label>
+              <select id="cmp-ratio"></select>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" id="cmp-submit" class="btn btn-accent" data-i18n="compare_start"></button>
+          </div>
+          <p id="cmp-error" class="error" hidden></p>
+          <p class="muted small" data-i18n="cloud_note"></p>
+        </section>
+      </div>
+      <div class="col-right">
+        <section class="card">
+          <h3 class="card-title" data-i18n="compare_models_card"></h3>
+          <p class="muted" data-i18n="compare_models_desc"></p>
+          <div id="cmp-models" class="check-list"></div>
+          <ul id="cmp-plan" class="plan"></ul>
+          <p id="cmp-cost" class="badge badge-block"></p>
+        </section>
+      </div>
+    </div>
+    <section class="card">
+      <h3 class="card-title" data-i18n="compare_results_card"></h3>
+      <p class="muted" data-i18n="compare_results_desc"></p>
+      <div id="cmp-results" class="cmp-grid"><p class="empty" data-i18n="compare_results_empty"></p></div>
+    </section>
+  </section>
+
+  <!-- ============ 批量导入 (desktop only) ============ -->
+  <section id="panel-batch" class="panel" role="tabpanel" hidden>
+    <div class="heading">
+      <h1 data-i18n="batch_title"></h1>
+      <p data-i18n="batch_desc"></p>
+    </div>
+    <section class="card">
+      <h3 class="card-title" data-i18n="batch_web_card"></h3>
+      <p class="muted" data-i18n="batch_web_desc"></p>
+      <div class="actions">
+        <a class="btn btn-accent" id="batch-desktop-link" href="https://github.com/PowerTokens/video-studio" target="_blank" rel="noopener" data-i18n="batch_web_btn"></a>
+      </div>
+    </section>
+  </section>
+
+  <!-- ============ 任务记录 / 恢复 ============ -->
+  <section id="panel-tasks" class="panel" role="tabpanel" hidden>
+    <div class="heading">
+      <h1 data-i18n="history_title"></h1>
+      <p data-i18n="history_desc"></p>
+    </div>
+    <section class="card">
+      <h3 class="card-title" data-i18n="history_card"></h3>
+      <p id="spend-line" class="spend-line" hidden><span id="spend-text"></span> <button type="button" class="link link-small" id="spend-reset" data-i18n="spend_reset"></button></p>
+      <div id="tasks-list" class="task-list"></div>
+      <div class="actions">
+        <button type="button" class="btn" id="tasks-refresh" data-i18n="refresh"></button>
+        <button type="button" class="btn" id="tasks-copy" data-i18n="copy_all_ids"></button>
+        <button type="button" class="btn" id="tasks-clear" data-i18n="clear_done"></button>
+      </div>
+    </section>
+    <section class="card">
+      <h3 class="card-title" data-i18n="manual_card"></h3>
+      <p class="muted" data-i18n="manual_card_desc"></p>
+      <div class="manual">
+        <select id="manual-kind" aria-label="Task type"></select>
+        <input type="text" id="manual-id" autocomplete="off" spellcheck="false" data-i18n-ph="manual_task_ph">
+        <button type="button" class="btn btn-accent" id="manual-btn" data-i18n="manual_btn"></button>
+      </div>
+      <p id="manual-error" class="error" hidden></p>
+    </section>
+  </section>
+
+  <!-- ============ API Key ============ -->
+  <section id="panel-key" class="panel" role="tabpanel" hidden>
+    <div class="heading">
+      <h1 data-i18n="keys_title"></h1>
+      <p data-i18n="keys_desc"></p>
+    </div>
+    <div class="columns">
+      <div class="col-left">
+        <section class="card">
+          <h3 class="card-title"><label for="key-input" data-i18n="add_card"></label></h3>
+          <p class="muted" data-i18n="add_card_desc"></p>
+          <div class="key-row">
+            <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph">
+            <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show"></span></label>
+          </div>
+          <p class="muted small" data-i18n="paste_hint"></p>
+          <div class="actions">
+            <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_save"></button>
+          </div>
+          <p id="key-error" class="error" hidden></p>
+        </section>
+        <section class="card">
+          <h3 class="card-title" data-i18n="current_key_card"></h3>
+          <p class="muted" data-i18n="key_desc"></p>
+          <p id="key-status" class="badge"></p>
+          <p class="badge badge-block" data-i18n="key_quota_tip"></p>
+          <div class="actions">
+            <a class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="key_quota_tip_btn"></a>
+            <button type="button" class="btn" id="key-forget" data-i18n="key_forget"></button>
+          </div>
+        </section>
+      </div>
+      <div class="col-right">
+        <section class="card">
+          <h3 class="card-title" data-i18n="get_card"></h3>
+          <p class="muted" data-i18n="get_card_desc"></p>
+          <a class="btn btn-accent btn-block" id="get-key-link" target="_blank" rel="noopener" data-i18n="get_btn" data-href="signup_url"></a>
+          <p class="muted small" data-i18n="get_note"></p>
+        </section>
+        <section class="card">
+          <h3 class="card-title" data-i18n="local_card"></h3>
+          <p class="badge" data-i18n="browser_badge"></p>
+          <p class="muted" data-i18n="key_privacy"></p>
+          <hr>
+          <p class="muted" data-i18n="no_repeat_key_note"></p>
+        </section>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span><a id="footer-site" target="_blank" rel="noopener" data-href="site_url">PowerTokens</a></span>
+  <span><a href="LICENSE" target="_blank" rel="noopener" data-i18n="footer_license"></a></span>
+  <span><a href="https://github.com/PowerTokens/video-studio" target="_blank" rel="noopener" data-i18n="footer_desktop"></a></span>
+</footer>
+
+<div id="statusbar" class="statusbar" role="status"></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="js/i18n.js"></script>
+<!-- Translations: one file per language. Add a new language by adding one line here. -->
+<script src="js/lang/zh.js"></script>
+<script src="js/lang/en.js"></script>
+<script src="js/models.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
