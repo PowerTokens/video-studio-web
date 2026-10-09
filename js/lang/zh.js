@@ -217,6 +217,7 @@ VSI18n.register('zh', {
   model_desc_seedance_fast: "Seedance 2.0 Fast 侧重速度，适合草稿与预览：支持文生、图生与多模态参考，带原生音频。时长 4–15 秒，最高 720p（不支持 1080p）。",
   model_desc_seedance_25: "Seedance 2.5 面向更长叙事与原生音频同步，最长 30 秒，支持 480p–1080p。文生、图生与多模态参考可用于保持场景与角色一致性。",
   model_desc_kling_v3: "kling v3 支持文生视频与图生视频（首帧 / 尾帧），可选原生音频。时长 3–15 秒；可选 720p、1080p 或 4K 模式，需要更高输出分辨率时选用。",
+  // Usage examples + how-to (keep in sync with index.html data-i18n keys)
   examples_label: "试试示例",
   examples_hint: "点一下填入提示词，再点「生成视频」。标签里写的是推荐模型，你仍可在上方任选模型。",
   examples_filled: "已填入示例 — 可直接生成，也可再改。",

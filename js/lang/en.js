@@ -212,6 +212,7 @@ VSI18n.register('en', {
   model_desc_seedance_fast: "Seedance 2.0 Fast prioritizes speed for drafts and previews: text-to-video, image-to-video, and multimodal reference, with native audio. Clips are 4–15 seconds and top out at 720p (no 1080p).",
   model_desc_seedance_25: "Seedance 2.5 targets longer storytelling with native audio sync, up to 30 seconds and 480p–1080p. Supports text-to-video, image-to-video, and multimodal references for scene and character consistency.",
   model_desc_kling_v3: "kling v3 offers text-to-video and image-to-video (first / last frame) with optional native audio. Duration 3–15 seconds; choose 720p, 1080p, or 4K mode when you need higher output resolution.",
+  // Usage examples + how-to (keep in sync with index.html data-i18n keys)
   examples_label: "Try an example",
   examples_hint: "Click a chip to fill the prompt — then hit Generate. Labels hint at a good model; you can still pick any model above.",
   examples_filled: "Example loaded — edit it or generate as-is.",
