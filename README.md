@@ -16,6 +16,6 @@ Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=rea
 
 1. Open the [live page](https://powertokens.github.io/video-studio-web/).
 2. Add a PowerTokens API key.
-3. On **Generate video**, click an example chip (Product · Wan / Short drama · Seedance / Café / Cinematic · Kling) to fill the prompt, then **Generate video**.
+3. On **Generate video**, click an example chip (Product · Wan / Short drama · Seedance / Café / Cinematic · Kling) to fill the prompt (click again to clear). Model-tagged chips also switch Settings to that model; then **Generate video**.
 4. For spreadsheet samples (desktop Batch tab), see the **Batch import** tab on the web page — links download the same Excel files as the desktop app.
 

@@ -10,6 +10,19 @@
   var ALL_RES = ['480p', '720p', '1080p', '4k'];
   var ALL_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'];
   var EXAMPLE_IDS = ['product', 'drama', 'cafe', 'cinematic'];
+  /** Recommended model per example chip. null = any model (do not change Settings). */
+  var EXAMPLE_MODELS = {
+    product: 'wan3.0-video',
+    drama: 'dreamina-seedance-2-5-260628',
+    cafe: null,
+    cinematic: 'kling-v3'
+  };
+  var EXAMPLE_FAMILIES = {
+    product: 'wan',
+    drama: 'seedance',
+    cafe: null,
+    cinematic: 'kling'
+  };
 
   function $(id) { return document.getElementById(id); }
   function t() { return I.t.apply(null, [lang].concat(Array.prototype.slice.call(arguments))); }
@@ -442,6 +455,28 @@
 
 
   // ---------------- examples ----------------
+  function chipLogoSvg(family) {
+    if (family === 'wan') {
+      // Compact Wan monogram (fair-use style mark, not an official asset)
+      return '<svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#6B5CE7"/><path d="M3.2 11.2L5.1 4.8h1.7l1.2 4.3 1.2-4.3h1.7l1.9 6.4h-1.55l-1.05-3.85-1.1 3.85H7.05L5.95 7.35 4.9 11.2H3.2z" fill="#fff"/></svg>';
+    }
+    if (family === 'seedance') {
+      return '<svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#111827"/><path d="M8.2 3.4c-2.05 0-3.35 1.05-3.35 2.55 0 1.55 1.2 2.15 2.85 2.55 1.25.3 1.7.55 1.7 1.2 0 .75-.7 1.2-1.85 1.2-1.15 0-2-.4-2.45-1.05l-1.15.85C4.7 11.85 6.05 12.6 8 12.6c2.2 0 3.55-1.15 3.55-2.75 0-1.65-1.2-2.3-2.95-2.7-1.2-.28-1.65-.55-1.65-1.15 0-.65.6-1.1 1.55-1.1.95 0 1.7.35 2.1.9l1.1-.9c-.6-.85-1.75-1.5-3.35-1.5z" fill="#fff"/></svg>';
+    }
+    if (family === 'kling') {
+      return '<svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#0f172a"/><path d="M4.4 3.6h1.7v3.35L9.55 3.6H11.6L8.15 7.15 11.85 12.4H9.7L6.85 8.35v4.05H4.4V3.6z" fill="#fff"/><rect x="11.15" y="10.55" width="1.85" height="1.85" rx="0.4" fill="#F97316"/></svg>';
+    }
+    return '';
+  }
+
+  function appendChipLogo(btn, family) {
+    if (!family) return;
+    var mark = el('span', 'chip-logo chip-logo-' + family);
+    mark.setAttribute('aria-hidden', 'true');
+    mark.innerHTML = chipLogoSvg(family);
+    btn.appendChild(mark);
+  }
+
   function renderExamples() {
     [['gen-example-chips', 'gen'], ['cmp-example-chips', 'cmp']].forEach(function (pair) {
       var box = $(pair[0]);
@@ -451,6 +486,8 @@
         var label = t('example_' + id + '_label');
         var b = el('button', 'example-chip');
         b.type = 'button';
+        var family = EXAMPLE_FAMILIES[id];
+        appendChipLogo(b, family);
         var parts = String(label).split(' · ');
         if (parts.length >= 2) {
           b.appendChild(el('span', 'chip-title', parts[0]));
@@ -460,7 +497,9 @@
         }
         b.setAttribute('data-example', id);
         b.setAttribute('data-target', pair[1]);
+        if (family) b.setAttribute('data-family', family);
         b.title = t('example_' + id + '_prompt');
+        b.setAttribute('aria-pressed', 'false');
         b.addEventListener('click', function () { applyExample(id, pair[1], b); });
         box.appendChild(b);
       });
@@ -471,22 +510,48 @@
     if (product) product.href = t('batch_sample_product_url');
   }
 
+  function setExampleActive(target, btn) {
+    var sel = target === 'cmp' ? '#cmp-example-chips .example-chip' : '#gen-example-chips .example-chip';
+    document.querySelectorAll(sel).forEach(function (n) {
+      var on = btn && n === btn;
+      n.classList.toggle('active', on);
+      n.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
   function applyExample(id, target, btn) {
+    var wasActive = btn && btn.classList.contains('active');
+    if (wasActive) {
+      if (target === 'cmp') {
+        $('cmp-prompt').value = '';
+        cmp.prompt = '';
+        saveCmp();
+      } else {
+        $('gen-prompt').value = '';
+        gen.prompt = '';
+        saveGen();
+        $('gen-prompt').focus();
+      }
+      setExampleActive(target, null);
+      toast(t('examples_cleared'));
+      return;
+    }
+
     var prompt = t('example_' + id + '_prompt');
     if (target === 'cmp') {
       $('cmp-prompt').value = prompt;
       cmp.prompt = prompt;
       saveCmp();
-      document.querySelectorAll('#cmp-example-chips .example-chip').forEach(function (n) {
-        n.classList.toggle('active', n === btn);
-      });
+      setExampleActive(target, btn);
     } else {
       $('gen-prompt').value = prompt;
       gen.prompt = prompt;
       saveGen();
-      document.querySelectorAll('#gen-example-chips .example-chip').forEach(function (n) {
-        n.classList.toggle('active', n === btn);
-      });
+      setExampleActive(target, btn);
+      var modelId = EXAMPLE_MODELS[id];
+      if (modelId && M.MODELS[modelId] && gen.model !== modelId) {
+        selectGenModel(modelId);
+      }
       $('gen-prompt').focus();
     }
     toast(t('examples_filled'));

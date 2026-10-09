@@ -225,8 +225,9 @@ VSI18n.register('en', {
   model_desc_kling_v3: "kling v3 offers text-to-video and image-to-video (first / last frame) with optional native audio. Duration 3–15 seconds; choose 720p, 1080p, or 4K mode when you need higher output resolution.",
   // Usage examples + how-to (keep in sync with index.html data-i18n keys)
   examples_label: "Try an example",
-  examples_hint: "One click fills the prompt. The tag suggests a model — you can still pick any model in Settings.",
+  examples_hint: "Click to fill the prompt; click again to clear. Model badges switch Settings to that model — you can still change it.",
   examples_filled: "Example loaded — edit it or generate as-is.",
+  examples_cleared: "Example cleared — write your own prompt.",
   howto_1: "Add an API key.",
   howto_2: "Click an example above, or write your own prompt.",
   howto_3: "Pick a model in Settings.",

@@ -230,8 +230,9 @@ VSI18n.register('zh', {
   model_desc_kling_v3: "kling v3 支持文生视频与图生视频（首帧 / 尾帧），可选原生音频。时长 3–15 秒；可选 720p、1080p 或 4K 模式，需要更高输出分辨率时选用。",
   // Usage examples + how-to (keep in sync with index.html data-i18n keys)
   examples_label: "试试示例",
-  examples_hint: "点一下即可填入提示词。标签是推荐模型，仍可在「生成参数」里任选。",
+  examples_hint: "点选填入提示词，再点一次清空。带模型徽标的示例会自动切到对应模型，仍可在「生成参数」里改。",
   examples_filled: "已填入示例 — 可直接生成，也可再改。",
+  examples_cleared: "已取消示例，可自行输入描述。",
   howto_1: "添加 API Key。",
   howto_2: "点上方示例，或自己写描述。",
   howto_3: "在「生成参数」里选模型。",
