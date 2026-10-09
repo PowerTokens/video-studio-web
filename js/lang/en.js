@@ -211,7 +211,7 @@ VSI18n.register('en', {
   add_card_desc: "Paste your key exactly as copied from PowerTokens (a “Bearer” prefix is fine).",
   paste_hint: "Once saved, the key stays in this browser only.",
   current_key_card: "Current key",
-  pool_card: "Key pool",
+  pool_card: "API Keys",
   pool_card_desc: "Add multiple keys and tap to switch. One key covers every model. Set limits and expiry per key on PowerTokens — that’s the advantage.",
   pool_add_label: "Paste a new key into the pool",
   pool_active: "Active",

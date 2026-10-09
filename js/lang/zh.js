@@ -216,7 +216,7 @@ VSI18n.register('zh', {
   add_card_desc: "直接粘贴从 PowerTokens 官网复制的 Key（带 “Bearer” 前缀也可以）。",
   paste_hint: "保存后 Key 只存在这个浏览器里。",
   current_key_card: "当前 Key",
-  pool_card: "Key 池",
+  pool_card: "API Keys",
   pool_card_desc: "可添加多个 Key，随时点选切换；一个 Key 通吃全部模型。额度与有效期可按 Key 分开管理——这是 PowerTokens 的优势。",
   pool_add_label: "粘贴新 Key 加入池中",
   pool_active: "使用中",
