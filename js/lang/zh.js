@@ -246,7 +246,7 @@ VSI18n.register('zh', {
   howto_3: "在「生成参数」里选模型。",
   howto_4: "点击「生成视频」。",
   example_product_label: "产品展示 · Wan",
-  example_product_prompt: "哑光黑无线耳机盒放在柔和白背景上的产品特写。镜头缓慢环绕，柔和主光，细微高光，干净商业感。盒盖打开时轻声 whoosh。",
+  example_product_prompt: "奢侈品广告感：哑光黑无线耳机盒静置于湿润黑色大理石上，一束硬顶光打下。50mm 微距极近特写；镜头缓推，再慢速 180° 环绕，细雾丝缕穿过光柱。盒盖磁吸轻启——清脆咔哒与丝绒般 whoosh；耳机边缘银色轮廓光一闪。暗调棚拍、高反差、苹果广告级质感，无字幕、无旁白。",
   example_drama_label: "短剧 · Seedance",
   example_drama_prompt: "雨夜，阿宁在空荡的车站捡到一部旧手机。屏幕突然亮起，播放一条来自明天的语音：“不要登上末班车。”真实电影质感，镜头由车站远景推近到手机屏幕，环境雨声和手机提示音。",
   example_cafe_label: "咖啡馆 · 任意模型",

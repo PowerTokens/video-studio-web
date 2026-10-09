@@ -241,7 +241,7 @@ VSI18n.register('en', {
   howto_3: "Pick a model in Settings.",
   howto_4: "Click Generate video.",
   example_product_label: "Product · Wan",
-  example_product_prompt: "Product close-up of a matte black wireless earbud case on a soft white backdrop. Slow orbit camera, soft key light, subtle specular highlights, clean commercial look. Soft whoosh as the lid opens.",
+  example_product_prompt: "Luxury product film: a matte-black wireless earbud case on wet black marble under a single hard spotlight. Extreme close-up, 50mm macro; camera creeps in, then a slow 180° orbit as faint steam catches the beam. Lid unlatches with a soft magnetic click and velvet whoosh; earbuds catch a silver rim light. Dark studio, high contrast, Apple-ad polish — no text, no VO.",
   example_drama_label: "Short drama · Seedance",
   example_drama_prompt: "Rainy night. Ning finds an old phone in an empty train station. The screen suddenly lights up and plays a voice message from tomorrow: \"Don't get on the last train.\" Realistic cinematic look; the camera pushes in from a wide shot of the station to the phone screen. Ambient rain and a phone notification chime.",
   example_cafe_label: "Café · any model",
