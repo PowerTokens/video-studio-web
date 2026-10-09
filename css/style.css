@@ -49,7 +49,7 @@ p { margin: 0; }
 .mock-banner { background: #fff1c2; color: #6b4e00; text-align: center; font-size: 13px; padding: 6px 12px; }
 
 /* ---------- header (desktop: padding 28/20, logo 44, Brand 21pt bold) ---------- */
-.app-header { background: var(--white); padding: calc(12px + env(safe-area-inset-top)) 14px 10px; }
+.app-header { background: var(--white); padding: calc(12px + env(safe-area-inset-top)) 12px 10px; }
 .header-row { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); min-width: 0; }
 .brand:hover { text-decoration: none; }
@@ -91,18 +91,20 @@ p { margin: 0; }
 .btn-credits::after { content: " ↗"; font-weight: 400; }
 .btn-credits:hover { background: var(--hover); text-decoration: none; }
 
-/* ---------- notebook tabs (desktop: white tabs, selected pale teal / teal text) ---------- */
+/* ---------- notebook tabs (align with .page cards: same max-width + horizontal padding) ---------- */
 .tabs {
   position: sticky; top: 0; z-index: 10; background: var(--page);
-  display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; padding: 0 0 0 0;
   border-bottom: 1px solid #c9d3dc;
 }
-.tabs::-webkit-scrollbar { display: none; }
+.tabs-inner {
+  width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 12px;
+  display: flex; gap: 0; overflow-x: auto; scrollbar-width: none;
+}
+.tabs-inner::-webkit-scrollbar { display: none; }
 .tabs button {
   flex: none; font: inherit; font-size: 13px; color: var(--muted); background: var(--white);
   border: 1px solid #c9d3dc; border-bottom: 0; margin-right: -1px; padding: 10px 14px; cursor: pointer; white-space: nowrap;
 }
-.tabs button:first-child { border-left: 0; }
 .tabs button:hover { background: #f0f7f5; }
 .tabs button.active { background: var(--pale); color: var(--accent-text); box-shadow: inset 0 -2px 0 var(--accent); }
 .badge-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-left: 5px; vertical-align: 2px; }
@@ -296,7 +298,7 @@ select {
 /* ---------- larger screens ---------- */
 @media (min-width: 640px) {
   body { font-size: 14px; }
-  .app-header { padding: 20px 28px 16px; }
+  .app-header { padding: 20px 24px 16px; }
   .brand img { width: 44px; height: 44px; }
   .brand { gap: 12px; }
   .brand-name { font-size: 26px; }
@@ -307,7 +309,7 @@ select {
   .tips-narrow { display: none; }
   .header-actions { gap: 8px 14px; }
   .badge-btn, .btn-credits { font-size: 13.5px; padding: 6px 12px; }
-  .tabs { padding-left: 0; }
+  .tabs-inner { padding: 0 24px; }
   .tabs button { font-size: 13.5px; padding: 11px 20px; }
   .page { padding: 20px 24px 24px; }
   .heading h1 { font-size: 23px; }
