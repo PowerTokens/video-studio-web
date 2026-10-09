@@ -700,6 +700,58 @@
     });
   }
 
+
+  /** Infer whole-second duration from prompt text (aligned with desktop input_helpers.infer_prompt).
+   *  Priority: declared total (总时长/Total length) → leading "10-second"/"约 10 秒" → shot-timeline end (0-2s…8-10s).
+   *  Returns null when nothing reliable is found. */
+  function inferPromptDuration(text) {
+    if (!text) return null;
+    var s = String(text).toLowerCase().replace(/：/g, ':');
+    var qty = '(\\d+(?:\\.\\d+)?)';
+    var unit = '\\s*[-－]?\\s*(秒钟?|seconds?(?![a-z])|secs?(?![a-z])|s(?![a-z]))';
+    var about = '(?:(?:about|around|approximately|approx\\.?|roughly|约)\\s*)?';
+    function clamp(v) {
+      v = Math.round(parseFloat(v));
+      if (!isFinite(v)) return null;
+      return Math.min(30, Math.max(2, v));
+    }
+    var totalRe = new RegExp('(?:总时长|全片时长|视频时长|时长|total\\s+(?:duration|length|runtime|running\\s+time|time)|total|duration|length|runtime|running\\s+time)\\s*(?:of\\s+|is\\s+)?[:=为约是~]?\\s*' + about + qty + unit);
+    var totalSuffix = new RegExp(qty + unit + '\\s+(?:in\\s+)?(?:total|overall|long)\\b');
+    var hyphenSec = new RegExp('^\\s*' + about + qty + '[-－]\\s*(?:second|sec)(?![a-z])');
+    var leadAbout = new RegExp('^\\s*' + about + qty + unit);
+    var m = s.match(totalRe) || s.match(totalSuffix) || s.match(hyphenSec) || s.match(leadAbout);
+    if (m) {
+      var n = clamp(m[1]);
+      if (n !== null) return n;
+    }
+    var rangeRe = new RegExp(qty + '\\s*(?:[-–—~～至到]|to)\\s*' + qty + unit, 'g');
+    var maxEnd = null, rm;
+    while ((rm = rangeRe.exec(s))) {
+      var end = parseFloat(rm[2]);
+      if (isFinite(end) && (maxEnd === null || end > maxEnd)) maxEnd = end;
+    }
+    if (maxEnd !== null) return clamp(maxEnd);
+    return null;
+  }
+
+  /** Fallback when parsing fails (desktop short-drama / canyon samples are ~10s). */
+  var EXAMPLE_DURATION = { drama: 10, cinematic: 10 };
+
+  function applyInferredDuration(prompt, id, target) {
+    var d = inferPromptDuration(prompt);
+    if (d === null && EXAMPLE_DURATION[id] != null) d = EXAMPLE_DURATION[id];
+    if (d === null) return;
+    if (target === 'cmp') {
+      cmp.duration = d;
+      var elDur = $('cmp-duration');
+      if (elDur) elDur.value = d;
+      saveCmp();
+      renderCmpParams();
+    } else {
+      applyGenEdit('duration', d);
+    }
+  }
+
   /** After filling a long prompt, show the start (browsers often jump to the end). */
   function showPromptStart(ta) {
     if (!ta) return;
@@ -751,6 +803,8 @@
       }
       showPromptStart($('gen-prompt'));
     }
+    // Match Settings duration to the example prompt (short-drama ~10s, etc.)
+    applyInferredDuration(prompt, id, target);
     toast(t('examples_filled'));
   }
 

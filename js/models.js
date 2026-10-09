@@ -9,7 +9,7 @@
   var API_BASE = 'https://api.powertokens.ai';
   // In-tool links use source=videostudio + medium=web (desktop app: videostudio/app; GitHub README/docs: github/oss).
   var UTM = 'utm_source=videostudio&utm_medium=web&utm_campaign=video-studio';
-  var PRICE_CHECKED_DATE = '2026-10-05';
+  var PRICE_CHECKED_DATE = '2026-10-09';
 
   function range(lo, hi) {
     var out = [];
