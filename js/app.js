@@ -49,13 +49,48 @@
   }
 
   // ---------------- language ----------------
+  // Forward Ads / paid click IDs from the landing URL onto PowerTokens CTAs.
+  // Do not overwrite inbound utm/gclid with the videostudio defaults.
+  var PT_OUTBOUND_HREF = { signup_url: 1, site_url: 1, billing_url: 1 };
+  var PT_TRACK_KEYS = [
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+    'gclid', 'gbraid', 'wbraid', 'fbclid', 'msclkid', 'dclid', 'ttclid', 'twclid',
+    'li_fat_id', 'yclid', 'epik', 'rdt_cid'
+  ];
+  var PT_DEFAULT_UTM = {
+    utm_source: 'videostudio',
+    utm_medium: 'web',
+    utm_campaign: 'video-studio'
+  };
+
+  function buildPtOutbound(base) {
+    var url;
+    try { url = new URL(String(base || ''), location.href); }
+    catch (e) { return base; }
+    // Drop any baked-in tracking on the i18n base so inbound Ads params win cleanly.
+    PT_TRACK_KEYS.forEach(function (k) { url.searchParams.delete(k); });
+    var inbound = new URLSearchParams(location.search);
+    PT_TRACK_KEYS.forEach(function (k) {
+      var v = inbound.get(k);
+      if (v != null && v !== '') url.searchParams.set(k, v);
+    });
+    Object.keys(PT_DEFAULT_UTM).forEach(function (k) {
+      if (!url.searchParams.has(k)) url.searchParams.set(k, PT_DEFAULT_UTM[k]);
+    });
+    return url.toString();
+  }
+
   function applyStatic() {
     var meta = I.meta(lang) || {};
     document.documentElement.lang = meta.htmlLang || lang;
     document.title = t('page_title');
     document.querySelectorAll('[data-i18n]').forEach(function (n) { n.textContent = t(n.getAttribute('data-i18n')); });
     document.querySelectorAll('[data-i18n-ph]').forEach(function (n) { n.placeholder = t(n.getAttribute('data-i18n-ph')); });
-    document.querySelectorAll('[data-href]').forEach(function (n) { n.href = t(n.getAttribute('data-href')); });
+    document.querySelectorAll('[data-href]').forEach(function (n) {
+      var key = n.getAttribute('data-href');
+      var href = t(key);
+      n.href = PT_OUTBOUND_HREF[key] ? buildPtOutbound(href) : href;
+    });
     // Desktop-style language buttons (中文 | English); falls back to a select once there are many languages.
     var box = $('lang-switch');
     if (!box) return;
