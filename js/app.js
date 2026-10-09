@@ -206,10 +206,11 @@
     var ok = !!key && !block;
     var keyBadge = $('key-badge');
     if (keyBadge) {
-      keyBadge.hidden = false;
+      // TEMP: dual color preview on the tab — keep live single dot hidden until colors are approved
+      keyBadge.hidden = true;
       keyBadge.classList.toggle('badge-dot-ok', ok);
       keyBadge.classList.toggle('badge-dot-bad', !ok);
-      keyBadge.setAttribute('aria-hidden', 'false');
+      keyBadge.setAttribute('aria-hidden', 'true');
       if (!key || block === 'none') keyBadge.title = t('key_chip_none');
       else if (block === 'auth') keyBadge.title = t('key_chip_auth');
       else if (block === 'quota') keyBadge.title = t('key_chip_quota');

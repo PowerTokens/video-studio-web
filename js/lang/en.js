@@ -13,6 +13,7 @@ VSI18n.register('en', {
   key_chip_none: "No API key yet",
   key_chip_set: "1 key added (…%s)",
   key_chip_ok: "Key ready — you can generate",
+  key_dot_preview: "preview",
   key_chip_auth: "Key invalid or expired",
   key_chip_quota: "Balance or quota too low",
   tab_generate: "Generate video",

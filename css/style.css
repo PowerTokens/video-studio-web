@@ -125,9 +125,19 @@ p { margin: 0; }
 }
 .tabs button:hover { background: var(--hover); color: var(--accent-text); }
 .tabs button.active { background: var(--pale); color: var(--accent-text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
-.badge-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--bad); margin-left: 5px; vertical-align: 2px; }
-.badge-dot-ok { background: #1f9d63; }
-.badge-dot-bad { background: var(--bad); }
+.badge-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; margin-left: 5px; vertical-align: 1px; box-shadow: 0 0 0 1px rgba(0,0,0,.06); }
+.badge-dot-ok { background: #22c55e; }
+.badge-dot-bad { background: #ff3b30; }
+/* Temporary: side-by-side color preview on API Key tab — remove after Qin Yu picks */
+.key-dot-preview {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 6px;
+  padding: 1px 6px 1px 4px; border-radius: 999px; background: #eef6f3;
+  border: 1px solid #cfe6df; vertical-align: middle;
+}
+.key-dot-preview .badge-dot { margin-left: 0; }
+.key-dot-preview-note {
+  font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .02em;
+}
 
 /* ---------- page / headings / cards ---------- */
 .page { width: 100%; max-width: 1240px; margin: 0 auto; padding: 14px 12px 20px; flex: 1; }
