@@ -9,7 +9,7 @@
   var MIN_CMP = 2, MAX_CMP = 3;
   var ALL_RES = ['480p', '720p', '1080p', '4k'];
   var ALL_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'];
-  var EXAMPLE_IDS = ['product', 'drama', 'cafe', 'cinematic'];
+  var EXAMPLE_IDS = ['drama', 'cafe', 'cinematic', 'product'];
   /** Recommended model per example chip. null = any model (do not change Settings). */
   var EXAMPLE_MODELS = {
     product: 'wan3.0-video',
