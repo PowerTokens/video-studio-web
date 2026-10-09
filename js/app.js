@@ -174,7 +174,7 @@
     show(banner, !key && onboarded);
   }
 
-  // API Key tab dot: green only when a key is present and usable; red for any generate-blocking issue.
+  // API Key tab pill: both dots always visible; emphasize green when usable, red for any generate-blocking issue.
   // Yellow/warn is never used here.
   function syncKeyBlockFromRec(rec) {
     if (!rec || rec.removed || !A.getKey()) return;
@@ -205,15 +205,20 @@
     var block = currentKeyBlock();
     var ok = !!key && !block;
     var keyBadge = $('key-badge');
+    var keyBadgeText = $('key-badge-text');
     if (keyBadge) {
       keyBadge.hidden = false;
-      keyBadge.classList.toggle('badge-dot-ok', ok);
-      keyBadge.classList.toggle('badge-dot-bad', !ok);
+      keyBadge.classList.toggle('is-ok', ok);
+      keyBadge.classList.toggle('is-bad', !ok);
       keyBadge.setAttribute('aria-hidden', 'false');
-      if (!key || block === 'none') keyBadge.title = t('key_chip_none');
-      else if (block === 'auth') keyBadge.title = t('key_chip_auth');
-      else if (block === 'quota') keyBadge.title = t('key_chip_quota');
-      else keyBadge.title = t('key_chip_ok');
+      var title;
+      if (!key || block === 'none') title = t('key_chip_none');
+      else if (block === 'auth') title = t('key_chip_auth');
+      else if (block === 'quota') title = t('key_chip_quota');
+      else title = t('key_chip_ok');
+      keyBadge.title = title;
+      keyBadge.setAttribute('aria-label', title);
+      if (keyBadgeText) keyBadgeText.textContent = ok ? t('key_status_ok') : t('key_status_check');
     }
     $('key-status').textContent = key ? t('key_saved', A.keyHint(key)) : t('key_none');
     $('key-forget').disabled = !key;

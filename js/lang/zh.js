@@ -15,6 +15,8 @@ VSI18n.register('zh', {
   key_chip_ok: "Key 可用，可以生成",
   key_chip_auth: "Key 无效或已过期",
   key_chip_quota: "余额或额度不足",
+  key_status_ok: "状态正常",
+  key_status_check: "要检查",
   tab_generate: "生成视频",
   tab_compare: "模型对比",
   tab_tasks: "任务记录 / 恢复",
