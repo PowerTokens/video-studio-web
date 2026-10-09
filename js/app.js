@@ -310,7 +310,11 @@
       keyBadge.setAttribute('aria-label', title);
       if (keyBadgeText) keyBadgeText.textContent = ok ? t('key_status_ok') : t('key_status_check');
     }
-    $('key-status').textContent = key ? t('key_saved', A.keyHint(key)) : t('key_none');
+    var statusEl = $('key-status');
+    if (statusEl) {
+      statusEl.textContent = key ? t('key_quota_tip') : t('key_none');
+      statusEl.classList.toggle('badge-bad', !key);
+    }
     $('key-forget').disabled = !key;
     renderNokeyBanner();
     renderStatus();

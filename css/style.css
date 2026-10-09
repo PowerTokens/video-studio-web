@@ -81,6 +81,9 @@ p { margin: 0; }
 .badge-btn:hover { background: var(--pressed); }
 .badge-block { display: block; margin-top: 10px; }
 .badge-warn { background: var(--warn-soft); color: var(--warn); }
+.badge-bad {
+  background: #ffe8e6; color: #ff3b30; border-color: #ffc9c4; font-weight: 600;
+}
 .link {
   font: inherit; font-size: 13px; color: var(--accent-link); background: none; border: 0; padding: 4px 2px; cursor: pointer;
   text-decoration: none; white-space: nowrap;
