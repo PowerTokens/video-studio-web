@@ -10,13 +10,13 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261009-onboard4">
-<link rel="preload" href="js/i18n.js?v=20261009-onboard4" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261009-onboard4" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261009-onboard4" as="script">
-<link rel="preload" href="js/models.js?v=20261009-onboard4" as="script">
-<link rel="preload" href="js/api.js?v=20261009-onboard4" as="script">
-<link rel="preload" href="js/app.js?v=20261009-onboard4" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261009-copypolish">
+<link rel="preload" href="js/i18n.js?v=20261009-copypolish" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261009-copypolish" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261009-copypolish" as="script">
+<link rel="preload" href="js/models.js?v=20261009-copypolish" as="script">
+<link rel="preload" href="js/api.js?v=20261009-copypolish" as="script">
+<link rel="preload" href="js/app.js?v=20261009-copypolish" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -37,8 +37,8 @@
   <div class="header-row sub-row">
     <div class="subtitle"><span data-i18n="subtitle">多模型 AI 视频生成 · 网页版</span><button id="tips-btn-m" class="link tips-btn tips-narrow" type="button" data-i18n="onboard_help">使用提示</button></div>
     <div class="header-actions">
-      <a id="billing-chip" class="btn-credits" href="https://powertokens.ai/zh-Hans/billing?utm_source=videostudio&utm_medium=web&utm_campaign=video-studio" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text">积分 / 充值</span></a>
-      <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" id="header-get-key" class="btn btn-accent btn-small header-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key">注册 / 获取 API Key ↗</a>
+      <a id="billing-chip" class="btn-credits" href="https://powertokens.ai/zh-Hans/billing?utm_source=videostudio&utm_medium=web&utm_campaign=video-studio" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text">积分充值</span></a>
+      <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" id="header-get-key" class="btn btn-accent btn-small header-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key">注册获取 API Key</a>
     </div>
   </div>
 </header>
@@ -55,7 +55,7 @@
 
 <aside id="nokey-banner" class="nokey-banner" hidden>
   <div class="nokey-inner">
-    <p data-i18n="nokey_banner">还没有 API Key？点右上角「注册 / 获取 API Key」，拿到后粘贴到「API Key」页即可。</p>
+    <p data-i18n="nokey_banner">还没有 API Key？点右上角「注册获取 API Key」，拿到后粘贴到「API Key」页即可。</p>
     <div class="nokey-actions">
       <button type="button" class="btn btn-small" id="nokey-goto-keys" data-i18n="nokey_goto_keys">去添加 Key</button>
     </div>
@@ -67,8 +67,8 @@
   <section id="panel-generate" class="panel" role="tabpanel">
     <section id="onboard" class="card onboard" hidden>
       <h3 class="card-title" data-i18n="onboard_title">四步开始</h3>
-      <p class="muted" data-i18n="onboard_step1">① 还没有 Key？点右上角「注册 / 获取 API Key」；已有 Key 则点「去添加 Key」粘贴</p>
-      <p class="muted" data-i18n="onboard_step2">② 选一个模型 — Wan / Seedance / Kling 等，多模型任选是优势</p>
+      <p class="muted" data-i18n="onboard_step1">① 还没有 Key？点右上角「注册获取 API Key」；已有 Key 则点「去添加 Key」粘贴</p>
+      <p class="muted" data-i18n="onboard_step2">② 选 Wan、Seedance、Kling 或其它模型，一把 Key 多模型随便换。</p>
       <p class="muted" data-i18n="onboard_step3">③ 用自然语言写一段视频描述</p>
       <p class="muted" data-i18n="onboard_step4">④ 点击「生成视频」</p>
       <div class="actions">
@@ -89,7 +89,7 @@
           <p class="muted small" data-i18n="prompt_desc">用自然语言描述画面、镜头、动作与声音。</p>
           <ol class="howto" id="gen-howto" aria-label="How to">
             <li data-i18n="howto_1">先在「API Key」页添加 PowerTokens Key。</li>
-            <li data-i18n="howto_2">在「生成参数」里选模型 — Wan / Seedance / Kling 等，多模型任选。</li>
+            <li data-i18n="howto_2">在「生成参数」里选 Wan、Seedance、Kling 或其它模型，一把 Key 多模型随便换。</li>
             <li data-i18n="howto_3">点下方一个示例，或自己写一段描述。</li>
             <li data-i18n="howto_4">点击「生成视频」。</li>
           </ol>
@@ -323,7 +323,7 @@
         <section class="card">
           <h3 class="card-title" data-i18n="get_card">获取 Key</h3>
           <p class="muted" data-i18n="get_card_desc">还没有 Key？去 PowerTokens 注册即可使用。支持 Wan、Seedance、Kling 等多种视频模型。</p>
-          <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="btn btn-accent btn-block" id="get-key-link" target="_blank" rel="noopener" data-i18n="get_btn" data-href="signup_url">注册 / 获取 API Key ↗</a>
+          <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="btn btn-accent btn-block" id="get-key-link" target="_blank" rel="noopener" data-i18n="get_btn" data-href="signup_url">注册获取 API Key</a>
           <p class="muted small" data-i18n="get_note">打开 PowerTokens 官网 API Key 页面</p>
         </section>
         <section class="card">
@@ -360,12 +360,12 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 请先在「API Key」页添加 Key</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261009-onboard4"></script>
+<script src="js/i18n.js?v=20261009-copypolish"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261009-onboard4"></script>
-<script src="js/lang/en.js?v=20261009-onboard4"></script>
-<script src="js/models.js?v=20261009-onboard4"></script>
-<script src="js/api.js?v=20261009-onboard4"></script>
-<script src="js/app.js?v=20261009-onboard4"></script>
+<script src="js/lang/zh.js?v=20261009-copypolish"></script>
+<script src="js/lang/en.js?v=20261009-copypolish"></script>
+<script src="js/models.js?v=20261009-copypolish"></script>
+<script src="js/api.js?v=20261009-copypolish"></script>
+<script src="js/app.js?v=20261009-copypolish"></script>
 </body>
 </html>
