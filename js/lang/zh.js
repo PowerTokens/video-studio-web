@@ -13,7 +13,6 @@ VSI18n.register('zh', {
   key_chip_none: "尚未添加 API Key",
   key_chip_set: "已添加 1 个 Key（…%s）",
   key_chip_ok: "Key 可用，可以生成",
-  key_dot_preview: "预览",
   key_chip_auth: "Key 无效或已过期",
   key_chip_quota: "余额或额度不足",
   tab_generate: "生成视频",
