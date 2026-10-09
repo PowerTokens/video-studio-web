@@ -233,7 +233,7 @@
   function bindOnboard() {
     var done = A.store.get('onboarded', false);
     function syncHowto(onboardVisible) {
-      // Avoid two competing "3 steps" blocks; keep the compact howto when onboard is dismissed.
+      // Avoid two competing "4 steps" blocks; keep the compact howto when onboard is dismissed.
       var howto = $('gen-howto');
       if (howto) show(howto, !onboardVisible);
     }
@@ -250,7 +250,7 @@
     if (nokeyGoto) {
       nokeyGoto.addEventListener('click', function () { setTab('key', true); $('key-input').focus(); });
     }
-    // Header "使用提示 / Tips" brings the 3-step tip back (desktop: 使用提示 button in the header).
+    // Header "使用提示 / Tips" brings the 4-step tip back (desktop: 使用提示 button in the header).
     document.querySelectorAll('.tips-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         setTab('generate', true);
