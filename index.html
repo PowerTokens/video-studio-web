@@ -10,13 +10,13 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261009-cement2">
-<link rel="preload" href="js/i18n.js?v=20261009-cement2" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261009-cement2" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261009-cement2" as="script">
-<link rel="preload" href="js/models.js?v=20261009-cement2" as="script">
-<link rel="preload" href="js/api.js?v=20261009-cement2" as="script">
-<link rel="preload" href="js/app.js?v=20261009-cement2" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261009-chip-get">
+<link rel="preload" href="js/i18n.js?v=20261009-chip-get" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261009-chip-get" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261009-chip-get" as="script">
+<link rel="preload" href="js/models.js?v=20261009-chip-get" as="script">
+<link rel="preload" href="js/api.js?v=20261009-chip-get" as="script">
+<link rel="preload" href="js/app.js?v=20261009-chip-get" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -90,7 +90,7 @@
               <p class="examples-label" data-i18n="examples_label">试试示例</p>
               <p class="examples-hint" data-i18n="examples_hint">点选填入提示词，再点一次清空。带模型徽标的示例会自动切到对应模型，仍可在「生成参数」里改。</p>
             </div>
-            <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"><button type="button" class="example-chip" data-example="product" data-target="gen" data-family="wan"><span class="chip-logo chip-logo-wan" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#6B5CE7"/><path d="M3.2 11.2L5.1 4.8h1.7l1.2 4.3 1.2-4.3h1.7l1.9 6.4h-1.55l-1.05-3.85-1.1 3.85H7.05L5.95 7.35 4.9 11.2H3.2z" fill="#fff"/></svg></span><span class="chip-title">产品展示</span><span class="chip-model">Wan</span></button><button type="button" class="example-chip" data-example="drama" data-target="gen" data-family="seedance"><span class="chip-logo chip-logo-seedance" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#111827"/><path d="M8.2 3.4c-2.05 0-3.35 1.05-3.35 2.55 0 1.55 1.2 2.15 2.85 2.55 1.25.3 1.7.55 1.7 1.2 0 .75-.7 1.2-1.85 1.2-1.15 0-2-.4-2.45-1.05l-1.15.85C4.7 11.85 6.05 12.6 8 12.6c2.2 0 3.55-1.15 3.55-2.75 0-1.65-1.2-2.3-2.95-2.7-1.2-.28-1.65-.55-1.65-1.15 0-.65.6-1.1 1.55-1.1.95 0 1.7.35 2.1.9l1.1-.9c-.6-.85-1.75-1.5-3.35-1.5z" fill="#fff"/></svg></span><span class="chip-title">短剧</span><span class="chip-model">Seedance</span></button><button type="button" class="example-chip" data-example="cafe" data-target="gen"><span class="chip-title">咖啡馆</span><span class="chip-model">任意模型</span></button><button type="button" class="example-chip" data-example="cinematic" data-target="gen" data-family="kling"><span class="chip-logo chip-logo-kling" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#0f172a"/><path d="M4.4 3.6h1.7v3.35L9.55 3.6H11.6L8.15 7.15 11.85 12.4H9.7L6.85 8.35v4.05H4.4V3.6z" fill="#fff"/><rect x="11.15" y="10.55" width="1.85" height="1.85" rx="0.4" fill="#F97316"/></svg></span><span class="chip-title">电影感</span><span class="chip-model">Kling</span></button></div>
+            <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"><button type="button" class="example-chip" data-example="product" data-target="gen" data-family="wan"><span class="chip-title">产品展示</span><span class="chip-model"><span class="chip-logo chip-logo-wan" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#6B5CE7"/><path d="M3.2 11.2L5.1 4.8h1.7l1.2 4.3 1.2-4.3h1.7l1.9 6.4h-1.55l-1.05-3.85-1.1 3.85H7.05L5.95 7.35 4.9 11.2H3.2z" fill="#fff"/></svg></span>Wan</span></button><button type="button" class="example-chip" data-example="drama" data-target="gen" data-family="seedance"><span class="chip-title">短剧</span><span class="chip-model"><span class="chip-logo chip-logo-seedance" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#111827"/><path d="M8.2 3.4c-2.05 0-3.35 1.05-3.35 2.55 0 1.55 1.2 2.15 2.85 2.55 1.25.3 1.7.55 1.7 1.2 0 .75-.7 1.2-1.85 1.2-1.15 0-2-.4-2.45-1.05l-1.15.85C4.7 11.85 6.05 12.6 8 12.6c2.2 0 3.55-1.15 3.55-2.75 0-1.65-1.2-2.3-2.95-2.7-1.2-.28-1.65-.55-1.65-1.15 0-.65.6-1.1 1.55-1.1.95 0 1.7.35 2.1.9l1.1-.9c-.6-.85-1.75-1.5-3.35-1.5z" fill="#fff"/></svg></span>Seedance</span></button><button type="button" class="example-chip" data-example="cafe" data-target="gen"><span class="chip-title">咖啡馆</span><span class="chip-model">任意模型</span></button><button type="button" class="example-chip" data-example="cinematic" data-target="gen" data-family="kling"><span class="chip-title">电影感</span><span class="chip-model"><span class="chip-logo chip-logo-kling" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#0f172a"/><path d="M4.4 3.6h1.7v3.35L9.55 3.6H11.6L8.15 7.15 11.85 12.4H9.7L6.85 8.35v4.05H4.4V3.6z" fill="#fff"/><rect x="11.15" y="10.55" width="1.85" height="1.85" rx="0.4" fill="#F97316"/></svg></span>Kling</span></button></div>
           </div>
           <textarea id="gen-prompt" rows="3" data-i18n-ph="prompt_placeholder" placeholder="例如：清晨的海边咖啡馆，镜头缓缓推近一杯拿铁，窗外海浪声，柔和暖光。"></textarea>
           <p class="muted small" data-i18n="prompt_desc">用自然语言描述画面、镜头、动作与声音。</p>
@@ -191,7 +191,7 @@
               <p class="examples-label" data-i18n="examples_label">试试示例</p>
               <p class="examples-hint" data-i18n="examples_hint">点选填入提示词，再点一次清空。带模型徽标的示例会自动切到对应模型，仍可在「生成参数」里改。</p>
             </div>
-            <div class="example-chips" id="cmp-example-chips" role="group" aria-label="Examples"><button type="button" class="example-chip" data-example="product" data-target="cmp" data-family="wan"><span class="chip-logo chip-logo-wan" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#6B5CE7"/><path d="M3.2 11.2L5.1 4.8h1.7l1.2 4.3 1.2-4.3h1.7l1.9 6.4h-1.55l-1.05-3.85-1.1 3.85H7.05L5.95 7.35 4.9 11.2H3.2z" fill="#fff"/></svg></span><span class="chip-title">产品展示</span><span class="chip-model">Wan</span></button><button type="button" class="example-chip" data-example="drama" data-target="cmp" data-family="seedance"><span class="chip-logo chip-logo-seedance" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#111827"/><path d="M8.2 3.4c-2.05 0-3.35 1.05-3.35 2.55 0 1.55 1.2 2.15 2.85 2.55 1.25.3 1.7.55 1.7 1.2 0 .75-.7 1.2-1.85 1.2-1.15 0-2-.4-2.45-1.05l-1.15.85C4.7 11.85 6.05 12.6 8 12.6c2.2 0 3.55-1.15 3.55-2.75 0-1.65-1.2-2.3-2.95-2.7-1.2-.28-1.65-.55-1.65-1.15 0-.65.6-1.1 1.55-1.1.95 0 1.7.35 2.1.9l1.1-.9c-.6-.85-1.75-1.5-3.35-1.5z" fill="#fff"/></svg></span><span class="chip-title">短剧</span><span class="chip-model">Seedance</span></button><button type="button" class="example-chip" data-example="cafe" data-target="cmp"><span class="chip-title">咖啡馆</span><span class="chip-model">任意模型</span></button><button type="button" class="example-chip" data-example="cinematic" data-target="cmp" data-family="kling"><span class="chip-logo chip-logo-kling" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#0f172a"/><path d="M4.4 3.6h1.7v3.35L9.55 3.6H11.6L8.15 7.15 11.85 12.4H9.7L6.85 8.35v4.05H4.4V3.6z" fill="#fff"/><rect x="11.15" y="10.55" width="1.85" height="1.85" rx="0.4" fill="#F97316"/></svg></span><span class="chip-title">电影感</span><span class="chip-model">Kling</span></button></div>
+            <div class="example-chips" id="cmp-example-chips" role="group" aria-label="Examples"><button type="button" class="example-chip" data-example="product" data-target="cmp" data-family="wan"><span class="chip-title">产品展示</span><span class="chip-model"><span class="chip-logo chip-logo-wan" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#6B5CE7"/><path d="M3.2 11.2L5.1 4.8h1.7l1.2 4.3 1.2-4.3h1.7l1.9 6.4h-1.55l-1.05-3.85-1.1 3.85H7.05L5.95 7.35 4.9 11.2H3.2z" fill="#fff"/></svg></span>Wan</span></button><button type="button" class="example-chip" data-example="drama" data-target="cmp" data-family="seedance"><span class="chip-title">短剧</span><span class="chip-model"><span class="chip-logo chip-logo-seedance" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#111827"/><path d="M8.2 3.4c-2.05 0-3.35 1.05-3.35 2.55 0 1.55 1.2 2.15 2.85 2.55 1.25.3 1.7.55 1.7 1.2 0 .75-.7 1.2-1.85 1.2-1.15 0-2-.4-2.45-1.05l-1.15.85C4.7 11.85 6.05 12.6 8 12.6c2.2 0 3.55-1.15 3.55-2.75 0-1.65-1.2-2.3-2.95-2.7-1.2-.28-1.65-.55-1.65-1.15 0-.65.6-1.1 1.55-1.1.95 0 1.7.35 2.1.9l1.1-.9c-.6-.85-1.75-1.5-3.35-1.5z" fill="#fff"/></svg></span>Seedance</span></button><button type="button" class="example-chip" data-example="cafe" data-target="cmp"><span class="chip-title">咖啡馆</span><span class="chip-model">任意模型</span></button><button type="button" class="example-chip" data-example="cinematic" data-target="cmp" data-family="kling"><span class="chip-title">电影感</span><span class="chip-model"><span class="chip-logo chip-logo-kling" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" focusable="false"><rect width="16" height="16" rx="4" fill="#0f172a"/><path d="M4.4 3.6h1.7v3.35L9.55 3.6H11.6L8.15 7.15 11.85 12.4H9.7L6.85 8.35v4.05H4.4V3.6z" fill="#fff"/><rect x="11.15" y="10.55" width="1.85" height="1.85" rx="0.4" fill="#F97316"/></svg></span>Kling</span></button></div>
           </div>
           <textarea id="cmp-prompt" rows="4" data-i18n-ph="prompt_placeholder" placeholder="例如：清晨的海边咖啡馆，镜头缓缓推近一杯拿铁，窗外海浪声，柔和暖光。"></textarea>
         </section>
@@ -360,12 +360,12 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 请先在「API Key」页添加 Key</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261009-cement2"></script>
+<script src="js/i18n.js?v=20261009-chip-get"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261009-cement2"></script>
-<script src="js/lang/en.js?v=20261009-cement2"></script>
-<script src="js/models.js?v=20261009-cement2"></script>
-<script src="js/api.js?v=20261009-cement2"></script>
-<script src="js/app.js?v=20261009-cement2"></script>
+<script src="js/lang/zh.js?v=20261009-chip-get"></script>
+<script src="js/lang/en.js?v=20261009-chip-get"></script>
+<script src="js/models.js?v=20261009-chip-get"></script>
+<script src="js/api.js?v=20261009-chip-get"></script>
+<script src="js/app.js?v=20261009-chip-get"></script>
 </body>
 </html>

@@ -567,12 +567,12 @@
     return '';
   }
 
-  function appendChipLogo(btn, family) {
-    if (!family) return;
+  function makeChipLogo(family) {
+    if (!family) return null;
     var mark = el('span', 'chip-logo chip-logo-' + family);
     mark.setAttribute('aria-hidden', 'true');
     mark.innerHTML = chipLogoSvg(family);
-    btn.appendChild(mark);
+    return mark;
   }
 
   function renderExamples() {
@@ -585,11 +585,14 @@
         var b = el('button', 'example-chip');
         b.type = 'button';
         var family = EXAMPLE_FAMILIES[id];
-        appendChipLogo(b, family);
         var parts = String(label).split(' · ');
         if (parts.length >= 2) {
           b.appendChild(el('span', 'chip-title', parts[0]));
-          b.appendChild(el('span', 'chip-model', parts.slice(1).join(' · ')));
+          var model = el('span', 'chip-model');
+          var logo = makeChipLogo(family);
+          if (logo) model.appendChild(logo);
+          model.appendChild(document.createTextNode(parts.slice(1).join(' · ')));
+          b.appendChild(model);
         } else {
           b.appendChild(el('span', 'chip-title', label));
         }
