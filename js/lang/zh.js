@@ -147,7 +147,7 @@ VSI18n.register('zh', {
   // Footer
   footer_desktop: '下载 Windows 桌面版',
   footer_license: 'MIT 许可证',
-  desktop_cta_title: '需要批量、分镜或接上一段？下载 Windows 桌面版',
+  desktop_cta_title: '需要批量、分镜或接上一段？下载 Windows 桌面版。',
   desktop_cta_desc: '网页版适合随手试一条。完整功能（Excel 批量、剧本分镜、接上一段）在 Windows 桌面客户端，免装 Python，同一个 API Key。',
   desktop_cta_btn: '下载 Windows 安装包 (.exe)',
   desktop_cta_releases: '全部版本 ↗',

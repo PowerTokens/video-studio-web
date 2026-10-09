@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,10 +10,17 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261009-desktop">
+<link rel="stylesheet" href="css/style.css?v=20261009-fp2">
+<link rel="preload" href="js/i18n.js?v=20261009-fp2" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261009-fp2" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261009-fp2" as="script">
+<link rel="preload" href="js/models.js?v=20261009-fp2" as="script">
+<link rel="preload" href="js/api.js?v=20261009-fp2" as="script">
+<link rel="preload" href="js/app.js?v=20261009-fp2" as="script">
 </head>
 <body>
-<div id="mock-banner" class="mock-banner" hidden data-i18n="mock_banner"></div>
+<noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
+<div id="mock-banner" class="mock-banner" hidden data-i18n="mock_banner">模拟模式：不会调用真实接口，也不会扣费。</div>
 
 <!-- Header: same structure as the desktop app (brand + language switch + Tips / subtitle + key badge + links) -->
 <header class="app-header">
@@ -23,36 +30,36 @@
       <span class="brand-name">PowerTokens Video Studio</span>
     </a>
     <div class="top-actions">
-      <div class="lang-switch" id="lang-switch" role="group" aria-label="Language"></div>
-      <button id="tips-btn" class="link tips-btn tips-wide" type="button" data-i18n="onboard_help"></button>
+      <div class="lang-switch" id="lang-switch" role="group" aria-label="Language"><button class="active" type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">English</button></div>
+      <button id="tips-btn" class="link tips-btn tips-wide" type="button" data-i18n="onboard_help">使用提示</button>
     </div>
   </div>
   <div class="header-row sub-row">
-    <div class="subtitle"><span data-i18n="subtitle"></span><button id="tips-btn-m" class="link tips-btn tips-narrow" type="button" data-i18n="onboard_help"></button></div>
+    <div class="subtitle"><span data-i18n="subtitle">多模型 AI 视频生成 · 网页版</span><button id="tips-btn-m" class="link tips-btn tips-narrow" type="button" data-i18n="onboard_help">使用提示</button></div>
     <div class="header-actions">
-      <button id="key-chip" class="badge badge-btn" type="button"></button>
-      <a id="billing-chip" class="btn-credits" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text"></span></a>
-      <a id="header-get-key" class="btn btn-accent btn-small header-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key"></a>
+      <button id="key-chip" class="badge badge-btn" type="button">尚未添加 API Key</button>
+      <a id="billing-chip" class="btn-credits" href="https://powertokens.ai/zh-Hans/billing?utm_source=videostudio&utm_medium=web&utm_campaign=video-studio" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text">积分 / 充值</span></a>
+      <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" id="header-get-key" class="btn btn-accent btn-small header-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key">注册 / 获取 API Key ↗</a>
     </div>
   </div>
 </header>
 
 <nav class="tabs" aria-label="Tabs">
   <div class="tabs-inner" role="tablist">
-    <button role="tab" type="button" data-tab="generate" data-i18n="tab_generate"></button>
-    <button role="tab" type="button" data-tab="compare" data-i18n="tab_compare"></button>
-    <button role="tab" type="button" data-tab="batch" data-i18n="tab_batch"></button>
-    <button role="tab" type="button" data-tab="tasks"><span data-i18n="tab_tasks"></span><span id="tasks-badge" class="badge-dot" hidden></span></button>
-    <button role="tab" type="button" data-tab="key" data-i18n="tab_key"></button>
+    <button role="tab" type="button" data-tab="generate" data-i18n="tab_generate">生成视频</button>
+    <button role="tab" type="button" data-tab="compare" data-i18n="tab_compare">模型对比</button>
+    <button role="tab" type="button" data-tab="batch" data-i18n="tab_batch">批量导入</button>
+    <button role="tab" type="button" data-tab="tasks"><span data-i18n="tab_tasks">任务记录 / 恢复</span><span id="tasks-badge" class="badge-dot" hidden></span></button>
+    <button role="tab" type="button" data-tab="key" data-i18n="tab_key">API Key</button>
   </div>
 </nav>
 
 <aside id="nokey-banner" class="nokey-banner" hidden>
   <div class="nokey-inner">
-    <p data-i18n="nokey_banner"></p>
+    <p data-i18n="nokey_banner">还没有 API Key？去 PowerTokens 官网注册获取，然后粘贴到「API Key」页即可开始生成。</p>
     <div class="nokey-actions">
-      <a class="btn btn-accent btn-small" id="nokey-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="nokey_signup"></a>
-      <button type="button" class="link" id="nokey-goto-keys" data-i18n="nokey_goto_keys"></button>
+      <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="btn btn-accent btn-small" id="nokey-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="nokey_signup">去官网注册 ↗</a>
+      <button type="button" class="link" id="nokey-goto-keys" data-i18n="nokey_goto_keys">我已有 Key</button>
     </div>
   </div>
 </aside>
@@ -61,161 +68,161 @@
   <!-- ============ 生成视频 ============ -->
   <section id="panel-generate" class="panel" role="tabpanel">
     <section id="onboard" class="card onboard" hidden>
-      <h3 class="card-title" data-i18n="onboard_title"></h3>
-      <p class="muted" data-i18n="onboard_step1"></p>
-      <p class="muted" data-i18n="onboard_step2"></p>
-      <p class="muted" data-i18n="onboard_step3"></p>
+      <h3 class="card-title" data-i18n="onboard_title">三步开始</h3>
+      <p class="muted" data-i18n="onboard_step1">① 在「API Key」页添加 PowerTokens Key（还没有？点「获取 API Key」注册）</p>
+      <p class="muted" data-i18n="onboard_step2">② 用自然语言写一段视频描述</p>
+      <p class="muted" data-i18n="onboard_step3">③ 点击「生成视频」</p>
       <div class="actions">
-        <button type="button" class="btn" id="onboard-goto-keys" data-i18n="onboard_goto_keys"></button>
-        <a class="link" id="onboard-get-key" target="_blank" rel="noopener" data-i18n="onboard_get_key" data-href="signup_url"></a>
-        <button type="button" class="btn" id="onboard-dismiss" data-i18n="onboard_dismiss"></button>
+        <button type="button" class="btn" id="onboard-goto-keys" data-i18n="onboard_goto_keys">去添加 Key</button>
+        <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="link" id="onboard-get-key" target="_blank" rel="noopener" data-i18n="onboard_get_key" data-href="signup_url">获取 API Key</a>
+        <button type="button" class="btn" id="onboard-dismiss" data-i18n="onboard_dismiss">知道了，不再显示</button>
       </div>
     </section>
 
     <div class="heading">
-      <h1 data-i18n="gen_title"></h1>
-      <p data-i18n="gen_desc"></p>
+      <h1 data-i18n="gen_title">生成视频</h1>
+      <p data-i18n="gen_desc">输入创意，调整参数，生成带原生音效的视频。</p>
     </div>
     <div class="columns">
       <div class="col-left">
         <section class="card">
-          <h3 class="card-title"><label for="gen-prompt" data-i18n="prompt_card"></label></h3>
-          <textarea id="gen-prompt" rows="3" data-i18n-ph="prompt_placeholder"></textarea>
-          <p class="muted small" data-i18n="prompt_desc"></p>
+          <h3 class="card-title"><label for="gen-prompt" data-i18n="prompt_card">视频描述</label></h3>
+          <textarea id="gen-prompt" rows="3" data-i18n-ph="prompt_placeholder" placeholder="例如：清晨的海边咖啡馆，镜头缓缓推近一杯拿铁，窗外海浪声，柔和暖光。"></textarea>
+          <p class="muted small" data-i18n="prompt_desc">用自然语言描述画面、镜头、动作与声音。</p>
           <ol class="howto" id="gen-howto" aria-label="How to">
-            <li data-i18n="howto_1"></li>
-            <li data-i18n="howto_2"></li>
-            <li data-i18n="howto_3"></li>
+            <li data-i18n="howto_1">先在「API Key」页添加 PowerTokens Key。</li>
+            <li data-i18n="howto_2">点下方一个示例，或自己写一段描述。</li>
+            <li data-i18n="howto_3">需要的话换个模型，然后点「生成视频」。</li>
           </ol>
           <div class="examples" id="gen-examples">
             <div class="examples-head">
-              <p class="examples-label" data-i18n="examples_label"></p>
-              <p class="examples-hint" data-i18n="examples_hint"></p>
+              <p class="examples-label" data-i18n="examples_label">试试示例</p>
+              <p class="examples-hint" data-i18n="examples_hint">点一下即可填入提示词。标签是推荐模型，仍可在「生成参数」里任选。</p>
             </div>
-            <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"></div>
+            <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"><button type="button" class="example-chip" data-example="product" data-target="gen"><span class="chip-title">产品展示</span><span class="chip-model">Wan</span></button><button type="button" class="example-chip" data-example="drama" data-target="gen"><span class="chip-title">短剧</span><span class="chip-model">Seedance</span></button><button type="button" class="example-chip" data-example="cafe" data-target="gen"><span class="chip-title">咖啡馆</span><span class="chip-model">任意模型</span></button><button type="button" class="example-chip" data-example="cinematic" data-target="gen"><span class="chip-title">电影感</span><span class="chip-model">Kling</span></button></div>
           </div>
         </section>
 
         <section class="card">
-          <h3 class="card-title" data-i18n="params_card"></h3>
-          <label class="field-label" for="gen-model" data-i18n="param_model"></label>
+          <h3 class="card-title" data-i18n="params_card">生成参数</h3>
+          <label class="field-label" for="gen-model" data-i18n="param_model">模型</label>
           <select id="gen-model"></select>
           <div class="model-desc-row">
             <span id="gen-model-desc" class="muted small"></span>
-            <button type="button" class="link" id="gen-model-details"></button>
+            <button type="button" class="link" id="gen-model-details">详情</button>
           </div>
           <div id="gen-model-full" class="model-full muted small" hidden></div>
           <p id="gen-notice" class="badge badge-block" hidden></p>
           <div class="fields">
             <div class="field">
-              <label class="field-label" for="gen-duration" data-i18n="param_duration"></label>
+              <label class="field-label" for="gen-duration" data-i18n="param_duration">时长（秒）</label>
               <input type="number" id="gen-duration" inputmode="numeric" min="2" max="30" step="1" value="5">
             </div>
             <div class="field">
-              <label class="field-label" for="gen-res" data-i18n="param_resolution"></label>
+              <label class="field-label" for="gen-res" data-i18n="param_resolution">分辨率</label>
               <select id="gen-res"></select>
             </div>
             <div class="field">
-              <label class="field-label" for="gen-ratio" data-i18n="param_ratio"></label>
+              <label class="field-label" for="gen-ratio" data-i18n="param_ratio">画面比例</label>
               <select id="gen-ratio"></select>
             </div>
           </div>
           <p id="gen-cost" class="muted small cost"></p>
           <div class="actions">
-            <button type="button" id="gen-submit" class="btn btn-accent" data-i18n="generate_btn"></button>
-            <button type="button" id="gen-stop" class="btn" data-i18n="stop_btn" disabled></button>
+            <button type="button" id="gen-submit" class="btn btn-accent" data-i18n="generate_btn">生成视频</button>
+            <button type="button" id="gen-stop" class="btn" data-i18n="stop_btn" disabled>停止等待</button>
           </div>
           <p id="gen-error" class="error" hidden></p>
-          <p class="muted small" data-i18n="cloud_note"></p>
+          <p class="muted small" data-i18n="cloud_note">提交后不会自动重复提交；刷新或关闭页面，任务仍在云端继续，可在「任务记录 / 恢复」里找回。</p>
         </section>
       </div>
 
       <div class="col-right">
         <section class="card">
-          <h3 class="card-title" data-i18n="current_card"></h3>
-          <p id="gen-current" class="badge badge-block"></p>
-          <p id="gen-current-params" class="muted small"></p>
-          <p class="muted small" data-i18n="current_saved"></p>
+          <h3 class="card-title" data-i18n="current_card">当前配置</h3>
+          <p id="gen-current" class="badge badge-block">Wan 3.0（wan3.0-video）</p>
+          <p id="gen-current-params" class="muted small">5 秒 · 720p · 16:9</p>
+          <p class="muted small" data-i18n="current_saved">完成后可在下方「任务进度」里播放和下载。</p>
         </section>
 
         <section class="card">
-          <h3 class="card-title" data-i18n="media_card"></h3>
-          <button type="button" class="link" id="adv-toggle" aria-expanded="false" aria-controls="adv-body"></button>
+          <h3 class="card-title" data-i18n="media_card">高级设置</h3>
+          <button type="button" class="link" id="adv-toggle" aria-expanded="false" aria-controls="adv-body">展开高级设置</button>
           <div id="adv-body" class="adv-body" hidden>
-            <p class="muted small" data-i18n="media_card_desc"></p>
-            <label class="field-label" for="gen-ff-url" data-i18n="media_first_frame"></label>
-            <input type="url" id="gen-ff-url" inputmode="url" autocomplete="off" data-i18n-ph="first_frame_url_ph">
+            <p class="muted small" data-i18n="media_card_desc">首帧图片：填公网图片链接，或从手机 / 电脑选一张图；不需要可留空。</p>
+            <label class="field-label" for="gen-ff-url" data-i18n="media_first_frame">首帧图片</label>
+            <input type="url" id="gen-ff-url" inputmode="url" autocomplete="off" data-i18n-ph="first_frame_url_ph" placeholder="https://… 公网图片链接">
             <div class="ff-local">
-              <label class="btn btn-small" for="gen-ff-file"><span data-i18n="first_frame_pick"></span></label>
+              <label class="btn btn-small" for="gen-ff-file"><span data-i18n="first_frame_pick">选择本地图片</span></label>
               <input type="file" id="gen-ff-file" accept="image/*" class="sr-only">
               <div id="gen-ff-preview" class="ff-preview" hidden>
                 <img id="gen-ff-img" alt="">
                 <span id="gen-ff-info" class="muted small"></span>
-                <button type="button" class="link" id="gen-ff-remove" data-i18n="first_frame_remove"></button>
+                <button type="button" class="link" id="gen-ff-remove" data-i18n="first_frame_remove">移除图片</button>
               </div>
             </div>
-            <p id="gen-ff-note" class="badge badge-block badge-warn" hidden data-i18n="first_frame_wan_note"></p>
+            <p id="gen-ff-note" class="badge badge-block badge-warn" hidden data-i18n="first_frame_wan_note">Wan 文档要求公网图片链接；本地图片会以内嵌图片提交，尚未用真实 Key 验证，失败时请改用公网链接。</p>
             <p id="gen-ff-error" class="error" hidden></p>
           </div>
         </section>
 
-        <p class="batch-hint"><span data-i18n="batch_hint"></span> <a target="_blank" rel="noopener" data-href="desktop_download_url"><span data-i18n="batch_hint_link"></span> ↗</a></p>
+        <p class="batch-hint"><span data-i18n="batch_hint">要批量生成（Excel 导入、断点续跑）？</span> <a href="https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe" target="_blank" rel="noopener" data-href="desktop_download_url"><span data-i18n="batch_hint_link">下载桌面版</span> ↗</a></p>
       </div>
     </div>
 
     <section class="card" id="progress-card">
-      <h3 class="card-title" data-i18n="progress_card"></h3>
-      <div id="gen-result"><p class="empty" data-i18n="result_empty"></p></div>
+      <h3 class="card-title" data-i18n="progress_card">任务进度</h3>
+      <div id="gen-result"><p class="empty" data-i18n="result_empty">提交后，进度和视频会显示在这里。</p></div>
     </section>
   </section>
 
   <!-- ============ 模型对比 ============ -->
   <section id="panel-compare" class="panel" role="tabpanel" hidden>
     <div class="heading">
-      <h1 data-i18n="compare_title"></h1>
-      <p data-i18n="compare_desc"></p>
+      <h1 data-i18n="compare_title">模型对比</h1>
+      <p data-i18n="compare_desc">同一提示词发给 2–3 个模型，并排查看结果后挑选最好的。</p>
     </div>
     <div class="columns">
       <div class="col-left">
         <section class="card">
-          <h3 class="card-title"><label for="cmp-prompt" data-i18n="compare_prompt_card"></label></h3>
-          <p class="muted" data-i18n="compare_prompt_desc"></p>
-          <textarea id="cmp-prompt" rows="4" data-i18n-ph="prompt_placeholder"></textarea>
+          <h3 class="card-title"><label for="cmp-prompt" data-i18n="compare_prompt_card">共用提示词</label></h3>
+          <p class="muted" data-i18n="compare_prompt_desc">所有勾选模型使用同一段描述；各模型参数会按自身限制自动调整。</p>
+          <textarea id="cmp-prompt" rows="4" data-i18n-ph="prompt_placeholder" placeholder="例如：清晨的海边咖啡馆，镜头缓缓推近一杯拿铁，窗外海浪声，柔和暖光。"></textarea>
           <div class="examples" id="cmp-examples">
             <div class="examples-head">
-              <p class="examples-label" data-i18n="examples_label"></p>
-              <p class="examples-hint" data-i18n="examples_hint"></p>
+              <p class="examples-label" data-i18n="examples_label">试试示例</p>
+              <p class="examples-hint" data-i18n="examples_hint">点一下即可填入提示词。标签是推荐模型，仍可在「生成参数」里任选。</p>
             </div>
-            <div class="example-chips" id="cmp-example-chips" role="group" aria-label="Examples"></div>
+            <div class="example-chips" id="cmp-example-chips" role="group" aria-label="Examples"><button type="button" class="example-chip" data-example="product" data-target="cmp"><span class="chip-title">产品展示</span><span class="chip-model">Wan</span></button><button type="button" class="example-chip" data-example="drama" data-target="cmp"><span class="chip-title">短剧</span><span class="chip-model">Seedance</span></button><button type="button" class="example-chip" data-example="cafe" data-target="cmp"><span class="chip-title">咖啡馆</span><span class="chip-model">任意模型</span></button><button type="button" class="example-chip" data-example="cinematic" data-target="cmp"><span class="chip-title">电影感</span><span class="chip-model">Kling</span></button></div>
           </div>
         </section>
         <section class="card">
-          <h3 class="card-title" data-i18n="compare_params_card"></h3>
+          <h3 class="card-title" data-i18n="compare_params_card">共用参数</h3>
           <div class="fields">
             <div class="field">
-              <label class="field-label" for="cmp-duration" data-i18n="param_duration"></label>
+              <label class="field-label" for="cmp-duration" data-i18n="param_duration">时长（秒）</label>
               <input type="number" id="cmp-duration" inputmode="numeric" min="2" max="30" step="1" value="5">
             </div>
             <div class="field">
-              <label class="field-label" for="cmp-res" data-i18n="param_resolution"></label>
+              <label class="field-label" for="cmp-res" data-i18n="param_resolution">分辨率</label>
               <select id="cmp-res"></select>
             </div>
             <div class="field">
-              <label class="field-label" for="cmp-ratio" data-i18n="param_ratio"></label>
+              <label class="field-label" for="cmp-ratio" data-i18n="param_ratio">画面比例</label>
               <select id="cmp-ratio"></select>
             </div>
           </div>
           <div class="actions">
-            <button type="button" id="cmp-submit" class="btn btn-accent" data-i18n="compare_start"></button>
+            <button type="button" id="cmp-submit" class="btn btn-accent" data-i18n="compare_start">开始对比</button>
           </div>
           <p id="cmp-error" class="error" hidden></p>
-          <p class="muted small" data-i18n="cloud_note"></p>
+          <p class="muted small" data-i18n="cloud_note">提交后不会自动重复提交；刷新或关闭页面，任务仍在云端继续，可在「任务记录 / 恢复」里找回。</p>
         </section>
       </div>
       <div class="col-right">
         <section class="card">
-          <h3 class="card-title" data-i18n="compare_models_card"></h3>
-          <p class="muted" data-i18n="compare_models_desc"></p>
+          <h3 class="card-title" data-i18n="compare_models_card">选择模型（2–3 个）</h3>
+          <p class="muted" data-i18n="compare_models_desc">勾选 2–3 个模型；下方会显示参数调整说明和合计费用。</p>
           <div id="cmp-models" class="check-list"></div>
           <ul id="cmp-plan" class="plan"></ul>
           <p id="cmp-cost" class="badge badge-block"></p>
@@ -223,59 +230,59 @@
       </div>
     </div>
     <section class="card">
-      <h3 class="card-title" data-i18n="compare_results_card"></h3>
-      <p class="muted" data-i18n="compare_results_desc"></p>
-      <div id="cmp-results" class="cmp-grid"><p class="empty" data-i18n="compare_results_empty"></p></div>
+      <h3 class="card-title" data-i18n="compare_results_card">对比结果</h3>
+      <p class="muted" data-i18n="compare_results_desc">每个模型单独保存为任务，可在「任务记录 / 恢复」中继续查询。</p>
+      <div id="cmp-results" class="cmp-grid"><p class="empty" data-i18n="compare_results_empty">开始对比后，各模型的结果会并排显示在这里。</p></div>
     </section>
   </section>
 
   <!-- ============ 批量导入 (desktop only) ============ -->
   <section id="panel-batch" class="panel" role="tabpanel" hidden>
     <div class="heading">
-      <h1 data-i18n="batch_title"></h1>
-      <p data-i18n="batch_desc"></p>
+      <h1 data-i18n="batch_title">批量导入视频任务</h1>
+      <p data-i18n="batch_desc">用表格一次生成多条视频。</p>
     </div>
     <section class="card">
-      <h3 class="card-title" data-i18n="batch_web_card"></h3>
-      <p class="muted" data-i18n="batch_web_desc"></p>
+      <h3 class="card-title" data-i18n="batch_web_card">在桌面版中使用</h3>
+      <p class="muted" data-i18n="batch_web_desc">网页版暂不支持批量。Excel / CSV 导入、断点续跑、从剧本生成分镜、接上一段都在 Windows 桌面版里，和网页版用同一个 Key。</p>
       <div class="actions">
-        <a class="btn btn-accent" id="batch-desktop-link" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="batch_web_btn"></a>
+        <a href="https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe" class="btn btn-accent" id="batch-desktop-link" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="batch_web_btn">下载桌面版 ↗</a>
       </div>
     </section>
     <section class="card">
-      <h3 class="card-title" data-i18n="batch_sample_card"></h3>
-      <p class="muted" data-i18n="batch_sample_desc"></p>
+      <h3 class="card-title" data-i18n="batch_sample_card">示例表格</h3>
+      <p class="muted" data-i18n="batch_sample_desc">与桌面版相同的 Excel 示例（各 3 行）。下载后改「提示词」列，在 Windows 桌面版「批量导入」页打开。</p>
       <div class="actions">
-        <a class="btn" id="batch-sample-drama" target="_blank" rel="noopener" data-i18n="batch_sample_drama"></a>
-        <a class="btn" id="batch-sample-product" target="_blank" rel="noopener" data-i18n="batch_sample_product"></a>
+        <a class="btn" id="batch-sample-drama" target="_blank" rel="noopener" data-i18n="batch_sample_drama">短剧示例 ↘</a>
+        <a class="btn" id="batch-sample-product" target="_blank" rel="noopener" data-i18n="batch_sample_product">产品示例 ↘</a>
       </div>
-      <p class="muted small" data-i18n="batch_sample_note"></p>
+      <p class="muted small" data-i18n="batch_sample_note">网页版暂不支持导入 Excel — 示例给桌面版批量页用。列：名称、时长(秒)、分辨率、比例、提示词，可选模型。</p>
     </section>
   </section>
 
   <!-- ============ 任务记录 / 恢复 ============ -->
   <section id="panel-tasks" class="panel" role="tabpanel" hidden>
     <div class="heading">
-      <h1 data-i18n="history_title"></h1>
-      <p data-i18n="history_desc"></p>
+      <h1 data-i18n="history_title">任务记录 / 恢复</h1>
+      <p data-i18n="history_desc">继续查询原任务并下载，不会提交新生成任务。任务 ID 保存在这个浏览器里，刷新页面会自动接着查询。</p>
     </div>
     <section class="card">
-      <h3 class="card-title" data-i18n="history_card"></h3>
-      <p id="spend-line" class="spend-line" hidden><span id="spend-text"></span> <button type="button" class="link link-small" id="spend-reset" data-i18n="spend_reset"></button></p>
+      <h3 class="card-title" data-i18n="history_card">任务记录</h3>
+      <p id="spend-line" class="spend-line" hidden><span id="spend-text"></span> <button type="button" class="link link-small" id="spend-reset" data-i18n="spend_reset">清零</button></p>
       <div id="tasks-list" class="task-list"></div>
       <div class="actions">
-        <button type="button" class="btn" id="tasks-refresh" data-i18n="refresh"></button>
-        <button type="button" class="btn" id="tasks-copy" data-i18n="copy_all_ids"></button>
-        <button type="button" class="btn" id="tasks-clear" data-i18n="clear_done"></button>
+        <button type="button" class="btn" id="tasks-refresh" data-i18n="refresh">刷新</button>
+        <button type="button" class="btn" id="tasks-copy" data-i18n="copy_all_ids">复制全部 ID</button>
+        <button type="button" class="btn" id="tasks-clear" data-i18n="clear_done">清除已完成</button>
       </div>
     </section>
     <section class="card">
-      <h3 class="card-title" data-i18n="manual_card"></h3>
-      <p class="muted" data-i18n="manual_card_desc"></p>
+      <h3 class="card-title" data-i18n="manual_card">恢复其他任务</h3>
+      <p class="muted" data-i18n="manual_card_desc">在 PowerTokens 后台找到任务 ID 后，可以在这里继续查询和下载。需使用提交该任务的 Key。</p>
       <div class="manual">
         <select id="manual-kind" aria-label="Task type"></select>
-        <input type="text" id="manual-id" autocomplete="off" spellcheck="false" data-i18n-ph="manual_task_ph">
-        <button type="button" class="btn btn-accent" id="manual-btn" data-i18n="manual_btn"></button>
+        <input type="text" id="manual-id" autocomplete="off" spellcheck="false" data-i18n-ph="manual_task_ph" placeholder="任务 ID">
+        <button type="button" class="btn btn-accent" id="manual-btn" data-i18n="manual_btn">查询 / 下载</button>
       </div>
       <p id="manual-error" class="error" hidden></p>
     </section>
@@ -284,48 +291,48 @@
   <!-- ============ API Key ============ -->
   <section id="panel-key" class="panel" role="tabpanel" hidden>
     <div class="heading">
-      <h1 data-i18n="keys_title"></h1>
-      <p data-i18n="keys_desc"></p>
+      <h1 data-i18n="keys_title">API Key 管理</h1>
+      <p data-i18n="keys_desc">一个 Key 可用于全部模型；Key 只以掩码显示。</p>
     </div>
     <div class="columns">
       <div class="col-left">
         <section class="card">
-          <h3 class="card-title"><label for="key-input" data-i18n="add_card"></label></h3>
-          <p class="muted" data-i18n="add_card_desc"></p>
+          <h3 class="card-title"><label for="key-input" data-i18n="add_card">添加 API Key</label></h3>
+          <p class="muted" data-i18n="add_card_desc">直接粘贴从 PowerTokens 官网复制的 Key（带 “Bearer” 前缀也可以）。</p>
           <div class="key-row">
-            <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph">
-            <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show"></span></label>
+            <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph" placeholder="粘贴 Key（sk-…）">
+            <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show">显示</span></label>
           </div>
-          <p class="muted small" data-i18n="paste_hint"></p>
+          <p class="muted small" data-i18n="paste_hint">保存后 Key 只存在这个浏览器里。</p>
           <div class="actions">
-            <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_save"></button>
+            <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_save">保存 Key</button>
           </div>
           <p id="key-error" class="error" hidden></p>
         </section>
         <section class="card">
-          <h3 class="card-title" data-i18n="current_key_card"></h3>
-          <p class="muted" data-i18n="key_desc"></p>
+          <h3 class="card-title" data-i18n="current_key_card">当前 Key</h3>
+          <p class="muted" data-i18n="key_desc">提交和查询任务都使用这个 Key。</p>
           <p id="key-status" class="badge"></p>
-          <p class="badge badge-block" data-i18n="key_quota_tip"></p>
+          <p class="badge badge-block" data-i18n="key_quota_tip">在 PowerTokens 可以给每个 Key 设置额度上限和有效期，控制花费。</p>
           <div class="actions">
-            <a class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="key_quota_tip_btn"></a>
-            <button type="button" class="btn" id="key-forget" data-i18n="key_forget"></button>
+            <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="key_quota_tip_btn">管理额度和有效期 →</a>
+            <button type="button" class="btn" id="key-forget" data-i18n="key_forget">忘记 Key</button>
           </div>
         </section>
       </div>
       <div class="col-right">
         <section class="card">
-          <h3 class="card-title" data-i18n="get_card"></h3>
-          <p class="muted" data-i18n="get_card_desc"></p>
-          <a class="btn btn-accent btn-block" id="get-key-link" target="_blank" rel="noopener" data-i18n="get_btn" data-href="signup_url"></a>
-          <p class="muted small" data-i18n="get_note"></p>
+          <h3 class="card-title" data-i18n="get_card">获取 Key</h3>
+          <p class="muted" data-i18n="get_card_desc">还没有 Key？去 PowerTokens 注册即可使用。支持 Wan、Seedance、Kling 等多种视频模型。</p>
+          <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="btn btn-accent btn-block" id="get-key-link" target="_blank" rel="noopener" data-i18n="get_btn" data-href="signup_url">注册 / 获取 API Key ↗</a>
+          <p class="muted small" data-i18n="get_note">打开 PowerTokens 官网 API Key 页面</p>
         </section>
         <section class="card">
-          <h3 class="card-title" data-i18n="local_card"></h3>
-          <p class="badge" data-i18n="browser_badge"></p>
-          <p class="muted" data-i18n="key_privacy"></p>
+          <h3 class="card-title" data-i18n="local_card">本机保存</h3>
+          <p class="badge" data-i18n="browser_badge">仅保存在这个浏览器</p>
+          <p class="muted" data-i18n="key_privacy">Key 保存在这个浏览器的本地存储（localStorage）里，只会发送到 api.powertokens.ai，不经过任何其他服务器。在公用设备上用完请点「忘记 Key」。</p>
           <hr>
-          <p class="muted" data-i18n="no_repeat_key_note"></p>
+          <p class="muted" data-i18n="no_repeat_key_note">任务已提交、网络超时或提交结果不明确时，不会自动重复生成。</p>
         </section>
       </div>
     </div>
@@ -335,31 +342,31 @@
 <aside class="desktop-cta" aria-label="Desktop download">
   <div class="desktop-cta-inner">
     <div class="desktop-cta-copy">
-      <p class="desktop-cta-title" data-i18n="desktop_cta_title"></p>
-      <p class="desktop-cta-desc" data-i18n="desktop_cta_desc"></p>
+      <p class="desktop-cta-title" data-i18n="desktop_cta_title">需要批量、分镜或接上一段？下载 Windows 桌面版。</p>
+      <p class="desktop-cta-desc" data-i18n="desktop_cta_desc">网页版适合随手试一条。完整功能（Excel 批量、剧本分镜、接上一段）在 Windows 桌面客户端，免装 Python，同一个 API Key。</p>
     </div>
     <div class="desktop-cta-actions">
-      <a class="btn btn-accent" id="desktop-download-btn" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="desktop_cta_btn"></a>
-      <a class="link" id="desktop-releases-link" target="_blank" rel="noopener" data-href="desktop_releases_url" data-i18n="desktop_cta_releases"></a>
+      <a href="https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe" class="btn btn-accent" id="desktop-download-btn" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="desktop_cta_btn">下载 Windows 安装包 (.exe)</a>
+      <a href="https://github.com/PowerTokens/video-studio/releases/latest" class="link" id="desktop-releases-link" target="_blank" rel="noopener" data-href="desktop_releases_url" data-i18n="desktop_cta_releases">全部版本 ↗</a>
     </div>
   </div>
 </aside>
 
 <footer class="footer">
-  <span><a id="footer-site" target="_blank" rel="noopener" data-href="site_url">PowerTokens</a></span>
-  <span><a href="LICENSE" target="_blank" rel="noopener" data-i18n="footer_license"></a></span>
-  <span><a id="footer-desktop" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="footer_desktop"></a></span>
+  <span><a href="https://powertokens.ai/zh-Hans?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" id="footer-site" target="_blank" rel="noopener" data-href="site_url">PowerTokens</a></span>
+  <span><a href="LICENSE" target="_blank" rel="noopener" data-i18n="footer_license">MIT 许可证</a></span>
+  <span><a href="https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe" id="footer-desktop" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="footer_desktop">下载 Windows 桌面版</a></span>
 </footer>
 
-<div id="statusbar" class="statusbar" role="status"></div>
+<div id="statusbar" class="statusbar" role="status">就绪 · 请先在「API Key」页添加 Key</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261009-desktop"></script>
+<script src="js/i18n.js?v=20261009-fp2"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261009-desktop"></script>
-<script src="js/lang/en.js?v=20261009-desktop"></script>
-<script src="js/models.js?v=20261009-desktop"></script>
-<script src="js/api.js?v=20261009-desktop"></script>
-<script src="js/app.js?v=20261009-desktop"></script>
+<script src="js/lang/zh.js?v=20261009-fp2"></script>
+<script src="js/lang/en.js?v=20261009-fp2"></script>
+<script src="js/models.js?v=20261009-fp2"></script>
+<script src="js/api.js?v=20261009-fp2"></script>
+<script src="js/app.js?v=20261009-fp2"></script>
 </body>
 </html>

@@ -22,7 +22,7 @@
   function money(v) { return Number(v).toFixed(2); }
   function resLabel(r) { return r === '4k' ? '4K' : r; }
   function ratioLabel(r) { return r === 'adaptive' ? t('ratio_adaptive') : r; }
-  function show(node, on) { node.hidden = !on; }
+  function show(node, on) { if (node) node.hidden = !on; }
 
   function modelDesc(m) {
     var key = 'model_desc_' + m.short_name.replace(/-/g, '_');
@@ -58,6 +58,7 @@
     document.querySelectorAll('[data-href]').forEach(function (n) { n.href = t(n.getAttribute('data-href')); });
     // Desktop-style language buttons (中文 | English); falls back to a select once there are many languages.
     var box = $('lang-switch');
+    if (!box) return;
     box.innerHTML = '';
     var codes = I.languages();
     if (codes.length > 3) {
@@ -268,6 +269,7 @@
 
   function renderModelDetailsBtn() {
     var b = $('gen-model-details');
+    if (!b) return;
     b.textContent = openDetails.on ? t('model_details_hide') : t('model_details');
     b.setAttribute('aria-expanded', openDetails.on ? 'true' : 'false');
   }
@@ -275,6 +277,7 @@
   var advOpen = false;
   function renderAdvToggle() {
     var b = $('adv-toggle');
+    if (!b) return;
     b.textContent = t(advOpen ? 'advanced_hide' : 'advanced_show');
     b.setAttribute('aria-expanded', advOpen ? 'true' : 'false');
     show($('adv-body'), advOpen);
@@ -1040,31 +1043,38 @@
   }
 
   function boot() {
-    if (A.MOCK) show($('mock-banner'), true);
-    var saved = A.store.get('lang', null);
-    lang = saved && I.has(saved) ? saved : I.detectLanguage(navigator);
-    document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
-      b.addEventListener('click', function () { setTab(b.getAttribute('data-tab'), true); });
-    });
-    bindKey();
-    bindOnboard();
-    bindGen();
-    bindCmp();
-    bindTasks();
-    setLang(lang, false);
-    setTab((location.hash || '').replace('#', '') || 'generate', false);
-    A.onChange(scheduleRender);
-    A.resumeOnLoad(A.getKey());
-    refreshBalance();
-    renderResults();
-    renderTasks();
-    setInterval(tick, 1000);
-    document.body.classList.add('ready');
+    try {
+      if (!M || !A || !I) throw new Error('core modules missing');
+      if (A.MOCK) show($('mock-banner'), true);
+      var saved = A.store.get('lang', null);
+      lang = saved && I.has(saved) ? saved : I.detectLanguage(navigator);
+      document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
+        b.addEventListener('click', function () { setTab(b.getAttribute('data-tab'), true); });
+      });
+      bindKey();
+      bindOnboard();
+      bindGen();
+      bindCmp();
+      bindTasks();
+      setLang(lang, false);
+      setTab((location.hash || '').replace('#', '') || 'generate', false);
+      A.onChange(scheduleRender);
+      A.resumeOnLoad(A.getKey());
+      refreshBalance();
+      renderResults();
+      renderTasks();
+      setInterval(tick, 1000);
+    } catch (err) {
+      try { if (window.console && console.error) console.error('Video Studio boot failed', err); } catch (e) { /* ignore */ }
+      // Keep HTML fallback strings visible; still mark ready so any CSS gated on .ready can show.
+    } finally {
+      document.body.classList.add('ready');
+    }
   }
 
-  if (A.MOCK) {
+  if (A && A.MOCK) {
     var s = document.createElement('script');
-    s.src = 'mock/mock.js';
+    s.src = 'mock/mock.js?v=20261009-fp2';
     s.onload = boot;
     s.onerror = boot;
     document.head.appendChild(s);

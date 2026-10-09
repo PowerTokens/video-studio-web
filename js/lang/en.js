@@ -142,7 +142,7 @@ VSI18n.register('en', {
   get_btn: 'Sign up / Get an API key ↗',
   footer_desktop: 'Download Windows desktop app',
   footer_license: 'MIT License',
-  desktop_cta_title: 'Need batch, storyboard, or continue-from-previous? Get the Windows desktop app',
+  desktop_cta_title: 'Need batch, storyboard, or continue-from-previous? Get the Windows desktop App.',
   desktop_cta_desc: 'The web version is great for a quick clip. Full features (Excel batch, script-to-storyboard, continue from previous clip) are in the Windows desktop client — no Python required, same API key.',
   desktop_cta_btn: 'Download Windows installer (.exe)',
   desktop_cta_releases: 'All releases ↗',
