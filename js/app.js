@@ -1074,7 +1074,7 @@
 
   if (A && A.MOCK) {
     var s = document.createElement('script');
-    s.src = 'mock/mock.js?v=20261009-fp2';
+    s.src = 'mock/mock.js?v=20261009-cta1';
     s.onload = boot;
     s.onerror = boot;
     document.head.appendChild(s);
