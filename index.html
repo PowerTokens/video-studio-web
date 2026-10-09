@@ -10,13 +10,13 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261009-keyline">
-<link rel="preload" href="js/i18n.js?v=20261009-keyline" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261009-keyline" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261009-keyline" as="script">
-<link rel="preload" href="js/models.js?v=20261009-keyline" as="script">
-<link rel="preload" href="js/api.js?v=20261009-keyline" as="script">
-<link rel="preload" href="js/app.js?v=20261009-keyline" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261009-keypool">
+<link rel="preload" href="js/i18n.js?v=20261009-keypool" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261009-keypool" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261009-keypool" as="script">
+<link rel="preload" href="js/models.js?v=20261009-keypool" as="script">
+<link rel="preload" href="js/api.js?v=20261009-keypool" as="script">
+<link rel="preload" href="js/app.js?v=20261009-keypool" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -291,30 +291,27 @@
   <section id="panel-key" class="panel" role="tabpanel" hidden>
     <div class="heading">
       <h1 data-i18n="keys_title">API Key 管理</h1>
-      <p data-i18n="keys_desc">一个 Key 可用于全部模型；Key 只以掩码显示。</p>
+      <p data-i18n="keys_desc">把多个 Key 放进同一个池里切换使用；一个 Key 通吃全部模型，只以掩码显示。</p>
     </div>
     <div class="columns">
       <div class="col-left">
-        <section class="card">
-          <h3 class="card-title"><label for="key-input" data-i18n="add_card">添加 API Key</label></h3>
-          <p class="muted" data-i18n="add_card_desc">直接粘贴从 PowerTokens 官网复制的 Key（带 “Bearer” 前缀也可以）。</p>
-          <div class="key-row">
-            <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph" placeholder="粘贴 Key（sk-…）">
-            <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show">显示</span></label>
-          </div>
-          <p class="muted small" data-i18n="paste_hint">保存后 Key 只存在这个浏览器里。</p>
-          <div class="actions">
-            <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_save">保存 Key</button>
-          </div>
-          <p id="key-error" class="error" hidden></p>
-        </section>
-        <section class="card">
-          <h3 class="card-title" data-i18n="current_key_card">当前 Key</h3>
-          <p class="muted" data-i18n="key_desc">提交和查询任务都使用这个 Key。</p>
-          <p id="key-status" class="badge badge-block badge-bad" role="status"></p>
-          <div class="actions">
-            <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="key_quota_tip_btn">管理额度和有效期 →</a>
-            <button type="button" class="btn" id="key-forget" data-i18n="key_forget">忘记 Key</button>
+        <section class="card key-pool-card">
+          <h3 class="card-title" data-i18n="pool_card">Key 池</h3>
+          <p class="muted" data-i18n="pool_card_desc">可添加多个 Key，随时点选切换；一个 Key 通吃全部模型。额度与有效期可按 Key 分开管理——这是 PowerTokens 的优势。</p>
+          <p id="key-status" class="badge badge-block badge-bad" role="status" hidden></p>
+          <ul id="key-pool-list" class="key-pool-list" hidden></ul>
+          <div class="key-pool-add">
+            <label class="field-label" for="key-input" data-i18n="pool_add_label">粘贴新 Key 加入池中</label>
+            <div class="key-row">
+              <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph" placeholder="粘贴 Key（sk-…）">
+              <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show">显示</span></label>
+            </div>
+            <p class="muted small" data-i18n="paste_hint">保存后 Key 只存在这个浏览器里。</p>
+            <div class="actions">
+              <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_save">保存到 Key 池</button>
+              <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="key_quota_tip_btn">管理额度和有效期 →</a>
+            </div>
+            <p id="key-error" class="error" hidden></p>
           </div>
         </section>
       </div>
@@ -328,7 +325,7 @@
         <section class="card">
           <h3 class="card-title" data-i18n="local_card">本机保存</h3>
           <p class="badge" data-i18n="browser_badge">仅保存在这个浏览器</p>
-          <p class="muted" data-i18n="key_privacy">Key 保存在这个浏览器的本地存储（localStorage）里，只会发送到 api.powertokens.ai，不经过任何其他服务器。在公用设备上用完请点「忘记 Key」。</p>
+          <p class="muted" data-i18n="key_privacy">Key 保存在这个浏览器的本地存储（localStorage）里，只会发送到 api.powertokens.ai，不经过任何其他服务器。在公用设备上用完请点对应 Key 的「忘记」。</p>
           <hr>
           <p class="muted" data-i18n="no_repeat_key_note">任务已提交、网络超时或提交结果不明确时，不会自动重复生成。</p>
         </section>
@@ -359,12 +356,12 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 请先在「API Key」页添加 Key</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261009-keyline"></script>
+<script src="js/i18n.js?v=20261009-keypool"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261009-keyline"></script>
-<script src="js/lang/en.js?v=20261009-keyline"></script>
-<script src="js/models.js?v=20261009-keyline"></script>
-<script src="js/api.js?v=20261009-keyline"></script>
-<script src="js/app.js?v=20261009-keyline"></script>
+<script src="js/lang/zh.js?v=20261009-keypool"></script>
+<script src="js/lang/en.js?v=20261009-keypool"></script>
+<script src="js/models.js?v=20261009-keypool"></script>
+<script src="js/api.js?v=20261009-keypool"></script>
+<script src="js/app.js?v=20261009-keypool"></script>
 </body>
 </html>

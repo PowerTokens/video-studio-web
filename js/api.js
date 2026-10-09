@@ -33,8 +33,8 @@
     }
   };
 
-  // ---------- API key ----------
-  /** Same cleanup as the desktop parse_keys(), single key. Throws Error('key_invalid_chars'). */
+  // ---------- API key pool ----------
+  /** Same cleanup as the desktop parse_keys(), single key per paste. Throws Error('key_invalid_chars'). */
   function parseKey(text) {
     text = String(text || '').replace(/[\u200b\u200c\u200d\u2060\ufeff]/g, '');
     text = text.replace(/(?:authorization\s*:\s*)?\bbearer\s+/gim, '');
@@ -45,9 +45,54 @@
     if (tokens.length !== 1 || !/^[A-Za-z0-9._~+/=-]+$/.test(tokens[0])) throw new Error('key_invalid_chars');
     return tokens[0];
   }
-  function getKey() { return store.get('key', '') || ''; }
-  function saveKey(k) { store.set('key', k); }
-  function forgetKey() { store.remove('key'); }
+  /** Migrate legacy single `key` into `keys` pool once. */
+  function migrateKeyPool() {
+    var keys = store.get('keys', null);
+    var active = store.get('key', '') || '';
+    if (!Array.isArray(keys)) {
+      keys = active ? [active] : [];
+      store.set('keys', keys);
+    } else {
+      keys = keys.filter(function (k) { return typeof k === 'string' && k; });
+    }
+    if (active && keys.indexOf(active) < 0) {
+      keys = keys.concat([active]);
+      store.set('keys', keys);
+    }
+    if (!active && keys.length) store.set('key', keys[0]);
+    if (active && !keys.length) { store.remove('key'); active = ''; }
+    return { keys: keys, active: store.get('key', '') || '' };
+  }
+  function listKeys() { return migrateKeyPool().keys.slice(); }
+  function getKey() { return migrateKeyPool().active; }
+  function saveKey(k) {
+    var pool = migrateKeyPool();
+    var keys = pool.keys.slice();
+    if (keys.indexOf(k) < 0) keys.push(k);
+    store.set('keys', keys);
+    store.set('key', k);
+  }
+  /** Forget one key (by value). Omitting k clears the whole pool (legacy). */
+  function forgetKey(k) {
+    var pool = migrateKeyPool();
+    if (!k) {
+      store.remove('keys');
+      store.remove('key');
+      return;
+    }
+    var keys = pool.keys.filter(function (x) { return x !== k; });
+    store.set('keys', keys);
+    if (pool.active === k) {
+      if (keys.length) store.set('key', keys[0]);
+      else store.remove('key');
+    }
+  }
+  function setActiveKey(k) {
+    var keys = listKeys();
+    if (keys.indexOf(k) < 0) return false;
+    store.set('key', k);
+    return true;
+  }
   function keyHint(k) { return k ? k.slice(-4) : ''; }
 
   // ---------- HTTP ----------
@@ -437,8 +482,10 @@
     store: store,
     parseKey: parseKey,
     getKey: getKey,
+    listKeys: listKeys,
     saveKey: saveKey,
     forgetKey: forgetKey,
+    setActiveKey: setActiveKey,
     keyHint: keyHint,
     api: api,
     loadTasks: loadTasks,

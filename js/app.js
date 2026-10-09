@@ -290,6 +290,57 @@
     return null;
   }
 
+  function renderKeyPoolList() {
+    var list = $('key-pool-list');
+    var statusEl = $('key-status');
+    if (!list || !statusEl) return;
+    var keys = A.listKeys();
+    var active = A.getKey();
+    list.innerHTML = '';
+    if (!keys.length) {
+      statusEl.hidden = false;
+      statusEl.textContent = t('key_none');
+      statusEl.classList.add('badge-bad');
+      list.hidden = true;
+      return;
+    }
+    statusEl.hidden = true;
+    statusEl.textContent = '';
+    list.hidden = false;
+    keys.forEach(function (k, idx) {
+      var isActive = k === active;
+      var li = document.createElement('li');
+      li.className = 'key-pool-item' + (isActive ? ' is-active' : '');
+      var select = document.createElement('button');
+      select.type = 'button';
+      select.className = 'key-pool-select';
+      select.setAttribute('data-idx', String(idx));
+      select.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      select.title = isActive ? t('pool_active') : t('pool_use');
+      var radio = document.createElement('span');
+      radio.className = 'key-pool-radio';
+      radio.setAttribute('aria-hidden', 'true');
+      var code = document.createElement('code');
+      code.textContent = '…' + A.keyHint(k);
+      select.appendChild(radio);
+      select.appendChild(code);
+      if (isActive) {
+        var tag = document.createElement('span');
+        tag.className = 'key-pool-active-tag';
+        tag.textContent = t('pool_active');
+        select.appendChild(tag);
+      }
+      var forget = document.createElement('button');
+      forget.type = 'button';
+      forget.className = 'btn btn-small key-forget-one';
+      forget.setAttribute('data-idx', String(idx));
+      forget.textContent = t('key_forget');
+      li.appendChild(select);
+      li.appendChild(forget);
+      list.appendChild(li);
+    });
+  }
+
   function renderKeyState() {
     var key = A.getKey();
     var block = currentKeyBlock();
@@ -310,12 +361,7 @@
       keyBadge.setAttribute('aria-label', title);
       if (keyBadgeText) keyBadgeText.textContent = ok ? t('key_status_ok') : t('key_status_check');
     }
-    var statusEl = $('key-status');
-    if (statusEl) {
-      statusEl.textContent = key ? t('key_quota_tip') : t('key_none');
-      statusEl.classList.toggle('badge-bad', !key);
-    }
-    $('key-forget').disabled = !key;
+    renderKeyPoolList();
     renderNokeyBanner();
     renderStatus();
   }
@@ -366,16 +412,46 @@
         show(err, true);
       }
     });
-    $('key-forget').addEventListener('click', function () {
-      A.forgetKey();
-      A.store.remove('key_block');
-      A.store.remove('key_saved_at');
-      balance = null;
-      renderCredits();
-      $('key-input').value = '';
-      renderKeyState();
-      toast(t('key_forgotten'));
-    });
+    var list = $('key-pool-list');
+    if (list) {
+      list.addEventListener('click', function (ev) {
+        var target = ev.target;
+        if (!target || !target.closest) return;
+        var forgetBtn = target.closest('.key-forget-one');
+        var selectBtn = target.closest('.key-pool-select');
+        var keys = A.listKeys();
+        if (forgetBtn) {
+          var fIdx = parseInt(forgetBtn.getAttribute('data-idx'), 10);
+          var fk = keys[fIdx];
+          if (!fk) return;
+          var wasActive = fk === A.getKey();
+          A.forgetKey(fk);
+          if (wasActive) {
+            A.store.remove('key_block');
+            A.store.remove('key_saved_at');
+            balance = null;
+            renderCredits();
+          }
+          if (!A.getKey()) $('key-input').value = '';
+          renderKeyState();
+          toast(t('key_forgotten'));
+          if (A.getKey()) refreshBalance();
+          return;
+        }
+        if (selectBtn) {
+          var sIdx = parseInt(selectBtn.getAttribute('data-idx'), 10);
+          var sk = keys[sIdx];
+          if (!sk || sk === A.getKey()) return;
+          A.setActiveKey(sk);
+          A.store.remove('key_block');
+          A.store.set('key_saved_at', Date.now());
+          renderKeyState();
+          toast(t('pool_switched', A.keyHint(sk)));
+          refreshBalance();
+          A.resumeOnLoad(sk);
+        }
+      });
+    }
   }
 
   // ---------------- onboarding ----------------
