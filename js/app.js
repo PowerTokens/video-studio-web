@@ -182,14 +182,25 @@
   // ---------------- onboarding ----------------
   function bindOnboard() {
     var done = A.store.get('onboarded', false);
+    function syncHowto(onboardVisible) {
+      // Avoid two competing "3 steps" blocks; keep the compact howto when onboard is dismissed.
+      var howto = $('gen-howto');
+      if (howto) show(howto, !onboardVisible);
+    }
     show($('onboard'), !done);
-    function dismiss() { A.store.set('onboarded', true); show($('onboard'), false); }
+    syncHowto(!done);
+    function dismiss() {
+      A.store.set('onboarded', true);
+      show($('onboard'), false);
+      syncHowto(false);
+    }
     $('onboard-dismiss').addEventListener('click', dismiss);
     // Header "使用提示 / Tips" brings the 3-step tip back (desktop: 使用提示 button in the header).
     document.querySelectorAll('.tips-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         setTab('generate', true);
         show($('onboard'), true);
+        syncHowto(true);
         $('onboard').scrollIntoView({ block: 'start' });
       });
     });
@@ -340,8 +351,16 @@
       if (!box) return;
       box.innerHTML = '';
       EXAMPLE_IDS.forEach(function (id) {
-        var b = el('button', 'example-chip', t('example_' + id + '_label'));
+        var label = t('example_' + id + '_label');
+        var b = el('button', 'example-chip');
         b.type = 'button';
+        var parts = String(label).split(' · ');
+        if (parts.length >= 2) {
+          b.appendChild(el('span', 'chip-title', parts[0]));
+          b.appendChild(el('span', 'chip-model', parts.slice(1).join(' · ')));
+        } else {
+          b.appendChild(el('span', 'chip-title', label));
+        }
         b.setAttribute('data-example', id);
         b.setAttribute('data-target', pair[1]);
         b.title = t('example_' + id + '_prompt');

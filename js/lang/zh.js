@@ -219,10 +219,10 @@ VSI18n.register('zh', {
   model_desc_kling_v3: "kling v3 支持文生视频与图生视频（首帧 / 尾帧），可选原生音频。时长 3–15 秒；可选 720p、1080p 或 4K 模式，需要更高输出分辨率时选用。",
   // Usage examples + how-to (keep in sync with index.html data-i18n keys)
   examples_label: "试试示例",
-  examples_hint: "点一下填入提示词，再点「生成视频」。标签里写的是推荐模型，你仍可在上方任选模型。",
+  examples_hint: "点一下即可填入提示词。标签是推荐模型，仍可在「生成参数」里任选。",
   examples_filled: "已填入示例 — 可直接生成，也可再改。",
   howto_1: "先在「API Key」页添加 PowerTokens Key。",
-  howto_2: "点下面一个示例（或自己写一段描述）。",
+  howto_2: "点下方一个示例，或自己写一段描述。",
   howto_3: "需要的话换个模型，然后点「生成视频」。",
   example_product_label: "产品展示 · Wan",
   example_product_prompt: "哑光黑无线耳机盒放在柔和白背景上的产品特写。镜头缓慢环绕，柔和主光，细微高光，干净商业感。盒盖打开时轻声 whoosh。",

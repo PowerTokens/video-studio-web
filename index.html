@@ -10,7 +10,7 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=20261009-ui1">
 </head>
 <body>
 <div id="mock-banner" class="mock-banner" hidden data-i18n="mock_banner"></div>
@@ -70,16 +70,18 @@
           <h3 class="card-title"><label for="gen-prompt" data-i18n="prompt_card"></label></h3>
           <textarea id="gen-prompt" rows="3" data-i18n-ph="prompt_placeholder"></textarea>
           <p class="muted small" data-i18n="prompt_desc"></p>
-          <div class="examples" id="gen-examples">
-            <p class="examples-label" data-i18n="examples_label"></p>
-            <p class="muted small" data-i18n="examples_hint"></p>
-            <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"></div>
-          </div>
-          <ol class="howto muted small">
+          <ol class="howto" id="gen-howto" aria-label="How to">
             <li data-i18n="howto_1"></li>
             <li data-i18n="howto_2"></li>
             <li data-i18n="howto_3"></li>
           </ol>
+          <div class="examples" id="gen-examples">
+            <div class="examples-head">
+              <p class="examples-label" data-i18n="examples_label"></p>
+              <p class="examples-hint" data-i18n="examples_hint"></p>
+            </div>
+            <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"></div>
+          </div>
         </section>
 
         <section class="card">
@@ -168,7 +170,10 @@
           <p class="muted" data-i18n="compare_prompt_desc"></p>
           <textarea id="cmp-prompt" rows="4" data-i18n-ph="prompt_placeholder"></textarea>
           <div class="examples" id="cmp-examples">
-            <p class="examples-label" data-i18n="examples_label"></p>
+            <div class="examples-head">
+              <p class="examples-label" data-i18n="examples_label"></p>
+              <p class="examples-hint" data-i18n="examples_hint"></p>
+            </div>
             <div class="example-chips" id="cmp-example-chips" role="group" aria-label="Examples"></div>
           </div>
         </section>
@@ -324,12 +329,12 @@
 <div id="statusbar" class="statusbar" role="status"></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261009-examples"></script>
+<script src="js/i18n.js?v=20261009-ui1"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261009-examples"></script>
-<script src="js/lang/en.js?v=20261009-examples"></script>
-<script src="js/models.js?v=20261009-examples"></script>
-<script src="js/api.js?v=20261009-examples"></script>
-<script src="js/app.js?v=20261009-examples"></script>
+<script src="js/lang/zh.js?v=20261009-ui1"></script>
+<script src="js/lang/en.js?v=20261009-ui1"></script>
+<script src="js/models.js?v=20261009-ui1"></script>
+<script src="js/api.js?v=20261009-ui1"></script>
+<script src="js/app.js?v=20261009-ui1"></script>
 </body>
 </html>
