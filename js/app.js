@@ -700,6 +700,20 @@
     });
   }
 
+  /** After filling a long prompt, show the start (browsers often jump to the end). */
+  function showPromptStart(ta) {
+    if (!ta) return;
+    try {
+      ta.focus();
+      if (typeof ta.setSelectionRange === 'function') ta.setSelectionRange(0, 0);
+      else {
+        ta.selectionStart = 0;
+        ta.selectionEnd = 0;
+      }
+    } catch (e) { /* ignore */ }
+    ta.scrollTop = 0;
+  }
+
   function applyExample(id, target, btn) {
     var wasActive = btn && btn.classList.contains('active');
     if (wasActive) {
@@ -707,11 +721,12 @@
         $('cmp-prompt').value = '';
         cmp.prompt = '';
         saveCmp();
+        showPromptStart($('cmp-prompt'));
       } else {
         $('gen-prompt').value = '';
         gen.prompt = '';
         saveGen();
-        $('gen-prompt').focus();
+        showPromptStart($('gen-prompt'));
       }
       setExampleActive(target, null);
       toast(t('examples_cleared'));
@@ -724,6 +739,7 @@
       cmp.prompt = prompt;
       saveCmp();
       setExampleActive(target, btn);
+      showPromptStart($('cmp-prompt'));
     } else {
       $('gen-prompt').value = prompt;
       gen.prompt = prompt;
@@ -733,7 +749,7 @@
       if (modelId && M.MODELS[modelId] && gen.model !== modelId) {
         selectGenModel(modelId);
       }
-      $('gen-prompt').focus();
+      showPromptStart($('gen-prompt'));
     }
     toast(t('examples_filled'));
   }
