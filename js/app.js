@@ -37,6 +37,96 @@
   function ratioLabel(r) { return r === 'adaptive' ? t('ratio_adaptive') : r; }
   function show(node, on) { if (node) node.hidden = !on; }
 
+
+  // White + teal custom selects (replace OS cement-gray dropdown chrome).
+  var CSELECT_IDS = ['gen-model', 'gen-res', 'gen-ratio', 'cmp-res', 'cmp-ratio', 'manual-kind'];
+  var openCSelect = null;
+
+  function closeCSelect() {
+    if (!openCSelect) return;
+    openCSelect.classList.remove('is-open');
+    var menu = openCSelect.querySelector('.cselect-menu');
+    if (menu) menu.hidden = true;
+    var btn = openCSelect.querySelector('.cselect-trigger');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+    openCSelect = null;
+  }
+
+  function syncCSelect(sel) {
+    if (!sel || !sel._cselect) return;
+    var wrap = sel._cselect;
+    var btn = wrap.querySelector('.cselect-trigger');
+    var label = wrap.querySelector('.cselect-trigger-label');
+    var menu = wrap.querySelector('.cselect-menu');
+    var opt = sel.options[sel.selectedIndex];
+    label.textContent = opt ? opt.textContent : '';
+    btn.disabled = !!sel.disabled;
+    menu.innerHTML = '';
+    Array.prototype.forEach.call(sel.options, function (o, idx) {
+      var li = el('li', 'cselect-opt' + (o.selected ? ' is-selected' : ''));
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', o.selected ? 'true' : 'false');
+      li.dataset.value = o.value;
+      li.textContent = o.textContent;
+      li.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (sel.value !== o.value) {
+          sel.value = o.value;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+          syncCSelect(sel);
+        }
+        closeCSelect();
+      });
+      menu.appendChild(li);
+    });
+  }
+
+  function enhanceSelect(sel) {
+    if (!sel || sel._cselect) return;
+    var wrap = el('div', 'cselect');
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.classList.add('cselect-native');
+    sel.setAttribute('tabindex', '-1');
+    var btn = el('button', 'cselect-trigger');
+    btn.type = 'button';
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    if (sel.id) btn.id = sel.id + '-trigger';
+    var label = el('span', 'cselect-trigger-label', '');
+    var caret = el('span', 'cselect-caret');
+    caret.setAttribute('aria-hidden', 'true');
+    btn.appendChild(label);
+    btn.appendChild(caret);
+    var menu = el('ul', 'cselect-menu');
+    menu.setAttribute('role', 'listbox');
+    menu.hidden = true;
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+    sel._cselect = wrap;
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (sel.disabled) return;
+      if (openCSelect === wrap) { closeCSelect(); return; }
+      closeCSelect();
+      syncCSelect(sel);
+      wrap.classList.add('is-open');
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      openCSelect = wrap;
+    });
+    sel.addEventListener('change', function () { syncCSelect(sel); });
+    syncCSelect(sel);
+  }
+
+  function enhanceAllSelects() {
+    CSELECT_IDS.forEach(function (id) { enhanceSelect($(id)); });
+  }
+
+
   function modelDesc(m) {
     var key = 'model_desc_' + m.short_name.replace(/-/g, '_');
     var s = t(key);
@@ -346,6 +436,7 @@
       o.selected = m.id === gen.model;
       sel.appendChild(o);
     });
+    syncCSelect(sel);
     var m = M.getModel(gen.model);
     $('gen-model-desc').textContent = modelSummary(m);
     var full = $('gen-model-full');
@@ -404,6 +495,7 @@
       o.selected = v === current;
       sel.appendChild(o);
     });
+    syncCSelect(sel);
   }
 
   function fillSelect(sel, values, current) {
@@ -414,6 +506,7 @@
       o.selected = v === current;
       sel.appendChild(o);
     });
+    syncCSelect(sel);
   }
 
   function renderGenParams() {
@@ -1119,6 +1212,7 @@
       op.selected = o[0] === cur;
       sel.appendChild(op);
     });
+    syncCSelect(sel);
   }
 
   function bindTasks() {
@@ -1229,6 +1323,11 @@
       bindGen();
       bindCmp();
       bindTasks();
+      enhanceAllSelects();
+      document.addEventListener('click', function () { closeCSelect(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeCSelect();
+      });
       setLang(lang, false);
       setTab((location.hash || '').replace('#', '') || 'generate', false);
       A.onChange(scheduleRender);
