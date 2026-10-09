@@ -161,13 +161,46 @@
     show(banner, !key && onboarded);
   }
 
+  // API Key tab dot: green only when a key is present and usable; red for any generate-blocking issue.
+  // Yellow/warn is never used here.
+  function syncKeyBlockFromRec(rec) {
+    if (!rec || rec.removed || !A.getKey()) return;
+    if (rec.error === 'AUTH' || rec.error === 'query_auth') {
+      A.store.set('key_block', 'auth');
+      return;
+    }
+    if (rec.error === 'QUOTA' || isBalanceError(rec)) {
+      A.store.set('key_block', 'quota');
+      return;
+    }
+    // Server accepted this key (got a task id / active or done work).
+    if (rec.task_id && ['submitting', 'queued', 'running', 'done'].indexOf(rec.state) >= 0) {
+      A.store.remove('key_block');
+    }
+  }
+
+  function currentKeyBlock() {
+    if (!A.getKey()) return 'none';
+    if (A.balanceEnabled() && typeof balance === 'number' && balance <= 0) return 'quota';
+    var stored = A.store.get('key_block', null);
+    if (stored === 'auth' || stored === 'quota') return stored;
+    return null;
+  }
+
   function renderKeyState() {
     var key = A.getKey();
+    var block = currentKeyBlock();
+    var ok = !!key && !block;
     var keyBadge = $('key-badge');
     if (keyBadge) {
-      show(keyBadge, !key);
-      keyBadge.title = key ? '' : t('key_chip_none');
-      keyBadge.setAttribute('aria-hidden', key ? 'true' : 'false');
+      keyBadge.hidden = false;
+      keyBadge.classList.toggle('badge-dot-ok', ok);
+      keyBadge.classList.toggle('badge-dot-bad', !ok);
+      keyBadge.setAttribute('aria-hidden', 'false');
+      if (!key || block === 'none') keyBadge.title = t('key_chip_none');
+      else if (block === 'auth') keyBadge.title = t('key_chip_auth');
+      else if (block === 'quota') keyBadge.title = t('key_chip_quota');
+      else keyBadge.title = t('key_chip_ok');
     }
     $('key-status').textContent = key ? t('key_saved', A.keyHint(key)) : t('key_none');
     $('key-forget').disabled = !key;
@@ -196,7 +229,7 @@
     if (!A.balanceEnabled()) return;
     var key = A.getKey();
     if (!key) { balance = null; renderCredits(); return; }
-    A.fetchBalance(key).then(function (v) { balance = v; renderCredits(); });
+    A.fetchBalance(key).then(function (v) { balance = v; renderCredits(); renderKeyState(); });
   }
 
   function bindKey() {
@@ -208,6 +241,8 @@
       try {
         var k = A.parseKey($('key-input').value);
         A.saveKey(k);
+        A.store.remove('key_block');
+        A.store.set('key_saved_at', Date.now());
         $('key-input').value = '';
         show(err, false);
         renderKeyState();
@@ -221,6 +256,8 @@
     });
     $('key-forget').addEventListener('click', function () {
       A.forgetKey();
+      A.store.remove('key_block');
+      A.store.remove('key_saved_at');
       balance = null;
       renderCredits();
       $('key-input').value = '';
@@ -1065,12 +1102,40 @@
     });
   }
 
+
+  /** Recover key_block after reload from tasks created under the current key. */
+  function hydrateKeyBlockFromHistory() {
+    if (!A.getKey()) { A.store.remove('key_block'); return; }
+    if (A.store.get('key_block', null)) return;
+    var savedAt = A.store.get('key_saved_at', 0) || 0;
+    var latestBlock = null, latestBlockAt = 0, latestOkAt = 0;
+    A.loadTasks().forEach(function (r) {
+      var ts = r.updated || r.created || 0;
+      if (savedAt && ts < savedAt) return;
+      if (r.error === 'AUTH' || r.error === 'query_auth') {
+        if (ts >= latestBlockAt) { latestBlockAt = ts; latestBlock = 'auth'; }
+      } else if (r.error === 'QUOTA' || isBalanceError(r)) {
+        if (ts >= latestBlockAt) { latestBlockAt = ts; latestBlock = 'quota'; }
+      }
+      if (r.task_id && ['submitting', 'queued', 'running', 'done'].indexOf(r.state) >= 0 && ts > latestOkAt) {
+        latestOkAt = ts;
+      }
+    });
+    if (latestBlock && latestBlockAt >= latestOkAt) A.store.set('key_block', latestBlock);
+  }
+
   var renderQueued = false;
   function scheduleRender(rec) {
+    if (rec) syncKeyBlockFromRec(rec);
     if (rec && (rec.state === 'done' || rec.state === 'rejected')) refreshBalanceSoon();
     if (renderQueued) return;
     renderQueued = true;
-    requestAnimationFrame(function () { renderQueued = false; renderResults(); renderTasks(); });
+    requestAnimationFrame(function () {
+      renderQueued = false;
+      renderResults();
+      renderTasks();
+      renderKeyState();
+    });
   }
 
   var balanceTimer = null;
@@ -1097,10 +1162,12 @@
       setLang(lang, false);
       setTab((location.hash || '').replace('#', '') || 'generate', false);
       A.onChange(scheduleRender);
+      hydrateKeyBlockFromHistory();
       A.resumeOnLoad(A.getKey());
       refreshBalance();
       renderResults();
       renderTasks();
+      renderKeyState();
       setInterval(tick, 1000);
     } catch (err) {
       try { if (window.console && console.error) console.error('Video Studio boot failed', err); } catch (e) { /* ignore */ }
