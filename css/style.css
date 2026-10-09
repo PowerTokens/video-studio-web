@@ -125,6 +125,7 @@ p { margin: 0; }
 .tabs button:hover { background: #f0f7f5; }
 .tabs button.active { background: var(--pale); color: var(--accent-text); box-shadow: inset 0 -2px 0 var(--accent); }
 .badge-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-left: 5px; vertical-align: 2px; }
+.badge-dot-warn { background: var(--warn); }
 
 /* ---------- page / headings / cards ---------- */
 .page { width: 100%; max-width: 1240px; margin: 0 auto; padding: 14px 12px 20px; flex: 1; }

@@ -10,19 +10,19 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261009-ads1">
-<link rel="preload" href="js/i18n.js?v=20261009-ads1" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261009-ads1" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261009-ads1" as="script">
-<link rel="preload" href="js/models.js?v=20261009-ads1" as="script">
-<link rel="preload" href="js/api.js?v=20261009-ads1" as="script">
-<link rel="preload" href="js/app.js?v=20261009-ads1" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261009-keydot1">
+<link rel="preload" href="js/i18n.js?v=20261009-keydot1" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261009-keydot1" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261009-keydot1" as="script">
+<link rel="preload" href="js/models.js?v=20261009-keydot1" as="script">
+<link rel="preload" href="js/api.js?v=20261009-keydot1" as="script">
+<link rel="preload" href="js/app.js?v=20261009-keydot1" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
 <div id="mock-banner" class="mock-banner" hidden data-i18n="mock_banner">模拟模式：不会调用真实接口，也不会扣费。</div>
 
-<!-- Header: same structure as the desktop app (brand + language switch + Tips / subtitle + key badge + links) -->
+<!-- Header: brand + language switch + Tips / subtitle + billing + signup -->
 <header class="app-header">
   <div class="header-row brand-row">
     <a class="brand" href="./">
@@ -37,7 +37,6 @@
   <div class="header-row sub-row">
     <div class="subtitle"><span data-i18n="subtitle">多模型 AI 视频生成 · 网页版</span><button id="tips-btn-m" class="link tips-btn tips-narrow" type="button" data-i18n="onboard_help">使用提示</button></div>
     <div class="header-actions">
-      <button id="key-chip" class="badge badge-btn" type="button">尚未添加 API Key</button>
       <a id="billing-chip" class="btn-credits" href="https://powertokens.ai/zh-Hans/billing?utm_source=videostudio&utm_medium=web&utm_campaign=video-studio" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text">积分 / 充值</span></a>
       <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" id="header-get-key" class="btn btn-accent btn-small header-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key">注册 / 获取 API Key ↗</a>
     </div>
@@ -50,7 +49,7 @@
     <button role="tab" type="button" data-tab="compare" data-i18n="tab_compare">模型对比</button>
     <button role="tab" type="button" data-tab="batch" data-i18n="tab_batch">批量导入</button>
     <button role="tab" type="button" data-tab="tasks"><span data-i18n="tab_tasks">任务记录 / 恢复</span><span id="tasks-badge" class="badge-dot" hidden></span></button>
-    <button role="tab" type="button" data-tab="key" data-i18n="tab_key">API Key</button>
+    <button role="tab" type="button" data-tab="key"><span data-i18n="tab_key">API Key</span><span id="key-badge" class="badge-dot badge-dot-warn" hidden aria-hidden="true"></span></button>
   </div>
 </nav>
 
@@ -359,12 +358,12 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 请先在「API Key」页添加 Key</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261009-ads1"></script>
+<script src="js/i18n.js?v=20261009-keydot1"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261009-ads1"></script>
-<script src="js/lang/en.js?v=20261009-ads1"></script>
-<script src="js/models.js?v=20261009-ads1"></script>
-<script src="js/api.js?v=20261009-ads1"></script>
-<script src="js/app.js?v=20261009-ads1"></script>
+<script src="js/lang/zh.js?v=20261009-keydot1"></script>
+<script src="js/lang/en.js?v=20261009-keydot1"></script>
+<script src="js/models.js?v=20261009-keydot1"></script>
+<script src="js/api.js?v=20261009-keydot1"></script>
+<script src="js/app.js?v=20261009-keydot1"></script>
 </body>
 </html>

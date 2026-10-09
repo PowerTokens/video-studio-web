@@ -163,8 +163,12 @@
 
   function renderKeyState() {
     var key = A.getKey();
-    $('key-chip').textContent = key ? t('key_chip_set', A.keyHint(key)) : t('key_chip_none');
-    $('key-chip').classList.toggle('badge-warn', !key);
+    var keyBadge = $('key-badge');
+    if (keyBadge) {
+      show(keyBadge, !key);
+      keyBadge.title = key ? '' : t('key_chip_none');
+      keyBadge.setAttribute('aria-hidden', key ? 'true' : 'false');
+    }
     $('key-status').textContent = key ? t('key_saved', A.keyHint(key)) : t('key_none');
     $('key-forget').disabled = !key;
     renderNokeyBanner();
@@ -196,7 +200,6 @@
   }
 
   function bindKey() {
-    $('key-chip').addEventListener('click', function () { setTab('key', true); });
     $('key-show').addEventListener('change', function () {
       $('key-input').type = $('key-show').checked ? 'text' : 'password';
     });
