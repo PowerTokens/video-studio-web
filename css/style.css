@@ -49,8 +49,11 @@ p { margin: 0; }
 .mock-banner { background: #fff1c2; color: #6b4e00; text-align: center; font-size: 13px; padding: 6px 12px; }
 
 /* ---------- header (desktop: padding 28/20, logo 44, Brand 21pt bold) ---------- */
-.app-header { background: var(--white); padding: calc(12px + env(safe-area-inset-top)) 12px 10px; }
-.header-row { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.app-header { background: var(--white); padding: calc(12px + env(safe-area-inset-top)) 0 10px; }
+.header-row {
+  width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
 .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); min-width: 0; }
 .brand:hover { text-decoration: none; }
 .brand img { width: 32px; height: 32px; flex: none; }
@@ -298,7 +301,8 @@ select {
 /* ---------- larger screens ---------- */
 @media (min-width: 640px) {
   body { font-size: 14px; }
-  .app-header { padding: 20px 24px 16px; }
+  .app-header { padding: 20px 0 16px; }
+  .header-row { padding: 0 24px; }
   .brand img { width: 44px; height: 44px; }
   .brand { gap: 12px; }
   .brand-name { font-size: 26px; }
