@@ -9,6 +9,7 @@
   var MIN_CMP = 2, MAX_CMP = 3;
   var ALL_RES = ['480p', '720p', '1080p', '4k'];
   var ALL_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'];
+  var EXAMPLE_IDS = ['product', 'drama', 'cafe', 'cinematic'];
 
   function $(id) { return document.getElementById(id); }
   function t() { return I.t.apply(null, [lang].concat(Array.prototype.slice.call(arguments))); }
@@ -96,6 +97,7 @@
     renderTasks();
     renderManualKinds();
     renderStatus();
+    renderExamples();
   }
 
   // ---------------- tabs ----------------
@@ -328,6 +330,50 @@
     } catch (e) {
       $('gen-cost').textContent = t('cost_invalid');
     }
+  }
+
+
+  // ---------------- examples ----------------
+  function renderExamples() {
+    [['gen-example-chips', 'gen'], ['cmp-example-chips', 'cmp']].forEach(function (pair) {
+      var box = $(pair[0]);
+      if (!box) return;
+      box.innerHTML = '';
+      EXAMPLE_IDS.forEach(function (id) {
+        var b = el('button', 'example-chip', t('example_' + id + '_label'));
+        b.type = 'button';
+        b.setAttribute('data-example', id);
+        b.setAttribute('data-target', pair[1]);
+        b.title = t('example_' + id + '_prompt');
+        b.addEventListener('click', function () { applyExample(id, pair[1], b); });
+        box.appendChild(b);
+      });
+    });
+    var drama = $('batch-sample-drama');
+    var product = $('batch-sample-product');
+    if (drama) drama.href = t('batch_sample_drama_url');
+    if (product) product.href = t('batch_sample_product_url');
+  }
+
+  function applyExample(id, target, btn) {
+    var prompt = t('example_' + id + '_prompt');
+    if (target === 'cmp') {
+      $('cmp-prompt').value = prompt;
+      cmp.prompt = prompt;
+      saveCmp();
+      document.querySelectorAll('#cmp-example-chips .example-chip').forEach(function (n) {
+        n.classList.toggle('active', n === btn);
+      });
+    } else {
+      $('gen-prompt').value = prompt;
+      gen.prompt = prompt;
+      saveGen();
+      document.querySelectorAll('#gen-example-chips .example-chip').forEach(function (n) {
+        n.classList.toggle('active', n === btn);
+      });
+      $('gen-prompt').focus();
+    }
+    toast(t('examples_filled'));
   }
 
   function bindGen() {

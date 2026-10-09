@@ -70,6 +70,16 @@
           <h3 class="card-title"><label for="gen-prompt" data-i18n="prompt_card"></label></h3>
           <textarea id="gen-prompt" rows="3" data-i18n-ph="prompt_placeholder"></textarea>
           <p class="muted small" data-i18n="prompt_desc"></p>
+          <div class="examples" id="gen-examples">
+            <p class="examples-label" data-i18n="examples_label"></p>
+            <p class="muted small" data-i18n="examples_hint"></p>
+            <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"></div>
+          </div>
+          <ol class="howto muted small">
+            <li data-i18n="howto_1"></li>
+            <li data-i18n="howto_2"></li>
+            <li data-i18n="howto_3"></li>
+          </ol>
         </section>
 
         <section class="card">
@@ -157,6 +167,10 @@
           <h3 class="card-title"><label for="cmp-prompt" data-i18n="compare_prompt_card"></label></h3>
           <p class="muted" data-i18n="compare_prompt_desc"></p>
           <textarea id="cmp-prompt" rows="4" data-i18n-ph="prompt_placeholder"></textarea>
+          <div class="examples" id="cmp-examples">
+            <p class="examples-label" data-i18n="examples_label"></p>
+            <div class="example-chips" id="cmp-example-chips" role="group" aria-label="Examples"></div>
+          </div>
         </section>
         <section class="card">
           <h3 class="card-title" data-i18n="compare_params_card"></h3>
@@ -210,6 +224,15 @@
       <div class="actions">
         <a class="btn btn-accent" id="batch-desktop-link" href="https://github.com/PowerTokens/video-studio" target="_blank" rel="noopener" data-i18n="batch_web_btn"></a>
       </div>
+    </section>
+    <section class="card">
+      <h3 class="card-title" data-i18n="batch_sample_card"></h3>
+      <p class="muted" data-i18n="batch_sample_desc"></p>
+      <div class="actions">
+        <a class="btn" id="batch-sample-drama" target="_blank" rel="noopener" data-i18n="batch_sample_drama"></a>
+        <a class="btn" id="batch-sample-product" target="_blank" rel="noopener" data-i18n="batch_sample_product"></a>
+      </div>
+      <p class="muted small" data-i18n="batch_sample_note"></p>
     </section>
   </section>
 
