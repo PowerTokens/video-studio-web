@@ -10,7 +10,7 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261009-signup">
+<link rel="stylesheet" href="css/style.css?v=20261009-desktop">
 </head>
 <body>
 <div id="mock-banner" class="mock-banner" hidden data-i18n="mock_banner"></div>
@@ -159,7 +159,7 @@
           </div>
         </section>
 
-        <p class="batch-hint"><span data-i18n="batch_hint"></span> <a href="https://github.com/PowerTokens/video-studio" target="_blank" rel="noopener"><span data-i18n="batch_hint_link"></span> ↗</a></p>
+        <p class="batch-hint"><span data-i18n="batch_hint"></span> <a target="_blank" rel="noopener" data-href="desktop_download_url"><span data-i18n="batch_hint_link"></span> ↗</a></p>
       </div>
     </div>
 
@@ -239,7 +239,7 @@
       <h3 class="card-title" data-i18n="batch_web_card"></h3>
       <p class="muted" data-i18n="batch_web_desc"></p>
       <div class="actions">
-        <a class="btn btn-accent" id="batch-desktop-link" href="https://github.com/PowerTokens/video-studio" target="_blank" rel="noopener" data-i18n="batch_web_btn"></a>
+        <a class="btn btn-accent" id="batch-desktop-link" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="batch_web_btn"></a>
       </div>
     </section>
     <section class="card">
@@ -332,21 +332,34 @@
   </section>
 </main>
 
+<aside class="desktop-cta" aria-label="Desktop download">
+  <div class="desktop-cta-inner">
+    <div class="desktop-cta-copy">
+      <p class="desktop-cta-title" data-i18n="desktop_cta_title"></p>
+      <p class="desktop-cta-desc" data-i18n="desktop_cta_desc"></p>
+    </div>
+    <div class="desktop-cta-actions">
+      <a class="btn btn-accent" id="desktop-download-btn" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="desktop_cta_btn"></a>
+      <a class="link" id="desktop-releases-link" target="_blank" rel="noopener" data-href="desktop_releases_url" data-i18n="desktop_cta_releases"></a>
+    </div>
+  </div>
+</aside>
+
 <footer class="footer">
   <span><a id="footer-site" target="_blank" rel="noopener" data-href="site_url">PowerTokens</a></span>
   <span><a href="LICENSE" target="_blank" rel="noopener" data-i18n="footer_license"></a></span>
-  <span><a href="https://github.com/PowerTokens/video-studio" target="_blank" rel="noopener" data-i18n="footer_desktop"></a></span>
+  <span><a id="footer-desktop" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="footer_desktop"></a></span>
 </footer>
 
 <div id="statusbar" class="statusbar" role="status"></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261009-signup"></script>
+<script src="js/i18n.js?v=20261009-desktop"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261009-signup"></script>
-<script src="js/lang/en.js?v=20261009-signup"></script>
-<script src="js/models.js?v=20261009-signup"></script>
-<script src="js/api.js?v=20261009-signup"></script>
-<script src="js/app.js?v=20261009-signup"></script>
+<script src="js/lang/zh.js?v=20261009-desktop"></script>
+<script src="js/lang/en.js?v=20261009-desktop"></script>
+<script src="js/models.js?v=20261009-desktop"></script>
+<script src="js/api.js?v=20261009-desktop"></script>
+<script src="js/app.js?v=20261009-desktop"></script>
 </body>
 </html>

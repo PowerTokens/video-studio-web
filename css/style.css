@@ -295,6 +295,29 @@ select {
 .key-row { display: flex; gap: 12px; align-items: center; }
 .key-row input[type="password"], .key-row input[type="text"] { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
+
+/* ---------- desktop download CTA (above footer) ---------- */
+.desktop-cta {
+  background: var(--white);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.desktop-cta-inner {
+  width: 100%; max-width: 1240px; margin: 0 auto; padding: 16px 12px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 18px;
+}
+.desktop-cta-copy { flex: 1 1 240px; min-width: 0; }
+.desktop-cta-title {
+  margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -.01em;
+}
+.desktop-cta-desc {
+  margin: 4px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45;
+}
+.desktop-cta-actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; flex: none;
+}
+.desktop-cta-actions .btn { text-decoration: none; font-weight: 600; }
+.desktop-cta-actions .btn:hover { text-decoration: none; }
 /* ---------- footer / status bar / toast ---------- */
 .footer {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; padding: 12px 12px 14px;
@@ -330,6 +353,9 @@ select {
   .tabs-inner { padding: 0 24px; }
   .nokey-inner { padding: 12px 24px; }
   .nokey-banner p { font-size: 13.5px; }
+  .desktop-cta-inner { padding: 18px 24px; }
+  .desktop-cta-title { font-size: 16px; }
+  .desktop-cta-desc { font-size: 13.5px; }
   .tabs button { font-size: 13.5px; padding: 11px 20px; }
   .page { padding: 20px 24px 24px; }
   .heading h1 { font-size: 23px; }
