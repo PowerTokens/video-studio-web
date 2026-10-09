@@ -10,7 +10,7 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261009-ui3">
+<link rel="stylesheet" href="css/style.css?v=20261009-signup">
 </head>
 <body>
 <div id="mock-banner" class="mock-banner" hidden data-i18n="mock_banner"></div>
@@ -32,7 +32,7 @@
     <div class="header-actions">
       <button id="key-chip" class="badge badge-btn" type="button"></button>
       <a id="billing-chip" class="btn-credits" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text"></span></a>
-      <a id="header-get-key" class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key"></a>
+      <a id="header-get-key" class="btn btn-accent btn-small header-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key"></a>
     </div>
   </div>
 </header>
@@ -46,6 +46,16 @@
     <button role="tab" type="button" data-tab="key" data-i18n="tab_key"></button>
   </div>
 </nav>
+
+<aside id="nokey-banner" class="nokey-banner" hidden>
+  <div class="nokey-inner">
+    <p data-i18n="nokey_banner"></p>
+    <div class="nokey-actions">
+      <a class="btn btn-accent btn-small" id="nokey-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="nokey_signup"></a>
+      <button type="button" class="link" id="nokey-goto-keys" data-i18n="nokey_goto_keys"></button>
+    </div>
+  </div>
+</aside>
 
 <main class="page">
   <!-- ============ 生成视频 ============ -->
@@ -331,12 +341,12 @@
 <div id="statusbar" class="statusbar" role="status"></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261009-ui3"></script>
+<script src="js/i18n.js?v=20261009-signup"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261009-ui3"></script>
-<script src="js/lang/en.js?v=20261009-ui3"></script>
-<script src="js/models.js?v=20261009-ui3"></script>
-<script src="js/api.js?v=20261009-ui3"></script>
-<script src="js/app.js?v=20261009-ui3"></script>
+<script src="js/lang/zh.js?v=20261009-signup"></script>
+<script src="js/lang/en.js?v=20261009-signup"></script>
+<script src="js/models.js?v=20261009-signup"></script>
+<script src="js/api.js?v=20261009-signup"></script>
+<script src="js/app.js?v=20261009-signup"></script>
 </body>
 </html>

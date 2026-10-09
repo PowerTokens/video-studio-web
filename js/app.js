@@ -115,12 +115,23 @@
   }
 
   // ---------------- key ----------------
+  function renderNokeyBanner() {
+    var banner = $('nokey-banner');
+    if (!banner) return;
+    var key = A.getKey();
+    var onboarded = A.store.get('onboarded', false);
+    // Show under the tabs only when there is no key and the first-run tip was dismissed,
+    // so we do not stack two signup CTAs on first visit.
+    show(banner, !key && onboarded);
+  }
+
   function renderKeyState() {
     var key = A.getKey();
     $('key-chip').textContent = key ? t('key_chip_set', A.keyHint(key)) : t('key_chip_none');
     $('key-chip').classList.toggle('badge-warn', !key);
     $('key-status').textContent = key ? t('key_saved', A.keyHint(key)) : t('key_none');
     $('key-forget').disabled = !key;
+    renderNokeyBanner();
     renderStatus();
   }
 
@@ -193,14 +204,22 @@
       A.store.set('onboarded', true);
       show($('onboard'), false);
       syncHowto(false);
+      renderNokeyBanner();
     }
     $('onboard-dismiss').addEventListener('click', dismiss);
+    var nokeyGoto = $('nokey-goto-keys');
+    if (nokeyGoto) {
+      nokeyGoto.addEventListener('click', function () { setTab('key', true); $('key-input').focus(); });
+    }
     // Header "使用提示 / Tips" brings the 3-step tip back (desktop: 使用提示 button in the header).
     document.querySelectorAll('.tips-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         setTab('generate', true);
         show($('onboard'), true);
         syncHowto(true);
+        // Hide the under-tabs strip while the tip card is showing.
+        var banner = $('nokey-banner');
+        if (banner) show(banner, false);
         $('onboard').scrollIntoView({ block: 'start' });
       });
     });

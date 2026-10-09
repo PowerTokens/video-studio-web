@@ -94,6 +94,20 @@ p { margin: 0; }
 .btn-credits::after { content: " ↗"; font-weight: 400; }
 .btn-credits:hover { background: var(--hover); text-decoration: none; }
 
+
+/* ---------- empty-key signup strip (under tabs) ---------- */
+.header-signup { text-decoration: none; font-weight: 600; }
+.header-signup:hover { text-decoration: none; }
+.nokey-banner {
+  background: var(--pale); border-bottom: 1px solid #cfe6df;
+}
+.nokey-inner {
+  width: 100%; max-width: 1240px; margin: 0 auto; padding: 10px 12px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
+}
+.nokey-banner p { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.45; flex: 1 1 220px; }
+.nokey-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; flex: none; }
+
 /* ---------- notebook tabs (align with .page cards: same max-width + horizontal padding) ---------- */
 .tabs {
   position: sticky; top: 0; z-index: 10; background: var(--page);
@@ -314,6 +328,8 @@ select {
   .header-actions { gap: 8px 14px; }
   .badge-btn, .btn-credits { font-size: 13.5px; padding: 6px 12px; }
   .tabs-inner { padding: 0 24px; }
+  .nokey-inner { padding: 12px 24px; }
+  .nokey-banner p { font-size: 13.5px; }
   .tabs button { font-size: 13.5px; padding: 11px 20px; }
   .page { padding: 20px 24px 24px; }
   .heading h1 { font-size: 23px; }
