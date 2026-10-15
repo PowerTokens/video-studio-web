@@ -9,19 +9,28 @@
   var MIN_CMP = 2, MAX_CMP = 3;
   var ALL_RES = ['480p', '720p', '1080p', '4k'];
   var ALL_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'];
-  var EXAMPLE_IDS = ['drama', 'cafe', 'cinematic', 'product'];
-  /** Recommended model per example chip. null = any model (do not change Settings). */
+  var EXAMPLE_IDS = ['drama', 'product', 'cinematic', 'ugc', 'cyber', 'fantasy'];
+  /** Recommended model per example preset. null = any model (do not change Settings). */
   var EXAMPLE_MODELS = {
-    product: 'wan3.0-video',
     drama: 'dreamina-seedance-2-5-260628',
-    cafe: null,
-    cinematic: 'kling-v3'
+    product: 'wan3.0-video',
+    cinematic: 'kling-v3',
+    ugc: null,
+    cyber: 'kling-v3',
+    fantasy: 'dreamina-seedance-2-5-260628'
   };
   var EXAMPLE_FAMILIES = {
-    product: 'wan',
     drama: 'seedance',
-    cafe: null,
-    cinematic: 'kling'
+    product: 'wan',
+    cinematic: 'kling',
+    ugc: null,
+    cyber: 'kling',
+    fantasy: 'seedance'
+  };
+  var EXAMPLE_FAMILY_LABEL = {
+    seedance: 'Seedance',
+    wan: 'Wan',
+    kling: 'Kling'
   };
 
   function $(id) { return document.getElementById(id); }
@@ -662,20 +671,20 @@
       box.innerHTML = '';
       EXAMPLE_IDS.forEach(function (id) {
         var label = t('example_' + id + '_label');
-        var b = el('button', 'example-chip');
+        var blurb = t('example_' + id + '_blurb');
+        var b = el('button', 'example-chip example-preset');
         b.type = 'button';
         var family = EXAMPLE_FAMILIES[id];
-        var parts = String(label).split(' · ');
-        if (parts.length >= 2) {
-          b.appendChild(el('span', 'chip-title', parts[0]));
-          var model = el('span', 'chip-model');
-          var logo = makeChipLogo(family);
-          if (logo) model.appendChild(logo);
-          model.appendChild(document.createTextNode(parts.slice(1).join(' · ')));
-          b.appendChild(model);
-        } else {
-          b.appendChild(el('span', 'chip-title', label));
+        b.appendChild(el('span', 'chip-title', label));
+        if (blurb && blurb.indexOf('example_') !== 0) {
+          b.appendChild(el('span', 'preset-blurb', blurb));
         }
+        var model = el('span', 'chip-model');
+        var logo = makeChipLogo(family);
+        if (logo) model.appendChild(logo);
+        var modelName = family ? (EXAMPLE_FAMILY_LABEL[family] || family) : t('example_any_model');
+        model.appendChild(document.createTextNode(modelName));
+        b.appendChild(model);
         b.setAttribute('data-example', id);
         b.setAttribute('data-target', pair[1]);
         if (family) b.setAttribute('data-family', family);
@@ -734,8 +743,8 @@
     return null;
   }
 
-  /** Fallback when parsing fails (desktop short-drama / canyon samples are ~10s). */
-  var EXAMPLE_DURATION = { drama: 10, cinematic: 10 };
+  /** Fallback when parsing fails (storyboard presets ~2–3s; Seedance snaps to 4s min). */
+  var EXAMPLE_DURATION = { drama: 4, product: 3, cinematic: 3, ugc: 3, cyber: 3, fantasy: 4 };
 
   function applyInferredDuration(prompt, id, target) {
     var d = inferPromptDuration(prompt);
@@ -803,7 +812,7 @@
       }
       showPromptStart($('gen-prompt'));
     }
-    // Match Settings duration to the example prompt (short-drama ~10s, etc.)
+    // Match Settings duration to the example prompt (~1–3s storyboard feel; snapped to model mins).
     applyInferredDuration(prompt, id, target);
     toast(t('examples_filled'));
   }
