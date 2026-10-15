@@ -326,11 +326,10 @@ select option, select optgroup {
   letter-spacing: -.01em;
 }
 .examples-hint { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
-.example-chips {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
-}
-@media (max-width: 720px) {
-  .example-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Single vertical column: one preset per row (full width). */
+.example-chips,
+#gen-example-chips {
+  display: grid; grid-template-columns: 1fr; gap: 10px;
 }
 .example-chip,
 .example-preset {
@@ -338,7 +337,7 @@ select option, select optgroup {
   text-align: left; font: inherit; font-size: 13px; font-weight: 500;
   color: var(--ink); background: var(--white);
   border: 1px solid #c5e4dc; border-radius: 12px; padding: 12px;
-  cursor: pointer; line-height: 1.35; min-height: 108px; width: 100%;
+  cursor: pointer; line-height: 1.35; min-height: 0; width: 100%;
   position: relative; box-shadow: 0 1px 0 rgba(27, 41, 60, .04);
   transition: background .15s ease, border-color .15s ease, color .15s ease,
     box-shadow .15s ease, transform .1s ease;
@@ -365,28 +364,6 @@ select option, select optgroup {
   display: block; font-size: 11.5px; font-weight: 400; color: var(--muted);
   line-height: 1.4; margin: 0 0 4px; flex: 1;
 }
-.example-chip .chip-model,
-.example-preset .chip-model {
-  display: inline-flex; align-items: center; gap: 4px; margin-top: auto;
-  font-size: 11px; font-weight: 500; color: #5a9f94; background: var(--pale);
-  border-radius: 999px; padding: 2px 7px 2px 4px; line-height: 1.2;
-}
-.example-chip .chip-model:not(:has(.chip-logo)),
-.example-preset .chip-model:not(:has(.chip-logo)) { padding-left: 7px; }
-.example-chip .chip-logo,
-.example-preset .chip-logo {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 14px; height: 14px; flex: none; border-radius: 3px; overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, .06);
-}
-.example-chip .chip-logo svg,
-.example-preset .chip-logo svg { display: block; width: 14px; height: 14px; }
-.example-chip.active .chip-model,
-.example-preset.active .chip-model {
-  color: var(--accent-text); background: #d8f0ea;
-}
-.example-chip.active .chip-logo,
-.example-preset.active .chip-logo { box-shadow: 0 0 0 1px rgba(83, 178, 165, .35); }
 .batch-sample-note { margin-top: 10px; }
 /* ---------- compare ---------- */
 .check-list { display: grid; gap: 2px; }
