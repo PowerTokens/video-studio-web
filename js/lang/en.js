@@ -23,7 +23,7 @@ VSI18n.register('en', {
   tab_tasks: "History / Resume",
   tab_key: "API Key",
   onboard_title: "Start with your access code",
-  onboard_step1: "1. Sign up for 100 free credits (header). Copy your access code from the official Key page, paste it below to verify; the badge turns green when it works.",
+  onboard_step1: "Sign up for 100 free credits (header). Copy your access code from the official Key page, paste it below to verify; the badge turns green when it works.",
   onboard_step2: "Use a preset here, or write your own video description.",
   onboard_step3: "Pick a model here (Wan / Seedance / Kling, etc.).",
   onboard_step4: "When ready, click Generate video.",

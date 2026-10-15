@@ -425,13 +425,25 @@ select option, select optgroup {
 .spend-line { margin: -2px 0 12px; font-size: 12px; color: var(--muted); }
 
 
-/* Foldable get-started tips (① card + expand stub) */
-.onboard-head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-  margin-bottom: 6px;
+/* Foldable get-started: tip ① container + expand stub (same teal tip language as ②–④) */
+.onboard {
+  margin-bottom: 14px;
+  padding: 8px 10px 12px;
+  background: #f7fcfa;
+  border: 1px solid #d5ebe5;
+  border-radius: 10px;
 }
-.onboard-head .card-title { margin: 0; }
-.onboard-collapse-link { flex: none; font-size: 13px; white-space: nowrap; }
+.onboard-guide-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.onboard-collapse-link {
+  flex: none;
+  margin-top: 2px;
+  font-size: 13px;
+  white-space: nowrap;
+}
 .onboard-expand-bar {
   padding: 10px 14px;
   background: #f7fcfa;
@@ -447,20 +459,21 @@ select option, select optgroup {
 .onboard-expand-btn:hover { color: var(--accent); }
 .onboard-chevron { flex: none; font-size: 12px; line-height: 1; color: var(--muted); }
 
-/* Onboard inline access-code verify (Generate tip card) */
+/* Access-code verify sits under tip ① inside the same lightweight tip container */
 .onboard-key {
-  margin: 10px 0 14px;
+  margin: 8px 0 0;
   padding: 12px;
   border: 1px dashed #c9e4dc;
   border-radius: 10px;
-  background: #f7fcfa;
+  background: #fff;
 }
 .onboard-key .field-label { margin-bottom: 6px; }
 .onboard-key-row { margin-top: 2px; }
 .onboard-key-actions { margin-top: 10px; }
 .onboard-key .error { margin-top: 8px; }
+.onboard-foot { margin-top: 10px; }
 
-/* Contextual get-started tips (steps ②–④ next to matching UI) */
+/* Shared compact tip bars: ① (embedded) + ②③④ */
 .guide-tip {
   display: flex; align-items: flex-start; gap: 8px;
   margin: 0 0 10px; padding: 8px 10px;
@@ -471,6 +484,16 @@ select option, select optgroup {
   flex: none; width: 22px; height: 22px; border-radius: 50%;
   background: var(--pale); color: var(--accent-text); border: 1px solid #c5e4dc;
   font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
+}
+/* Tip ① reuses .guide-tip layout but borrows the parent .onboard border/bg */
+.guide-tip--embedded {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
 }
 #gen-examples .guide-tip { margin: 0 0 12px; }
 #guide-tip-generate { margin: 4px 0 10px; }
