@@ -9,23 +9,19 @@
   var MIN_CMP = 2, MAX_CMP = 3;
   var ALL_RES = ['480p', '720p', '1080p', '4k'];
   var ALL_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'];
-  var EXAMPLE_IDS = ['drama', 'product', 'cinematic', 'ugc', 'cyber', 'fantasy'];
+  var EXAMPLE_IDS = ['locker', 'shopping', 'canyon', 'seal'];
   /** Recommended model per example preset. null = any model (do not change Settings). */
   var EXAMPLE_MODELS = {
-    drama: 'dreamina-seedance-2-5-260628',
-    product: 'wan3.0-video',
-    cinematic: 'kling-v3',
-    ugc: null,
-    cyber: 'kling-v3',
-    fantasy: 'dreamina-seedance-2-5-260628'
+    locker: 'wan3.0-video',
+    shopping: 'wan3.0-video',
+    canyon: 'wan3.0-video',
+    seal: 'wan3.0-video'
   };
   var EXAMPLE_FAMILIES = {
-    drama: 'seedance',
-    product: 'wan',
-    cinematic: 'kling',
-    ugc: null,
-    cyber: 'kling',
-    fantasy: 'seedance'
+    locker: 'wan',
+    shopping: 'wan',
+    canyon: 'wan',
+    seal: 'wan'
   };
   var EXAMPLE_FAMILY_LABEL = {
     seedance: 'Seedance',
@@ -34,12 +30,17 @@
   };
   /** Local showcase GIFs (from PowerTokens/video-studio README) shown in Progress on preset click. */
   var EXAMPLE_PREVIEW = {
-    drama: 'assets/presets/drama.gif',
-    product: 'assets/presets/product.gif',
-    cinematic: 'assets/presets/cinematic.gif',
-    ugc: 'assets/presets/product.gif',
-    cyber: 'assets/presets/cyber.gif',
-    fantasy: 'assets/presets/fantasy.gif'
+    locker: 'assets/presets/drama.gif',
+    shopping: 'assets/presets/product.gif',
+    canyon: 'assets/presets/cinematic.gif',
+    seal: 'assets/presets/fantasy.gif'
+  };
+  /** Settings to apply with each Generate preset (from prompt / README showcase). Snapped via M.snapParams. */
+  var EXAMPLE_SPECS = {
+    locker: { duration: 16, ratio: '16:9', resolution: '1080p' },
+    shopping: { duration: 10, ratio: '9:16', resolution: '1080p' },
+    canyon: { duration: 10, ratio: '9:16', resolution: '1080p' },
+    seal: { duration: 10, ratio: '9:16', resolution: '1080p' }
   };
   /** Active Generate-tab preset id for Progress sample; cleared on generate / preset clear. */
   var previewPresetId = null;
@@ -754,12 +755,42 @@
     return null;
   }
 
-  /** Fallback when parsing fails (storyboard presets ~2–3s; Seedance snaps to 4s min). */
-  var EXAMPLE_DURATION = { drama: 4, product: 3, cinematic: 3, ugc: 3, cyber: 3, fantasy: 4 };
+  /** Apply EXAMPLE_SPECS (duration / ratio / resolution) then snap to the active model. */
+  function applyExampleSpecs(id, target) {
+    var spec = EXAMPLE_SPECS[id];
+    if (!spec) return;
+    if (target === 'cmp') {
+      if (spec.duration != null) {
+        cmp.duration = spec.duration;
+        var elDur = $('cmp-duration');
+        if (elDur) elDur.value = spec.duration;
+      }
+      if (spec.ratio != null) cmp.ratio = spec.ratio;
+      if (spec.resolution != null) cmp.resolution = spec.resolution;
+      saveCmp();
+      renderCmpParams();
+      return;
+    }
+    var m = M.getModel(gen.model);
+    var s = M.snapParams(
+      m,
+      spec.duration != null ? spec.duration : gen.duration,
+      spec.resolution != null ? spec.resolution : gen.resolution,
+      spec.ratio != null ? spec.ratio : gen.ratio
+    );
+    gen.duration = s.duration;
+    gen.resolution = s.resolution;
+    gen.ratio = s.ratio;
+    genNotice = s.changes.length ? { model: gen.model, changes: s.changes } : '';
+    saveGen();
+    renderGenParams();
+  }
 
   function applyInferredDuration(prompt, id, target) {
     var d = inferPromptDuration(prompt);
-    if (d === null && EXAMPLE_DURATION[id] != null) d = EXAMPLE_DURATION[id];
+    if (d === null && EXAMPLE_SPECS[id] && EXAMPLE_SPECS[id].duration != null) {
+      d = EXAMPLE_SPECS[id].duration;
+    }
     if (d === null) return;
     if (target === 'cmp') {
       cmp.duration = d;
@@ -835,8 +866,8 @@
       previewPresetId = id;
       renderResults();
     }
-    // Match Settings duration to the example prompt (~1–3s storyboard feel; snapped to model mins).
-    applyInferredDuration(prompt, id, target);
+    // Match Settings to showcase prompt specs (duration / ratio / resolution), then snap to model.
+    applyExampleSpecs(id, target);
     scrollParamsIntoView(target);
   }
 
@@ -845,7 +876,7 @@
     var wrap = el('div', 'preset-sample');
     wrap.appendChild(el('p', 'preset-sample-label', t('preset_sample_label')));
     var img = el('img', 'preset-sample-gif');
-    img.src = EXAMPLE_PREVIEW[id] || EXAMPLE_PREVIEW.drama;
+    img.src = EXAMPLE_PREVIEW[id] || EXAMPLE_PREVIEW.locker;
     img.alt = t('preset_sample_label');
     img.loading = 'lazy';
     wrap.appendChild(img);
