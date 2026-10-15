@@ -23,7 +23,7 @@ VSI18n.register('zh', {
   tab_tasks: "任务记录 / 恢复",
   tab_key: "API Key",
   onboard_title: "先粘贴访问码",
-  onboard_step1: "① 注册领取 100 积分（右上角）。到官网 Key 页复制一次访问码，粘贴到下方校验；成功后顶栏会变绿。",
+  onboard_step1: "注册领取 100 积分（右上角）。到官网 Key 页复制一次访问码，粘贴到下方校验；成功后顶栏会变绿。",
   onboard_step2: "点这里的预设，或自己写一段视频描述",
   onboard_step3: "在这里选模型（Wan / Seedance / Kling 等）",
   onboard_step4: "准备好后点击「生成视频」",

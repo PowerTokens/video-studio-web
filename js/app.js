@@ -562,7 +562,7 @@
 
   function syncGuideFold() {
     var collapsed = guidesCollapsed();
-    // Slim top card (①) + contextual tips ②–④ share one fold flag.
+    // Tip ① panel + contextual tip bars ②–④ share one fold flag.
     show($('onboard'), !collapsed);
     show($('onboard-expand-bar'), collapsed);
     GUIDE_TIP_IDS.forEach(function (id) {
@@ -602,7 +602,7 @@
       // Expand tip ① and focus paste (Key tab pool still available too).
       nokeyGoto.addEventListener('click', function () { focusOnboardKey(); });
     }
-    // Header "使用提示 / Tips" expands the slim card + contextual tips anytime.
+    // Header "使用提示 / Tips" expands tip ① + contextual tip bars anytime.
     document.querySelectorAll('.tips-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         setTab('generate', true);
