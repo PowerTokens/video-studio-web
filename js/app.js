@@ -811,6 +811,11 @@
     var product = $('batch-sample-product');
     if (drama) drama.href = t('batch_sample_drama_url');
     if (product) product.href = t('batch_sample_product_url');
+    // Keep Generate chip selected across i18n re-renders.
+    if (previewPresetId) {
+      var activeBtn = document.querySelector('#gen-example-chips .example-chip[data-example="' + previewPresetId + '"]');
+      if (activeBtn) setExampleActive('gen', activeBtn);
+    }
   }
 
   function setExampleActive(target, btn) {
@@ -983,6 +988,29 @@
     wrap.appendChild(img);
     wrap.appendChild(el('p', 'preset-sample-note muted small', t('preset_sample_note')));
     box.appendChild(wrap);
+  }
+
+  /** On empty Generate prompt, select first preset via applyExample. If stored prompt still matches a preset, only restore chip + sample. */
+  function maybeDefaultGenPreset() {
+    var p = (gen.prompt || '').trim();
+    if (!p) {
+      var id = EXAMPLE_IDS[0];
+      var btn = document.querySelector('#gen-example-chips .example-chip[data-example="' + id + '"]');
+      if (btn) applyExample(id, 'gen', btn);
+      return;
+    }
+    for (var i = 0; i < EXAMPLE_IDS.length; i++) {
+      var eid = EXAMPLE_IDS[i];
+      var expected = t('example_' + eid + '_prompt');
+      if (!expected || p !== String(expected).trim()) continue;
+      var b = document.querySelector('#gen-example-chips .example-chip[data-example="' + eid + '"]');
+      if (b) {
+        setExampleActive('gen', b);
+        previewPresetId = eid;
+        renderResults();
+      }
+      break;
+    }
   }
 
   function bindGen() {
@@ -1668,6 +1696,7 @@
       });
       setLang(lang, false);
       setTab((location.hash || '').replace('#', '') || 'generate', false);
+      maybeDefaultGenPreset();
       A.onChange(scheduleRender);
       hydrateKeyBlockFromHistory();
       A.resumeOnLoad(A.getKey());
