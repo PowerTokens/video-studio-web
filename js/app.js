@@ -540,11 +540,20 @@
   }
 
   // ---------------- onboarding ----------------
+  var GUIDE_TIP_IDS = ['guide-tip-prompt', 'guide-tip-model', 'guide-tip-generate'];
+
+  function syncGuideTips(visible) {
+    // Slim top card (step ①) + contextual tips next to presets / model / Generate.
+    show($('onboard'), visible);
+    GUIDE_TIP_IDS.forEach(function (id) {
+      var el = $(id);
+      if (el) show(el, visible);
+    });
+  }
+
   function focusOnboardKey() {
     setTab('generate', true);
-    show($('onboard'), true);
-    var howto = $('gen-howto');
-    if (howto) show(howto, false);
+    syncGuideTips(true);
     var banner = $('nokey-banner');
     if (banner) show(banner, false);
     var card = $('onboard');
@@ -558,17 +567,10 @@
 
   function bindOnboard() {
     var done = A.store.get('onboarded', false);
-    function syncHowto(onboardVisible) {
-      // Avoid two competing "4 steps" blocks; keep the compact howto when onboard is dismissed.
-      var howto = $('gen-howto');
-      if (howto) show(howto, !onboardVisible);
-    }
-    show($('onboard'), !done);
-    syncHowto(!done);
+    syncGuideTips(!done);
     function dismiss() {
       A.store.set('onboarded', true);
-      show($('onboard'), false);
-      syncHowto(false);
+      syncGuideTips(false);
       renderNokeyBanner();
     }
     $('onboard-dismiss').addEventListener('click', dismiss);
@@ -577,20 +579,17 @@
       // After onboard is dismissed, Key-tab pool is the paste home.
       nokeyGoto.addEventListener('click', function () { setTab('key', true); $('key-input').focus(); });
     }
-    // Header "使用提示 / Tips" brings the 4-step tip back (desktop: 使用提示 button in the header).
+    // Header "使用提示 / Tips" restores the slim card + contextual tips.
     document.querySelectorAll('.tips-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         setTab('generate', true);
-        show($('onboard'), true);
-        syncHowto(true);
+        syncGuideTips(true);
         // Hide the under-tabs strip while the tip card is showing.
         var banner = $('nokey-banner');
         if (banner) show(banner, false);
         $('onboard').scrollIntoView({ block: 'start' });
       });
     });
-    // 「粘贴访问码」 focuses the inline onboard field (does not jump to Key tab).
-    $('onboard-goto-keys').addEventListener('click', function () { focusOnboardKey(); });
     var showCb = $('onboard-key-show');
     if (showCb) {
       showCb.addEventListener('change', function () {
@@ -605,7 +604,7 @@
           errEl: $('onboard-key-error'),
           btnEl: verifyBtn,
           onSuccess: function () {
-            // Keep the tip visible so steps ②–④ stay in view; badge is already green.
+            // Keep tips visible so steps ②–④ stay in view; badge is already green.
           }
         });
       });
@@ -1695,7 +1694,7 @@
 
   if (A && A.MOCK) {
     var s = document.createElement('script');
-    s.src = 'mock/mock.js?v=20261015-KeyVerify';
+    s.src = 'mock/mock.js?v=20261015-GuideTips';
     s.onload = boot;
     s.onerror = boot;
     document.head.appendChild(s);

@@ -445,6 +445,21 @@ select option, select optgroup {
 .onboard-key-row { margin-top: 2px; }
 .onboard-key-actions { margin-top: 10px; }
 .onboard-key .error { margin-top: 8px; }
+
+/* Contextual get-started tips (steps ②–④ next to matching UI) */
+.guide-tip {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin: 0 0 10px; padding: 8px 10px;
+  background: #f7fcfa; border: 1px solid #d5ebe5; border-radius: 10px;
+  color: var(--ink-2); font-size: 13px; line-height: 1.45;
+}
+.guide-tip-num {
+  flex: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--pale); color: var(--accent-text); border: 1px solid #c5e4dc;
+  font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
+}
+#gen-examples .guide-tip { margin: 0 0 12px; }
+#guide-tip-generate { margin: 4px 0 10px; }
 /* ---------- history / keys ---------- */
 .manual { display: grid; gap: 8px; }
 .key-row { display: flex; gap: 12px; align-items: center; }
