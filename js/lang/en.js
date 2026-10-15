@@ -17,6 +17,7 @@ VSI18n.register('en', {
   key_chip_quota: "Balance or quota too low",
   key_status_ok: "Ready",
   key_status_check: "Needs check",
+  key_status_quota: "Top up",
   tab_generate: "Generate video",
   tab_compare: "Compare models",
   tab_tasks: "History / Resume",

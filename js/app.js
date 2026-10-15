@@ -280,8 +280,7 @@
     show(banner, !key && onboarded);
   }
 
-  // API Key tab pill: both dots always visible; emphasize green when usable, red for any generate-blocking issue.
-  // Yellow/warn is never used here.
+  // API Key tab pill: three dots (bad / warn / ok). Green = usable; red = auth/none; amber = quota (need top-up).
   function syncKeyBlockFromRec(rec) {
     if (!rec || rec.removed || !A.getKey()) return;
     if (rec.error === 'AUTH' || rec.error === 'query_auth') {
@@ -361,12 +360,15 @@
     var key = A.getKey();
     var block = currentKeyBlock();
     var ok = !!key && !block;
+    var isQuota = block === 'quota';
+    var isBad = !ok && !isQuota; // none / auth
     var keyBadge = $('key-badge');
     var keyBadgeText = $('key-badge-text');
     if (keyBadge) {
       keyBadge.hidden = false;
       keyBadge.classList.toggle('is-ok', ok);
-      keyBadge.classList.toggle('is-bad', !ok);
+      keyBadge.classList.toggle('is-warn', isQuota);
+      keyBadge.classList.toggle('is-bad', isBad);
       keyBadge.setAttribute('aria-hidden', 'false');
       var title;
       if (!key || block === 'none') title = t('key_chip_none');
@@ -375,7 +377,11 @@
       else title = t('key_chip_ok');
       keyBadge.title = title;
       keyBadge.setAttribute('aria-label', title);
-      if (keyBadgeText) keyBadgeText.textContent = ok ? t('key_status_ok') : t('key_status_check');
+      if (keyBadgeText) {
+        if (ok) keyBadgeText.textContent = t('key_status_ok');
+        else if (isQuota) keyBadgeText.textContent = t('key_status_quota');
+        else keyBadgeText.textContent = t('key_status_check');
+      }
     }
     renderKeyPoolList();
     renderNokeyBanner();
