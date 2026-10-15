@@ -32,6 +32,17 @@
     wan: 'Wan',
     kling: 'Kling'
   };
+  /** Local showcase GIFs (from PowerTokens/video-studio README) shown in Progress on preset click. */
+  var EXAMPLE_PREVIEW = {
+    drama: 'assets/presets/drama.gif',
+    product: 'assets/presets/product.gif',
+    cinematic: 'assets/presets/cinematic.gif',
+    ugc: 'assets/presets/product.gif',
+    cyber: 'assets/presets/cyber.gif',
+    fantasy: 'assets/presets/fantasy.gif'
+  };
+  /** Active Generate-tab preset id for Progress sample; cleared on generate / preset clear. */
+  var previewPresetId = null;
 
   function $(id) { return document.getElementById(id); }
   function t() { return I.t.apply(null, [lang].concat(Array.prototype.slice.call(arguments))); }
@@ -797,9 +808,10 @@
         gen.prompt = '';
         saveGen();
         showPromptStart($('gen-prompt'));
+        previewPresetId = null;
+        renderResults();
       }
       setExampleActive(target, null);
-      toast(t('examples_cleared'));
       return;
     }
 
@@ -820,11 +832,25 @@
         selectGenModel(modelId);
       }
       showPromptStart($('gen-prompt'));
+      previewPresetId = id;
+      renderResults();
     }
     // Match Settings duration to the example prompt (~1–3s storyboard feel; snapped to model mins).
     applyInferredDuration(prompt, id, target);
-    toast(t('examples_filled'));
     scrollParamsIntoView(target);
+  }
+
+  function showPresetPreview(box, id) {
+    box.innerHTML = '';
+    var wrap = el('div', 'preset-sample');
+    wrap.appendChild(el('p', 'preset-sample-label', t('preset_sample_label')));
+    var img = el('img', 'preset-sample-gif');
+    img.src = EXAMPLE_PREVIEW[id] || EXAMPLE_PREVIEW.drama;
+    img.alt = t('preset_sample_label');
+    img.loading = 'lazy';
+    wrap.appendChild(img);
+    wrap.appendChild(el('p', 'preset-sample-note muted small', t('preset_sample_note')));
+    box.appendChild(wrap);
   }
 
   function bindGen() {
@@ -950,6 +976,7 @@
     btn.textContent = t('generating_btn');
     btn.setAttribute('data-i18n', 'generating_btn');
     var plan = { model: gen.model, prompt: prompt, duration: gen.duration, resolution: gen.resolution, ratio: gen.ratio, cost: cost, has_image: !!media.length };
+    previewPresetId = null;
     A.store.set('last_single', null);
     var first = true;
     A.submit(plan, built, key, function (info) {
@@ -1326,7 +1353,14 @@
     var box = $('gen-result');
     var id = A.store.get('last_single', null);
     var rec = id ? A.getTask(id) : null;
-    syncCards(box, rec ? [rec] : [], {}, 'result_empty');
+    var busy = !!(rec && (rec.state === 'submitting' || rec.state === 'queued' || rec.state === 'running'));
+    if (busy || (rec && !previewPresetId)) {
+      syncCards(box, rec ? [rec] : [], {}, 'result_empty');
+    } else if (previewPresetId && EXAMPLE_PREVIEW[previewPresetId]) {
+      showPresetPreview(box, previewPresetId);
+    } else {
+      syncCards(box, [], {}, 'result_empty');
+    }
     $('gen-stop').disabled = !(rec && (rec.state === 'queued' || rec.state === 'running') && A.isPolling(rec.local_id));
 
     var cbox = $('cmp-results');

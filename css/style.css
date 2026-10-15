@@ -554,3 +554,14 @@ select option, select optgroup {
   .cmp-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .task-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* Preset example GIF in Progress */
+.preset-sample { text-align: center; }
+.preset-sample-label {
+  margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--btn-text);
+}
+.preset-sample-gif {
+  display: block; width: 100%; max-height: 280px; object-fit: contain;
+  border-radius: 4px; background: #0b1220; margin: 0 auto;
+}
+.preset-sample-note { margin: 8px 0 0; }
