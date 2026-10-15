@@ -110,6 +110,7 @@
       if (!key || key.indexOf('bad') >= 0) {
         return json(500, { error: { code: 'token_invalid', message: 'Invalid token (request id: mock)', type: 'api_error' } });
       }
+      if (method === 'GET' && path === '/v1/models') return json(200, { object: 'list', data: [] });
       if (method === 'GET' && path === '/v1/mock-balance') return json(200, { balance: 128000 });
       if (method === 'POST') {
         if (key.indexOf('nobal') >= 0) return json(402, { error: { message: '账户余额不足，请充值后再试', type: 'insufficient_balance' } });

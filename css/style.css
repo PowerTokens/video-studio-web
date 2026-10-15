@@ -432,6 +432,19 @@ select option, select optgroup {
 @media (prefers-reduced-motion: reduce) { .progress.indeterminate .progress-fill { animation: none; left: 0; width: 100%; opacity: .35; } }
 .spend-line { margin: -2px 0 12px; font-size: 12px; color: var(--muted); }
 
+
+/* Onboard inline access-code verify (Generate tip card) */
+.onboard-key {
+  margin: 10px 0 14px;
+  padding: 12px;
+  border: 1px dashed #c9e4dc;
+  border-radius: 10px;
+  background: #f7fcfa;
+}
+.onboard-key .field-label { margin-bottom: 6px; }
+.onboard-key-row { margin-top: 2px; }
+.onboard-key-actions { margin-top: 10px; }
+.onboard-key .error { margin-top: 8px; }
 /* ---------- history / keys ---------- */
 .manual { display: grid; gap: 8px; }
 .key-row { display: flex; gap: 12px; align-items: center; }
