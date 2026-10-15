@@ -775,6 +775,15 @@
     ta.scrollTop = 0;
   }
 
+  /** After filling a preset, bring Settings / Generate into view on short viewports. */
+  function scrollParamsIntoView(target) {
+    var anchor = target === 'cmp' ? $('cmp-submit') : $('gen-submit');
+    if (!anchor) return;
+    var card = anchor.closest ? anchor.closest('.card') : null;
+    var el = card || anchor;
+    if (el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
   function applyExample(id, target, btn) {
     var wasActive = btn && btn.classList.contains('active');
     if (wasActive) {
@@ -815,6 +824,7 @@
     // Match Settings duration to the example prompt (~1–3s storyboard feel; snapped to model mins).
     applyInferredDuration(prompt, id, target);
     toast(t('examples_filled'));
+    scrollParamsIntoView(target);
   }
 
   function bindGen() {
