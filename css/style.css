@@ -326,10 +326,17 @@ select option, select optgroup {
   letter-spacing: -.01em;
 }
 .examples-hint { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
-/* Single vertical column: one preset per row (full width). */
-.example-chips,
-#gen-example-chips {
-  display: grid; grid-template-columns: 1fr; gap: 10px;
+/* Side-by-side row (并列); wraps on narrow screens. Logos stay off. */
+.example-chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .example-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  .example-chips { grid-template-columns: 1fr; }
 }
 .example-chip,
 .example-preset {
@@ -337,7 +344,7 @@ select option, select optgroup {
   text-align: left; font: inherit; font-size: 13px; font-weight: 500;
   color: var(--ink); background: var(--white);
   border: 1px solid #c5e4dc; border-radius: 12px; padding: 12px;
-  cursor: pointer; line-height: 1.35; min-height: 0; width: 100%;
+  cursor: pointer; line-height: 1.35; min-height: 108px; width: 100%;
   position: relative; box-shadow: 0 1px 0 rgba(27, 41, 60, .04);
   transition: background .15s ease, border-color .15s ease, color .15s ease,
     box-shadow .15s ease, transform .1s ease;
