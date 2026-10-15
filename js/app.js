@@ -274,10 +274,8 @@
     var banner = $('nokey-banner');
     if (!banner) return;
     var key = A.getKey();
-    var onboarded = A.store.get('onboarded', false);
-    // Show under the tabs only when there is no key and the first-run tip was dismissed,
-    // so we do not stack two signup CTAs on first visit.
-    show(banner, !key && onboarded);
+    // Under-tabs strip only when tips are folded and there is no key — avoids stacking CTAs.
+    show(banner, !key && guidesCollapsed());
   }
 
   // API Key tab pill: three dots (bad / warn / ok). Green = usable; red = auth/none; amber = quota (need top-up).
@@ -540,25 +538,48 @@
     }
   }
 
-  // ---------------- onboarding ----------------
+  // ---------------- onboarding (foldable tips ①–④) ----------------
   var GUIDE_TIP_IDS = ['guide-tip-prompt', 'guide-tip-model', 'guide-tip-generate'];
 
-  function syncGuideTips(visible) {
-    // Slim top card (step ①) + contextual tips next to presets / model / Generate.
-    show($('onboard'), visible);
+  function guidesCollapsed() {
+    var stored = A.store.get('onboard_collapsed', null);
+    if (stored === true || stored === false) return stored;
+    // Migrate legacy permanent dismiss → collapsed (still reopenable via Tips).
+    if (A.store.get('onboarded', false)) {
+      A.store.set('onboard_collapsed', true);
+      A.store.remove('onboarded');
+      return true;
+    }
+    return false;
+  }
+
+  function setGuidesCollapsed(collapsed) {
+    A.store.set('onboard_collapsed', !!collapsed);
+    if (A.store.get('onboarded', false)) A.store.remove('onboarded');
+    syncGuideFold();
+    renderNokeyBanner();
+  }
+
+  function syncGuideFold() {
+    var collapsed = guidesCollapsed();
+    // Slim top card (①) + contextual tips ②–④ share one fold flag.
+    show($('onboard'), !collapsed);
+    show($('onboard-expand-bar'), collapsed);
     GUIDE_TIP_IDS.forEach(function (id) {
       var el = $(id);
-      if (el) show(el, visible);
+      if (el) show(el, !collapsed);
     });
+  }
+
+  function expandGuidesAndScroll() {
+    setGuidesCollapsed(false);
+    var card = $('onboard');
+    if (card) card.scrollIntoView({ block: 'start' });
   }
 
   function focusOnboardKey() {
     setTab('generate', true);
-    syncGuideTips(true);
-    var banner = $('nokey-banner');
-    if (banner) show(banner, false);
-    var card = $('onboard');
-    if (card) card.scrollIntoView({ block: 'start' });
+    expandGuidesAndScroll();
     var input = $('onboard-key-input');
     if (input) {
       input.focus();
@@ -567,28 +588,25 @@
   }
 
   function bindOnboard() {
-    var done = A.store.get('onboarded', false);
-    syncGuideTips(!done);
-    function dismiss() {
-      A.store.set('onboarded', true);
-      syncGuideTips(false);
-      renderNokeyBanner();
-    }
-    $('onboard-dismiss').addEventListener('click', dismiss);
+    syncGuideFold();
+    function collapse() { setGuidesCollapsed(true); }
+    function expand() { expandGuidesAndScroll(); }
+    var collapseLink = $('onboard-collapse');
+    if (collapseLink) collapseLink.addEventListener('click', collapse);
+    var collapseBtn = $('onboard-collapse-btn');
+    if (collapseBtn) collapseBtn.addEventListener('click', collapse);
+    var expandBtn = $('onboard-expand');
+    if (expandBtn) expandBtn.addEventListener('click', expand);
     var nokeyGoto = $('nokey-goto-keys');
     if (nokeyGoto) {
-      // After onboard is dismissed, Key-tab pool is the paste home.
-      nokeyGoto.addEventListener('click', function () { setTab('key', true); $('key-input').focus(); });
+      // Expand tip ① and focus paste (Key tab pool still available too).
+      nokeyGoto.addEventListener('click', function () { focusOnboardKey(); });
     }
-    // Header "使用提示 / Tips" restores the slim card + contextual tips.
+    // Header "使用提示 / Tips" expands the slim card + contextual tips anytime.
     document.querySelectorAll('.tips-btn').forEach(function (b) {
       b.addEventListener('click', function () {
         setTab('generate', true);
-        syncGuideTips(true);
-        // Hide the under-tabs strip while the tip card is showing.
-        var banner = $('nokey-banner');
-        if (banner) show(banner, false);
-        $('onboard').scrollIntoView({ block: 'start' });
+        expandGuidesAndScroll();
       });
     });
     var showCb = $('onboard-key-show');
@@ -605,7 +623,7 @@
           errEl: $('onboard-key-error'),
           btnEl: verifyBtn,
           onSuccess: function () {
-            // Keep tips visible so steps ②–④ stay in view; badge is already green.
+            // Keep tips expanded so steps ②–④ stay in view; badge is already green.
           }
         });
       });

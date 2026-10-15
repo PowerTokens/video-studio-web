@@ -425,6 +425,28 @@ select option, select optgroup {
 .spend-line { margin: -2px 0 12px; font-size: 12px; color: var(--muted); }
 
 
+/* Foldable get-started tips (① card + expand stub) */
+.onboard-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin-bottom: 6px;
+}
+.onboard-head .card-title { margin: 0; }
+.onboard-collapse-link { flex: none; font-size: 13px; white-space: nowrap; }
+.onboard-expand-bar {
+  padding: 10px 14px;
+  background: #f7fcfa;
+  border: 1px dashed #c9e4dc;
+}
+.onboard-expand-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  width: 100%; margin: 0; padding: 0;
+  border: 0; background: transparent; cursor: pointer;
+  color: var(--accent-text); font: inherit; font-size: 13.5px; font-weight: 600;
+  text-align: left;
+}
+.onboard-expand-btn:hover { color: var(--accent); }
+.onboard-chevron { flex: none; font-size: 12px; line-height: 1; color: var(--muted); }
+
 /* Onboard inline access-code verify (Generate tip card) */
 .onboard-key {
   margin: 10px 0 14px;
