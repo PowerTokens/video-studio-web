@@ -411,26 +411,90 @@
     A.fetchBalance(key).then(function (v) { balance = v; renderCredits(); renderKeyState(); });
   }
 
+  /** Map verifyKey failure to a user-facing string. */
+  function verifyFailMessage(result) {
+    if (!result) return t('err_auth');
+    if (result.kind === 'NETWORK') return t('err_network');
+    if (result.kind === 'AUTH') return t('err_auth');
+    if (result.kind === 'QUOTA') return t('err_quota');
+    if (result.kind === 'NOT_ALLOWED') return t('err_not_allowed');
+    if (result.detail) return result.detail;
+    return t('key_verify_fail');
+  }
+
+  /**
+   * Parse → live verify (GET /v1/models) → save only on success.
+   * Shared by Key-tab save and onboard paste. Returns a Promise.
+   */
+  function verifyAndSaveKey(raw, opts) {
+    opts = opts || {};
+    var inputEl = opts.inputEl;
+    var errEl = opts.errEl;
+    var btnEl = opts.btnEl;
+    var busyLabel = t('key_verifying');
+    var idleLabel = t('key_verify');
+    function setBusy(on) {
+      if (!btnEl) return;
+      btnEl.disabled = !!on;
+      btnEl.textContent = on ? busyLabel : idleLabel;
+    }
+    function fail(msg) {
+      if (errEl) { errEl.textContent = msg; show(errEl, true); }
+      setBusy(false);
+      return false;
+    }
+    var k;
+    try {
+      k = A.parseKey(raw);
+    } catch (e) {
+      return Promise.resolve(fail(t('key_invalid_chars')));
+    }
+    if (errEl) show(errEl, false);
+    setBusy(true);
+    return A.verifyKey(k).then(function (result) {
+      if (!result || !result.ok) {
+        // Do not persist a rejected key; leave the pool / active key alone.
+        if (result && result.kind === 'AUTH') {
+          // If this exact key was already active, mark the badge red.
+          if (A.getKey() === k) {
+            A.store.set('key_block', 'auth');
+            renderKeyState();
+          }
+        }
+        return fail(verifyFailMessage(result));
+      }
+      A.saveKey(k);
+      A.store.remove('key_block');
+      A.store.set('key_saved_at', Date.now());
+      if (inputEl) inputEl.value = '';
+      if (errEl) show(errEl, false);
+      setBusy(false);
+      renderKeyState();
+      toast(t('key_verify_ok', A.keyHint(k)));
+      refreshBalance();
+      A.resumeOnLoad(k);
+      if (opts.onSuccess) opts.onSuccess(k);
+      return true;
+    }, function () {
+      return fail(t('err_network'));
+    });
+  }
+
   function bindKey() {
     $('key-show').addEventListener('change', function () {
       $('key-input').type = $('key-show').checked ? 'text' : 'password';
     });
     $('key-save').addEventListener('click', function () {
-      var err = $('key-error');
-      try {
-        var k = A.parseKey($('key-input').value);
-        A.saveKey(k);
-        A.store.remove('key_block');
-        A.store.set('key_saved_at', Date.now());
-        $('key-input').value = '';
-        show(err, false);
-        renderKeyState();
-        toast(t('key_saved', A.keyHint(k)));
-        refreshBalance();
-        A.resumeOnLoad(k);
-      } catch (e) {
-        err.textContent = t('key_invalid_chars');
-        show(err, true);
+      verifyAndSaveKey($('key-input').value, {
+        inputEl: $('key-input'),
+        errEl: $('key-error'),
+        btnEl: $('key-save')
+      });
+    });
+    $('key-input').addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        $('key-save').click();
       }
     });
     var list = $('key-pool-list');
@@ -476,6 +540,22 @@
   }
 
   // ---------------- onboarding ----------------
+  function focusOnboardKey() {
+    setTab('generate', true);
+    show($('onboard'), true);
+    var howto = $('gen-howto');
+    if (howto) show(howto, false);
+    var banner = $('nokey-banner');
+    if (banner) show(banner, false);
+    var card = $('onboard');
+    if (card) card.scrollIntoView({ block: 'start' });
+    var input = $('onboard-key-input');
+    if (input) {
+      input.focus();
+      try { input.select(); } catch (e) { /* ignore */ }
+    }
+  }
+
   function bindOnboard() {
     var done = A.store.get('onboarded', false);
     function syncHowto(onboardVisible) {
@@ -494,6 +574,7 @@
     $('onboard-dismiss').addEventListener('click', dismiss);
     var nokeyGoto = $('nokey-goto-keys');
     if (nokeyGoto) {
+      // After onboard is dismissed, Key-tab pool is the paste home.
       nokeyGoto.addEventListener('click', function () { setTab('key', true); $('key-input').focus(); });
     }
     // Header "使用提示 / Tips" brings the 4-step tip back (desktop: 使用提示 button in the header).
@@ -508,7 +589,36 @@
         $('onboard').scrollIntoView({ block: 'start' });
       });
     });
-    $('onboard-goto-keys').addEventListener('click', function () { setTab('key', true); $('key-input').focus(); });
+    // 「粘贴访问码」 focuses the inline onboard field (does not jump to Key tab).
+    $('onboard-goto-keys').addEventListener('click', function () { focusOnboardKey(); });
+    var showCb = $('onboard-key-show');
+    if (showCb) {
+      showCb.addEventListener('change', function () {
+        $('onboard-key-input').type = showCb.checked ? 'text' : 'password';
+      });
+    }
+    var verifyBtn = $('onboard-key-verify');
+    if (verifyBtn) {
+      verifyBtn.addEventListener('click', function () {
+        verifyAndSaveKey($('onboard-key-input').value, {
+          inputEl: $('onboard-key-input'),
+          errEl: $('onboard-key-error'),
+          btnEl: verifyBtn,
+          onSuccess: function () {
+            // Keep the tip visible so steps ②–④ stay in view; badge is already green.
+          }
+        });
+      });
+      var onboardInput = $('onboard-key-input');
+      if (onboardInput) {
+        onboardInput.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            verifyBtn.click();
+          }
+        });
+      }
+    }
   }
 
   // ---------------- generate form ----------------
@@ -1585,7 +1695,7 @@
 
   if (A && A.MOCK) {
     var s = document.createElement('script');
-    s.src = 'mock/mock.js?v=20261009-cta1';
+    s.src = 'mock/mock.js?v=20261015-KeyVerify';
     s.onload = boot;
     s.onerror = boot;
     document.head.appendChild(s);

@@ -477,6 +477,26 @@
     }).catch(function () { return 'blocked'; });
   }
 
+  /**
+   * Live-check a key the same way as desktop `pt_wan.py verify`:
+   * GET /v1/models with Bearer. Resolves { ok, kind?, detail?, http? }.
+   * ok only when HTTP 200. Never throws. Does not save the key.
+   */
+  function verifyKey(key) {
+    if (!key) return Promise.resolve({ ok: false, kind: 'AUTH', detail: '' });
+    return api('GET', '/v1/models', key, undefined, 15000).then(function (r) {
+      if (r.networkError) return { ok: false, kind: 'NETWORK', detail: r.error || '' };
+      if (r.code === 200) return { ok: true };
+      var kind = M.category(r.code || 400, r.body);
+      return {
+        ok: false,
+        kind: kind === 'AUTH' || kind === 'QUOTA' || kind === 'NOT_ALLOWED' ? kind : 'UNKNOWN',
+        detail: serverMessage(r.body),
+        http: r.code
+      };
+    });
+  }
+
   root.VSApi = {
     MOCK: MOCK,
     store: store,
@@ -487,6 +507,7 @@
     forgetKey: forgetKey,
     setActiveKey: setActiveKey,
     keyHint: keyHint,
+    verifyKey: verifyKey,
     api: api,
     loadTasks: loadTasks,
     getTask: getTask,

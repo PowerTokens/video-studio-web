@@ -10,13 +10,13 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261015-ShowcasePresets">
-<link rel="preload" href="js/i18n.js?v=20261015-ShowcasePresets" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261015-ShowcasePresets" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261015-ShowcasePresets" as="script">
-<link rel="preload" href="js/models.js?v=20261015-ShowcasePresets" as="script">
-<link rel="preload" href="js/api.js?v=20261015-ShowcasePresets" as="script">
-<link rel="preload" href="js/app.js?v=20261015-ShowcasePresets" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261015-KeyVerify">
+<link rel="preload" href="js/i18n.js?v=20261015-KeyVerify" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261015-KeyVerify" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261015-KeyVerify" as="script">
+<link rel="preload" href="js/models.js?v=20261015-KeyVerify" as="script">
+<link rel="preload" href="js/api.js?v=20261015-KeyVerify" as="script">
+<link rel="preload" href="js/app.js?v=20261015-KeyVerify" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -67,7 +67,18 @@
   <section id="panel-generate" class="panel" role="tabpanel">
     <section id="onboard" class="card onboard" hidden>
       <h3 class="card-title" data-i18n="onboard_title">四步开始</h3>
-      <p class="muted" data-i18n="onboard_step1">① 注册领取 100 积分（右上角）。到官网 Key 页复制一次访问码，再点「粘贴访问码」贴回本页。</p>
+      <p class="muted" data-i18n="onboard_step1">① 注册领取 100 积分（右上角）。到官网 Key 页复制一次访问码，粘贴到下方校验；成功后顶栏会变绿。</p>
+      <div class="onboard-key">
+        <label class="field-label" for="onboard-key-input" data-i18n="onboard_key_label">访问码</label>
+        <div class="key-row onboard-key-row">
+          <input type="password" id="onboard-key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="onboard_key_ph" placeholder="粘贴访问码（sk-…）">
+          <label class="check"><input type="checkbox" id="onboard-key-show"> <span data-i18n="key_show">显示</span></label>
+        </div>
+        <div class="actions onboard-key-actions">
+          <button type="button" class="btn btn-accent" id="onboard-key-verify" data-i18n="key_verify">校验并保存</button>
+        </div>
+        <p id="onboard-key-error" class="error" hidden></p>
+      </div>
       <p class="muted" data-i18n="onboard_step2">② 点上方预设卡片，或自己写一段视频描述</p>
       <p class="muted" data-i18n="onboard_step3">③ 在「生成参数」里选模型（Wan / Seedance / Kling 等）</p>
       <p class="muted" data-i18n="onboard_step4">④ 点击「生成视频」</p>
@@ -306,9 +317,9 @@
               <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph" placeholder="粘贴 Key（sk-…）">
               <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show">显示</span></label>
             </div>
-            <p class="muted small" data-i18n="paste_hint">保存后 Key 只存在这个浏览器里。</p>
+            <p class="muted small" data-i18n="paste_hint">校验通过后 Key 只存在这个浏览器里；无效 Key 不会写入。</p>
             <div class="actions">
-              <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_save">保存到 Key 池</button>
+              <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_verify">校验并保存</button>
               <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="key_quota_tip_btn">管理额度和有效期 →</a>
             </div>
             <p id="key-error" class="error" hidden></p>
@@ -356,12 +367,12 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 请先在「API Key」页添加 Key</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261015-ShowcasePresets"></script>
+<script src="js/i18n.js?v=20261015-KeyVerify"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261015-ShowcasePresets"></script>
-<script src="js/lang/en.js?v=20261015-ShowcasePresets"></script>
-<script src="js/models.js?v=20261015-ShowcasePresets"></script>
-<script src="js/api.js?v=20261015-ShowcasePresets"></script>
-<script src="js/app.js?v=20261015-ShowcasePresets"></script>
+<script src="js/lang/zh.js?v=20261015-KeyVerify"></script>
+<script src="js/lang/en.js?v=20261015-KeyVerify"></script>
+<script src="js/models.js?v=20261015-KeyVerify"></script>
+<script src="js/api.js?v=20261015-KeyVerify"></script>
+<script src="js/app.js?v=20261015-KeyVerify"></script>
 </body>
 </html>
