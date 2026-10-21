@@ -115,6 +115,30 @@
           <p class="muted small" data-i18n="prompt_desc">用自然语言描述画面、镜头、动作与声音。</p>
         </section>
 
+        <section class="card" id="gen-ff-card">
+          <h3 class="card-title" data-i18n="first_frame_label">首帧图片（可选）</h3>
+          <p class="muted small" id="gen-ff-tip" data-i18n="first_frame_tip">有产品图/分镜图？上传后更稳。</p>
+          <p class="muted small" id="gen-ff-unsupported" hidden data-i18n="first_frame_unsupported">当前模型仅支持文生视频，不使用首帧图片。</p>
+          <div id="gen-ff-controls">
+            <div class="ff-local">
+              <label class="btn btn-small" for="gen-ff-file"><span data-i18n="first_frame_pick">选择本地图片</span></label>
+              <input type="file" id="gen-ff-file" accept="image/*" class="sr-only">
+              <div id="gen-ff-preview" class="ff-preview" hidden>
+                <img id="gen-ff-img" alt="">
+                <span id="gen-ff-info" class="muted small"></span>
+                <button type="button" class="link" id="gen-ff-remove" data-i18n="first_frame_remove">移除图片</button>
+              </div>
+            </div>
+            <details class="ff-url-details" id="gen-ff-url-details">
+              <summary class="muted small" data-i18n="first_frame_url_summary">或粘贴公网图片链接</summary>
+              <label class="field-label sr-only" for="gen-ff-url" data-i18n="media_first_frame">首帧图片</label>
+              <input type="url" id="gen-ff-url" inputmode="url" autocomplete="off" data-i18n-ph="first_frame_url_ph" placeholder="https://… 公网图片链接">
+            </details>
+            <p id="gen-ff-note" class="badge badge-block badge-warn" hidden data-i18n="first_frame_wan_note">Wan 文档要求公网图片链接；本地图片会以内嵌图片提交，尚未用真实 Key 验证，失败时请改用公网链接。</p>
+            <p id="gen-ff-error" class="error" hidden></p>
+          </div>
+        </section>
+
         <section class="card">
           <h3 class="card-title" data-i18n="params_card">生成参数</h3>
           <p class="guide-tip" id="guide-tip-model" hidden><span class="guide-tip-num" aria-hidden="true">3</span><span data-i18n="onboard_step3">在这里选模型（Wan / Seedance / Kling 等）</span></p>
@@ -157,27 +181,6 @@
           <p id="gen-current" class="badge badge-block">Wan 3.0（wan3.0-video）</p>
           <p id="gen-current-params" class="muted small">5 秒 · 720p · 16:9</p>
           <p class="muted small" data-i18n="current_saved">完成后可在下方「任务进度」里播放和下载。</p>
-        </section>
-
-        <section class="card">
-          <h3 class="card-title" data-i18n="media_card">高级设置</h3>
-          <button type="button" class="link" id="adv-toggle" aria-expanded="false" aria-controls="adv-body">展开高级设置</button>
-          <div id="adv-body" class="adv-body" hidden>
-            <p class="muted small" data-i18n="media_card_desc">首帧图片：填公网图片链接，或从手机 / 电脑选一张图；不需要可留空。</p>
-            <label class="field-label" for="gen-ff-url" data-i18n="media_first_frame">首帧图片</label>
-            <input type="url" id="gen-ff-url" inputmode="url" autocomplete="off" data-i18n-ph="first_frame_url_ph" placeholder="https://… 公网图片链接">
-            <div class="ff-local">
-              <label class="btn btn-small" for="gen-ff-file"><span data-i18n="first_frame_pick">选择本地图片</span></label>
-              <input type="file" id="gen-ff-file" accept="image/*" class="sr-only">
-              <div id="gen-ff-preview" class="ff-preview" hidden>
-                <img id="gen-ff-img" alt="">
-                <span id="gen-ff-info" class="muted small"></span>
-                <button type="button" class="link" id="gen-ff-remove" data-i18n="first_frame_remove">移除图片</button>
-              </div>
-            </div>
-            <p id="gen-ff-note" class="badge badge-block badge-warn" hidden data-i18n="first_frame_wan_note">Wan 文档要求公网图片链接；本地图片会以内嵌图片提交，尚未用真实 Key 验证，失败时请改用公网链接。</p>
-            <p id="gen-ff-error" class="error" hidden></p>
-          </div>
         </section>
 
         <p class="batch-hint"><span data-i18n="batch_hint">要批量生成（Excel 导入、断点续跑）？</span> <a href="https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe" target="_blank" rel="noopener" data-href="desktop_download_url"><span data-i18n="batch_hint_link">下载桌面版</span> ↗</a></p>

@@ -242,7 +242,7 @@
         box.appendChild(b);
       });
     }
-    renderAdvToggle();
+    renderFirstFrameCard();
     renderModelDetailsBtn();
   }
 
@@ -697,13 +697,28 @@
     b.setAttribute('aria-expanded', openDetails.on ? 'true' : 'false');
   }
 
-  var advOpen = false;
-  function renderAdvToggle() {
-    var b = $('adv-toggle');
-    if (!b) return;
-    b.textContent = t(advOpen ? 'advanced_hide' : 'advanced_show');
-    b.setAttribute('aria-expanded', advOpen ? 'true' : 'false');
-    show($('adv-body'), advOpen);
+  function modelAllowsFirstFrame(m) {
+    var allowed = {
+      wan: 1, seedance: 1, kling: 1, vidu: 1, h3: 0, hailuo: 0
+    };
+    return !!allowed[m.family];
+  }
+
+  function renderFirstFrameCard() {
+    var m = M.getModel(gen.model);
+    var card = $('gen-ff-card');
+    if (!card) return;
+    var ok = modelAllowsFirstFrame(m);
+    card.classList.toggle('is-unsupported', !ok);
+    show($('gen-ff-unsupported'), !ok);
+    show($('gen-ff-tip'), ok);
+    show($('gen-ff-controls'), ok);
+    // Wan local-embed warning only when supported + local image present
+    show($('gen-ff-note'), ok && !!genImage && m.family === 'wan');
+    if (ok && $('gen-ff-url').value.trim()) {
+      var details = $('gen-ff-url-details');
+      if (details) details.open = true;
+    }
   }
 
   function renderCurrent() {
@@ -761,8 +776,7 @@
       n.textContent = M.formatAdjustNotice(m, genNotice.changes, modelLang());
       show(n, true);
     } else show(n, false);
-    // first frame note for Wan when a local image is used
-    show($('gen-ff-note'), !!genImage && m.family === 'wan');
+    renderFirstFrameCard();
     renderGenCost();
     renderCurrent();
   }
@@ -1040,7 +1054,6 @@
     });
     $('gen-res').addEventListener('change', function (e) { applyGenEdit('resolution', e.target.value); });
     $('gen-ratio').addEventListener('change', function (e) { applyGenEdit('ratio', e.target.value); });
-    $('adv-toggle').addEventListener('click', function () { advOpen = !advOpen; renderAdvToggle(); });
     $('gen-stop').addEventListener('click', function () {
       var id = A.store.get('last_single', null);
       if (id && A.isPolling(id)) A.stopPolling(id);
@@ -1130,9 +1143,12 @@
     var key = A.getKey();
     if (!key) { errBox.textContent = t('need_key'); show(errBox, true); return; }
     var media = [];
-    var ffUrl = $('gen-ff-url').value.trim();
-    if (genImage) media.push({ type: 'first_frame', url: genImage.dataUrl });
-    else if (ffUrl) media.push({ type: 'first_frame', url: ffUrl });
+    var mSpec = M.getModel(gen.model);
+    if (modelAllowsFirstFrame(mSpec)) {
+      var ffUrl = $('gen-ff-url').value.trim();
+      if (genImage) media.push({ type: 'first_frame', url: genImage.dataUrl });
+      else if (ffUrl) media.push({ type: 'first_frame', url: ffUrl });
+    }
     var prompt = $('gen-prompt').value;
     if (!prompt.trim() && !media.length) { errBox.textContent = t('need_prompt'); show(errBox, true); return; }
     var built;

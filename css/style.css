@@ -246,11 +246,16 @@ select option, select optgroup {
 .model-full { margin-top: 2px; }
 .model-full a { margin-right: 14px; }
 .cost { margin-top: 10px; }
-.adv-body { margin-top: 6px; }
-.adv-body .field-label { margin-top: 10px; }
-.ff-local { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
+.ff-local { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 4px; }
 .ff-preview { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ff-preview img { width: 56px; height: 56px; object-fit: cover; border: 1px solid var(--line); }
+.ff-url-details { margin-top: 10px; }
+.ff-url-details summary { cursor: pointer; list-style: none; }
+.ff-url-details summary::-webkit-details-marker { display: none; }
+.ff-url-details[open] summary { margin-bottom: 6px; }
+.ff-url-details input[type="url"] { width: 100%; }
+#gen-ff-card.is-unsupported #gen-ff-controls { display: none; }
+#gen-ff-card.is-unsupported #gen-ff-tip { display: none; }
 .batch-hint { font-size: 12.5px; color: var(--muted); margin: 0 4px 14px; }
 .batch-hint a { white-space: nowrap; }
 
