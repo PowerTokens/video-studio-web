@@ -1,7 +1,9 @@
 /*
  * Video model registry, limits, prices and request builders.
  * Ported from the desktop app (models.py on feat/multi-model, v1.12).
- * Prices are PowerTokens list prices checked on PRICE_CHECKED_DATE (USD per second, typical text-to-video).
+ * Prices are current PowerTokens without-video rates checked on PRICE_CHECKED_DATE (USD per second).
+ * A promo also stores the struck-through per-second rate and the unrounded Price (USD) per 1M tokens.
+ * discountPercent() is computed from that token pair (the ≈ per-second column is rounded).
  */
 (function (root) {
   'use strict';
@@ -9,7 +11,7 @@
   var API_BASE = 'https://api.powertokens.ai';
   // In-tool links use source=videostudio + medium=web (desktop app: videostudio/app; GitHub README/docs: github/oss).
   var UTM = 'utm_source=videostudio&utm_medium=web&utm_campaign=video-studio';
-  var PRICE_CHECKED_DATE = '2026-10-09';
+  var PRICE_CHECKED_DATE = '2026-10-21';
 
   function range(lo, hi) {
     var out = [];
@@ -76,6 +78,20 @@
       list_price_usd_per_second: { '480p': 0.068, '720p': 0.14, '1080p': 0.28 },
       _docs: 'ali/wan3.0-video-generation'
     }),
+    'dreamina-seedance-2-0-260128': spec({
+      id: 'dreamina-seedance-2-0-260128',
+      display_name: 'Seedance 2.0',
+      display_name_zh: 'Seedance 2.0',
+      short_name: 'seedance-20',
+      description_en: 'Seedance 2.0 is the full-quality model for text-to-video, image-to-video, and multimodal reference, with native audio. Clips are 4–15 seconds at 480p, 720p, 1080p, or 4K.',
+      description_zh: 'Seedance 2.0 为完整画质版本：支持文生、图生与多模态参考，带原生音频。时长 4–15 秒，支持 480p、720p、1080p 与 4K。',
+      family: 'seedance',
+      durations: range(4, 15),
+      resolutions: ['480p', '720p', '1080p', '4k'],
+      ratios: SEEDANCE_RATIOS,
+      list_price_usd_per_second: { '480p': 0.069, '720p': 0.152, '1080p': 0.375, '4k': 0.778 },
+      _docs: 'byteplus/dreamina-seedance-2-0-text-to-video'
+    }),
     'dreamina-seedance-2-0-fast-260128': spec({
       id: 'dreamina-seedance-2-0-fast-260128',
       display_name: 'Seedance 2.0 Fast',
@@ -87,8 +103,28 @@
       durations: range(4, 15),
       resolutions: ['480p', '720p'],
       ratios: SEEDANCE_RATIOS,
-      list_price_usd_per_second: { '480p': 0.121, '720p': 0.121 },
+      list_price_usd_per_second: { '480p': 0.061, '720p': 0.061 },
+      list_price_before_discount_usd_per_second: { '480p': 0.121, '720p': 0.121 },
+      price_usd_per_million_tokens: 2.8,
+      list_price_before_discount_usd_per_million_tokens: 5.6,
       _docs: 'byteplus/dreamina-seedance-2-0-fast-text-to-video'
+    }),
+    'dreamina-seedance-2-0-mini-260615': spec({
+      id: 'dreamina-seedance-2-0-mini-260615',
+      display_name: 'Seedance 2.0 Mini',
+      display_name_zh: 'Seedance 2.0 Mini',
+      short_name: 'seedance-20-mini',
+      description_en: 'Seedance 2.0 Mini prioritizes lower cost and faster turnaround for high-volume clips: text-to-video, image-to-video, and multimodal reference, with native audio. Clips are 4–15 seconds and top out at 720p (no 1080p).',
+      description_zh: 'Seedance 2.0 Mini 侧重更低成本与更快出片，适合大批量内容：支持文生、图生与多模态参考，带原生音频。时长 4–15 秒，最高 720p（不支持 1080p）。',
+      family: 'seedance',
+      durations: range(4, 15),
+      resolutions: ['480p', '720p'],
+      ratios: SEEDANCE_RATIOS,
+      list_price_usd_per_second: { '480p': 0.031, '720p': 0.031 },
+      list_price_before_discount_usd_per_second: { '480p': 0.076, '720p': 0.076 },
+      price_usd_per_million_tokens: 1.4,
+      list_price_before_discount_usd_per_million_tokens: 3.5,
+      _docs: 'byteplus/dreamina-seedance-2-0-mini-text-to-video'
     }),
     'dreamina-seedance-2-5-260628': spec({
       id: 'dreamina-seedance-2-5-260628',
@@ -128,7 +164,9 @@
   var MODEL_ORDER = [
     'wan3.0-video',
     'wan3.0-video-prime',
+    'dreamina-seedance-2-0-260128',
     'dreamina-seedance-2-0-fast-260128',
+    'dreamina-seedance-2-0-mini-260615',
     'dreamina-seedance-2-5-260628',
     'kling-v3'
   ];
@@ -144,8 +182,33 @@
     return m;
   }
 
+  function percentFromPair(now, before) {
+    if (typeof now !== 'number' || typeof before !== 'number') return 0;
+    if (!(before > now) || !(now > 0)) return 0;
+    return Math.round((1 - now / before) * 100);
+  }
+
+  /** Integer percent off, from the unrounded token price when present, else from per-second rates. 0 means no promo. */
+  function discountPercent(m) {
+    if (!m) return 0;
+    var fromTokens = percentFromPair(m.price_usd_per_million_tokens, m.list_price_before_discount_usd_per_million_tokens);
+    if (fromTokens) return fromTokens;
+    var beforeMap = m.list_price_before_discount_usd_per_second;
+    if (!beforeMap) return 0;
+    var best = 0;
+    Object.keys(m.list_price_usd_per_second).forEach(function (k) {
+      var pct = percentFromPair(m.list_price_usd_per_second[k], beforeMap[k]);
+      if (pct > best) best = pct;
+    });
+    return best;
+  }
+
   function listModels() {
-    return MODEL_ORDER.map(function (id) { return MODELS[id]; });
+    var all = MODEL_ORDER.map(function (id) { return MODELS[id]; });
+    var promo = [];
+    var rest = [];
+    all.forEach(function (m) { (discountPercent(m) > 0 ? promo : rest).push(m); });
+    return promo.concat(rest);
   }
 
   function label(m, lang) { return lang === 'zh' ? m.display_name_zh : m.display_name; }
@@ -491,6 +554,7 @@
     RES_RANK: RES_RANK,
     getModel: getModel,
     listModels: listModels,
+    discountPercent: discountPercent,
     label: label,
     description: description,
     summary: summary,

@@ -75,7 +75,7 @@
     var label = wrap.querySelector('.cselect-trigger-label');
     var menu = wrap.querySelector('.cselect-menu');
     var opt = sel.options[sel.selectedIndex];
-    label.textContent = opt ? opt.textContent : '';
+    fillChoiceLabel(label, opt);
     btn.disabled = !!sel.disabled;
     menu.innerHTML = '';
     Array.prototype.forEach.call(sel.options, function (o, idx) {
@@ -83,7 +83,7 @@
       li.setAttribute('role', 'option');
       li.setAttribute('aria-selected', o.selected ? 'true' : 'false');
       li.dataset.value = o.value;
-      li.textContent = o.textContent;
+      fillChoiceLabel(li, o);
       li.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -97,6 +97,14 @@
       });
       menu.appendChild(li);
     });
+  }
+
+  function fillChoiceLabel(node, opt) {
+    node.textContent = '';
+    if (!opt) return;
+    node.appendChild(el('span', 'cselect-label-text', opt.textContent));
+    var pct = opt.getAttribute('data-discount');
+    if (pct) node.appendChild(el('span', 'discount-badge', t('discount_badge', pct)));
   }
 
   function enhanceSelect(sel) {
@@ -662,6 +670,8 @@
       var rt = M.rangeText(m);
       var o = el('option', '', M.label(m, modelLang()) + ' · ' + t('model_limits', rt.seconds, rt.resolutions));
       o.value = m.id;
+      var pct = M.discountPercent(m);
+      if (pct) o.setAttribute('data-discount', String(pct));
       o.selected = m.id === gen.model;
       sel.appendChild(o);
     });
@@ -1183,14 +1193,18 @@
       cb.addEventListener('change', function () {
         if (cb.checked && cmp.models.indexOf(m.id) < 0) cmp.models.push(m.id);
         if (!cb.checked) cmp.models = cmp.models.filter(function (x) { return x !== m.id; });
-        cmp.models = M.MODEL_ORDER.filter(function (x) { return cmp.models.indexOf(x) >= 0; });
+        cmp.models = M.listModels().map(function (m) { return m.id; }).filter(function (x) { return cmp.models.indexOf(x) >= 0; });
         saveCmp();
         renderCmpModels();
         renderCmpParams();
       });
       item.appendChild(cb);
       var txt = el('span', 'check-text');
-      txt.appendChild(el('span', 'model-name', M.label(m, modelLang())));
+      var nameRow = el('span', 'model-name-row');
+      nameRow.appendChild(el('span', 'model-name', M.label(m, modelLang())));
+      var pct = M.discountPercent(m);
+      if (pct) nameRow.appendChild(el('span', 'discount-badge', t('discount_badge', pct)));
+      txt.appendChild(nameRow);
       var rt = M.rangeText(m);
       txt.appendChild(el('span', 'model-limits', t('model_limits', rt.seconds, rt.resolutions)));
       item.appendChild(txt);
@@ -1568,13 +1582,14 @@
     var opts = [];
     M.listModels().forEach(function (m) {
       if (m.family === 'kling') {
-        opts.push([m.id + '|kling_t2v', t('manual_kling_t2v')]);
-        opts.push([m.id + '|kling_i2v', t('manual_kling_i2v')]);
-      } else opts.push([m.id + '|unified', M.label(m, modelLang())]);
+        opts.push([m.id + '|kling_t2v', t('manual_kling_t2v'), 0]);
+        opts.push([m.id + '|kling_i2v', t('manual_kling_i2v'), 0]);
+      } else opts.push([m.id + '|unified', M.label(m, modelLang()), M.discountPercent(m)]);
     });
     opts.forEach(function (o) {
       var op = el('option', '', o[1]);
       op.value = o[0];
+      if (o[2]) op.setAttribute('data-discount', String(o[2]));
       op.selected = o[0] === cur;
       sel.appendChild(op);
     });
@@ -1715,7 +1730,7 @@
 
   if (A && A.MOCK) {
     var s = document.createElement('script');
-    s.src = 'mock/mock.js?v=20261015-GuideTips';
+    s.src = 'mock/mock.js?v=20261021-Seedance20';
     s.onload = boot;
     s.onerror = boot;
     document.head.appendChild(s);
