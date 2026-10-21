@@ -1715,7 +1715,7 @@
 
   if (A && A.MOCK) {
     var s = document.createElement('script');
-    s.src = 'mock/mock.js?v=20261015-GuideTips';
+    s.src = 'mock/mock.js?v=20261021-Seedance20';
     s.onload = boot;
     s.onerror = boot;
     document.head.appendChild(s);

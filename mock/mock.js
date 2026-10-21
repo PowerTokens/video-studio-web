@@ -33,7 +33,18 @@
   function rid() { return 'mock_' + Math.random().toString(36).slice(2, 12); }
 
   var WAN = ['wan3.0-video', 'wan3.0-video-prime'];
-  var SEEDANCE = ['dreamina-seedance-2-0-fast-260128', 'dreamina-seedance-2-5-260628'];
+  var SEEDANCE = [
+    'dreamina-seedance-2-0-260128',
+    'dreamina-seedance-2-0-fast-260128',
+    'dreamina-seedance-2-0-mini-260615',
+    'dreamina-seedance-2-5-260628'
+  ];
+  var SEEDANCE_SIZE = {
+    'dreamina-seedance-2-0-260128': /^(480p|720p|1080p|4k)$/,
+    'dreamina-seedance-2-0-fast-260128': /^(480p|720p|1080p)$/,
+    'dreamina-seedance-2-0-mini-260615': /^(480p|720p)$/,
+    'dreamina-seedance-2-5-260628': /^(480p|720p|1080p)$/
+  };
 
   function validate(path, b) {
     if (path === '/v1/videos') {
@@ -43,7 +54,8 @@
         return '';
       }
       if (SEEDANCE.indexOf(b.model) >= 0) {
-        if (!Array.isArray(b.media) || !b.media.length || !/^\d+$/.test(b.seconds) || !/^(480p|720p|1080p)$/.test(b.size) || b.watermark !== false) return 'seedance body shape';
+        var sizeRe = SEEDANCE_SIZE[b.model] || /^(480p|720p|1080p)$/;
+        if (!Array.isArray(b.media) || !b.media.length || !/^\d+$/.test(b.seconds) || !sizeRe.test(b.size) || b.watermark !== false) return 'seedance body shape';
         if (b.prompt !== undefined) return 'seedance must not send prompt';
         return '';
       }

@@ -240,7 +240,9 @@ VSI18n.register('zh', {
   // Model descriptions (keep in sync with the desktop app's models.py)
   model_desc_wan: "全能型 Wan 模型：文生视频、图生视频（首帧 / 首尾帧）与参考生视频，带原生音频。最长 30 秒，支持 480p–1080p，适合产品展示、口播与日常成片，作为默认选项。",
   model_desc_wan_prime: "能力与 Wan 3.0 相同（文生 / 图生 / 参考、最长 30 秒、480p–1080p、原生音频），端到端生成明显更快，适合更赶时间的出片。",
+  model_desc_seedance_20: "Seedance 2.0 为完整画质版本：支持文生、图生与多模态参考，带原生音频。时长 4–15 秒，支持 480p、720p、1080p 与 4K。",
   model_desc_seedance_fast: "Seedance 2.0 Fast 侧重速度，适合草稿与预览：支持文生、图生与多模态参考，带原生音频。时长 4–15 秒，最高 720p（不支持 1080p）。",
+  model_desc_seedance_20_mini: "Seedance 2.0 Mini 侧重更低成本与更快出片，适合大批量内容：支持文生、图生与多模态参考，带原生音频。时长 4–15 秒，最高 720p（不支持 1080p）。",
   model_desc_seedance_25: "Seedance 2.5 面向更长叙事与原生音频同步，最长 30 秒，支持 480p–1080p。文生、图生与多模态参考可用于保持场景与角色一致性。",
   model_desc_kling_v3: "Kling v3 支持文生视频与图生视频（首帧 / 尾帧），可选原生音频。时长 3–15 秒；可选 720p、1080p 或 4K 模式，需要更高输出分辨率时选用。",
   // Beginner preset cards + how-to (keep in sync with index.html data-i18n keys)
