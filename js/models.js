@@ -1,7 +1,9 @@
 /*
  * Video model registry, limits, prices and request builders.
  * Ported from the desktop app (models.py on feat/multi-model, v1.12).
- * Prices are PowerTokens list prices checked on PRICE_CHECKED_DATE (USD per second, typical text-to-video).
+ * Prices are current PowerTokens without-video rates checked on PRICE_CHECKED_DATE (USD per second).
+ * A promo also stores the struck-through per-second rate and the unrounded Price (USD) per 1M tokens.
+ * discountPercent() is computed from that token pair (the ≈ per-second column is rounded).
  */
 (function (root) {
   'use strict';
@@ -101,7 +103,10 @@
       durations: range(4, 15),
       resolutions: ['480p', '720p'],
       ratios: SEEDANCE_RATIOS,
-      list_price_usd_per_second: { '480p': 0.121, '720p': 0.121 },
+      list_price_usd_per_second: { '480p': 0.061, '720p': 0.061 },
+      list_price_before_discount_usd_per_second: { '480p': 0.121, '720p': 0.121 },
+      price_usd_per_million_tokens: 2.8,
+      list_price_before_discount_usd_per_million_tokens: 5.6,
       _docs: 'byteplus/dreamina-seedance-2-0-fast-text-to-video'
     }),
     'dreamina-seedance-2-0-mini-260615': spec({
@@ -116,6 +121,9 @@
       resolutions: ['480p', '720p'],
       ratios: SEEDANCE_RATIOS,
       list_price_usd_per_second: { '480p': 0.031, '720p': 0.031 },
+      list_price_before_discount_usd_per_second: { '480p': 0.076, '720p': 0.076 },
+      price_usd_per_million_tokens: 1.4,
+      list_price_before_discount_usd_per_million_tokens: 3.5,
       _docs: 'byteplus/dreamina-seedance-2-0-mini-text-to-video'
     }),
     'dreamina-seedance-2-5-260628': spec({
@@ -174,8 +182,33 @@
     return m;
   }
 
+  function percentFromPair(now, before) {
+    if (typeof now !== 'number' || typeof before !== 'number') return 0;
+    if (!(before > now) || !(now > 0)) return 0;
+    return Math.round((1 - now / before) * 100);
+  }
+
+  /** Integer percent off, from the unrounded token price when present, else from per-second rates. 0 means no promo. */
+  function discountPercent(m) {
+    if (!m) return 0;
+    var fromTokens = percentFromPair(m.price_usd_per_million_tokens, m.list_price_before_discount_usd_per_million_tokens);
+    if (fromTokens) return fromTokens;
+    var beforeMap = m.list_price_before_discount_usd_per_second;
+    if (!beforeMap) return 0;
+    var best = 0;
+    Object.keys(m.list_price_usd_per_second).forEach(function (k) {
+      var pct = percentFromPair(m.list_price_usd_per_second[k], beforeMap[k]);
+      if (pct > best) best = pct;
+    });
+    return best;
+  }
+
   function listModels() {
-    return MODEL_ORDER.map(function (id) { return MODELS[id]; });
+    var all = MODEL_ORDER.map(function (id) { return MODELS[id]; });
+    var promo = [];
+    var rest = [];
+    all.forEach(function (m) { (discountPercent(m) > 0 ? promo : rest).push(m); });
+    return promo.concat(rest);
   }
 
   function label(m, lang) { return lang === 'zh' ? m.display_name_zh : m.display_name; }
@@ -521,6 +554,7 @@
     RES_RANK: RES_RANK,
     getModel: getModel,
     listModels: listModels,
+    discountPercent: discountPercent,
     label: label,
     description: description,
     summary: summary,

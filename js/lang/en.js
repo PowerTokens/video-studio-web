@@ -42,6 +42,7 @@ VSI18n.register('en', {
   prompt_desc: 'Describe the scene, camera, action and sound in plain language.',
   model_label: 'Model',
   model_limits: '%s s · %s',
+  discount_badge: '-%d%',
   model_details: "Details",
   model_details_hide: "Hide details",
   model_price_link: 'Pricing & details ↗',

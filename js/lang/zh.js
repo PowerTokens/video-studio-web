@@ -42,6 +42,7 @@ VSI18n.register('zh', {
   prompt_desc: '用自然语言描述画面、镜头、动作与声音。',
   model_label: '模型',
   model_limits: '%s 秒 · %s',
+  discount_badge: '-%d%',
   model_details: "详情",
   model_details_hide: "收起详情",
   model_price_link: '价格与说明 ↗',
