@@ -326,7 +326,7 @@
           }
           if (ready) {
             readyNoUrl++;
-            if (family !== 'kling') {
+            if (family !== 'kling' && family !== 'h3' && family !== 'vidu') {
               return fetchContent(localId, key).then(function (ok) {
                 if (ok || ctl.stop) return;
                 if (readyNoUrl >= 3) return finish({ state: 'ready_no_url', status_raw: st, error: 'ready_no_url' });
@@ -354,7 +354,7 @@
   /** Fallback when the status has no URL: GET /v1/videos/{id}/content with the key. */
   function fetchContent(localId, key) {
     var rec = getTask(localId);
-    if (!rec || rec.family === 'kling') return Promise.resolve(false);
+    if (!rec || rec.family === 'kling' || rec.family === 'h3' || rec.family === 'vidu') return Promise.resolve(false);
     var url = apiUrl('/v1/videos/' + rec.task_id + '/content');
     return root.fetch(url, { headers: { Authorization: 'Bearer ' + key }, credentials: 'omit', referrerPolicy: 'no-referrer' })
       .then(function (res) {

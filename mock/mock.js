@@ -41,7 +41,7 @@
   ];
   var SEEDANCE_SIZE = {
     'dreamina-seedance-2-0-260128': /^(480p|720p|1080p|4k)$/,
-    'dreamina-seedance-2-0-fast-260128': /^(480p|720p|1080p)$/,
+    'dreamina-seedance-2-0-fast-260128': /^(480p|720p)$/,
     'dreamina-seedance-2-0-mini-260615': /^(480p|720p)$/,
     'dreamina-seedance-2-5-260628': /^(480p|720p|1080p)$/
   };
@@ -59,7 +59,24 @@
         if (b.prompt !== undefined) return 'seedance must not send prompt';
         return '';
       }
+      if (b.model === 'MiniMax-Hailuo-2.3') {
+        if (typeof b.prompt !== 'string' || !/^(6|10)$/.test(b.seconds) || !/^(768P|1080P)$/.test(b.size)) return 'hailuo body shape';
+        if (b.size === '1080P' && b.seconds !== '6') return 'hailuo 1080 only 6s';
+        return '';
+      }
       return 'unknown model ' + b.model;
+    }
+    if (path === '/minimax/v2/video_generation') {
+      if (b.model !== 'MiniMax-H3') return 'h3 model';
+      if (!Array.isArray(b.content) || !b.content.length || b.content[0].type !== 'text') return 'h3 content';
+      if (!/^(768P|2K)$/.test(b.resolution) || typeof b.duration !== 'number') return 'h3 params';
+      return '';
+    }
+    if (path === '/vidu/ent/v2/img2video' || path === '/vidu/ent/v2/reference2video') {
+      if (b.model !== 'viduq4-preview') return 'vidu model';
+      if (!Array.isArray(b.images) || !b.images.length) return 'vidu images';
+      if (typeof b.duration !== 'number') return 'vidu duration';
+      return '';
     }
     if (path.indexOf('/kling/v1/videos/') === 0) {
       if (b.model_name !== 'kling-v3' || !/^\d+$/.test(b.duration) || ['std', 'pro', '4k'].indexOf(b.mode) < 0 || b.sound !== 'on') return 'kling body shape';
@@ -75,7 +92,9 @@
   function promptOf(b) {
     if (typeof b.prompt === 'string') return b.prompt;
     var t = (b.media || []).filter(function (m) { return m.type === 'text'; })[0];
-    return t ? t.text : '';
+    if (t) return t.text;
+    var c = (b.content || []).filter(function (m) { return m.type === 'text'; })[0];
+    return c ? c.text : '';
   }
 
   function summarize(b) {
@@ -141,15 +160,21 @@
         }
         var id = rid();
         var kling = path.indexOf('/kling/') === 0;
-        s.tasks[id] = { created: Date.now(), kling: kling, prompt: prompt, model: body.model || body.model_name };
+        var h3 = path.indexOf('/minimax/') === 0;
+        var vidu = path.indexOf('/vidu/') === 0;
+        s.tasks[id] = { created: Date.now(), kling: kling, h3: h3, vidu: vidu, prompt: prompt, model: body.model || body.model_name };
         save(s);
         if (kling) return json(200, { code: 0, message: 'SUCCEED', request_id: 'mock', data: { task_id: id, task_status: 'submitted' } });
+        if (h3) return json(200, { task_id: id });
+        if (vidu) return json(200, { task_id: id, state: 'created', model: body.model });
         return json(200, { id: id, object: 'video', model: body.model, status: 'queued', progress: 0, created_at: Math.floor(Date.now() / 1000) });
       }
       // GET
       var content = /\/v1\/videos\/([^/]+)\/content$/.exec(path);
+      var h3q = /\/minimax\/v2\/query\/video_generation\/([^/]+)$/.exec(path);
+      var viduq = /\/vidu\/ent\/v2\/tasks\/([^/]+)\/creations$/.exec(path);
       var m = /\/([^/]+)$/.exec(path);
-      var tid = content ? content[1] : (m ? m[1] : '');
+      var tid = content ? content[1] : (h3q ? h3q[1] : (viduq ? viduq[1] : (m ? m[1] : '')));
       var task = s.tasks[tid];
       if (!task) return json(404, { error: { message: 'task not found' } });
       if (content) {
@@ -169,6 +194,17 @@
         var data = { task_id: tid, task_status: ks, task_status_msg: status === 'failed' ? 'mock: content check failed' : '' };
         if (status === 'succeeded') data.task_result = { videos: [{ id: 'v1', url: videoUrl, duration: '5' }] };
         return json(200, { code: 0, message: 'SUCCEED', data: data });
+      }
+      if (task.h3 || h3q) {
+        var ht = { id: tid, model: task.model, status: status };
+        if (status === 'succeeded') ht.content = { url: videoUrl };
+        return json(200, { task: ht });
+      }
+      if (task.vidu || viduq) {
+        var vs = { queued: 'queueing', in_progress: 'processing', succeeded: 'success', failed: 'failed' }[status] || status;
+        var vo = { state: vs, err_code: status === 'failed' ? 'generation_failed' : '', creations: [] };
+        if (status === 'succeeded') vo.creations = [{ id: 'c1', url: videoUrl }];
+        return json(200, vo);
       }
       var out = { id: tid, object: 'video', model: task.model, status: status, progress: progress };
       if (status === 'failed') out.error = { code: 'mock_failed', message: 'mock: content check failed' };
