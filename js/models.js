@@ -140,6 +140,60 @@
       list_price_usd_per_second: { '480p': 0.105, '720p': 0.232, '1080p': 0.569 },
       _docs: 'byteplus/dreamina-seedance-2-5-text-to-video'
     }),
+    'MiniMax-H3': spec({
+      id: 'MiniMax-H3',
+      display_name: 'MiniMax H3',
+      display_name_zh: 'MiniMax H3',
+      short_name: 'minimax-h3',
+      description_en: 'MiniMax H3 generates 4–15 second clips at 768p or 2K with text-to-video (Studio). Multimodal reference and image conditioning are available on the API; this build focuses on text-to-video.',
+      description_zh: 'MiniMax H3 支持 4–15 秒、768p 或 2K 的文生视频（Studio 当前）。API 另有图生与多模态参考；本版优先文生。',
+      family: 'h3',
+      durations: range(4, 15),
+      resolutions: ['768p', '2k'],
+      ratios: ['21:9', '16:9', '4:3', '1:1', '3:4', '9:16'],
+      list_price_usd_per_second: { '768p': 0.08, '2k': 0.13 },
+      default_resolution: '768p',
+      submit_path: '/minimax/v2/video_generation',
+      poll_kind: 'h3',
+      _docs: 'minimax/minimax-h3/text-to-video'
+    }),
+    'MiniMax-Hailuo-2.3': spec({
+      id: 'MiniMax-Hailuo-2.3',
+      display_name: 'Hailuo 2.3',
+      display_name_zh: 'Hailuo 2.3',
+      short_name: 'hailuo-23',
+      description_en: 'Hailuo 2.3 text-to-video at 768p or 1080p with fixed 6 or 10 second clips (1080p is 6 seconds only). Priced per clip on PowerTokens.',
+      description_zh: 'Hailuo 2.3 文生视频，支持 768p / 1080p，时长固定 6 或 10 秒（1080p 仅 6 秒）。PowerTokens 按条计费。',
+      family: 'hailuo',
+      durations: [6, 10],
+      resolutions: ['768p', '1080p'],
+      ratios: ['16:9'],
+      list_price_usd_per_second: { '768p': 0.044, '1080p': 0.078 },
+      // Flat per-clip prices (model page 2026-10-21); estimateCost uses these.
+      flat_price_usd: { '768p|6': 0.266, '768p|10': 0.532, '1080p|6': 0.466 },
+      default_duration: 6,
+      default_resolution: '768p',
+      supports_seed: false,
+      _docs: 'minimax/minimax-hailuo-2.3-text-to-video'
+    }),
+    'viduq4-preview': spec({
+      id: 'viduq4-preview',
+      display_name: 'Vidu Q4 Preview',
+      display_name_zh: 'Vidu Q4 Preview',
+      short_name: 'viduq4',
+      description_en: 'Vidu Q4 Preview (I2V / reference-to-video only — no text-only). Clips 3–16 seconds at 540p–4K with optional native audio. Attach a first frame or reference images to generate.',
+      description_zh: 'Vidu Q4 Preview（仅图生 / 参考生，不支持纯文生）。时长 3–16 秒，540p–4K，可选原生音频。请上传首帧或参考图后再生成。',
+      family: 'vidu',
+      durations: range(3, 16),
+      resolutions: ['540p', '720p', '1080p', '2k', '4k'],
+      ratios: ['16:9', '9:16', '1:1', '3:4', '4:3'],
+      list_price_usd_per_second: { '540p': 0.045, '720p': 0.095, '1080p': 0.120, '2k': 0.190, '4k': 0.390 },
+      default_duration: 5,
+      default_resolution: '720p',
+      submit_path: '/vidu/ent/v2/img2video',
+      poll_kind: 'vidu',
+      _docs: 'vidu/viduq4-preview-image-to-video'
+    }),
     'kling-v3': spec({
       id: 'kling-v3',
       display_name: 'kling v3',
@@ -168,10 +222,13 @@
     'dreamina-seedance-2-0-fast-260128',
     'dreamina-seedance-2-0-mini-260615',
     'dreamina-seedance-2-5-260628',
+    'MiniMax-H3',
+    'MiniMax-Hailuo-2.3',
+    'viduq4-preview',
     'kling-v3'
   ];
 
-  var RES_RANK = { '480p': 480, '720p': 720, '1080p': 1080, '4k': 2160 };
+  var RES_RANK = { '480p': 480, '540p': 540, '720p': 720, '768p': 768, '1080p': 1080, '2k': 1440, '4k': 2160 };
   var RATIO_ASPECT = {
     '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1, '4:3': 4 / 3, '3:4': 3 / 4, '21:9': 21 / 9, 'adaptive': null
   };
@@ -239,8 +296,9 @@
 
   function normalizeResolution(v) {
     v = String(v == null ? '' : v).trim().toLowerCase().replace(/ /g, '');
-    if (v === '720' || v === '1080' || v === '480') v += 'p';
+    if (v === '720' || v === '1080' || v === '480' || v === '540' || v === '768') v += 'p';
     if (v === '2160p' || v === '2160') v = '4k';
+    if (v === '1440p' || v === '1440') v = '2k';
     return v;
   }
 
@@ -361,14 +419,20 @@
   function estimateCost(duration, resolution, modelId) {
     var m = getModel(modelId);
     var r = normalizeResolution(resolution);
+    var d = toInt(duration);
+    if (m.family === 'hailuo' && m.flat_price_usd) {
+      var flat = m.flat_price_usd[r + '|' + d];
+      if (flat === undefined) throw new Error('resolution');
+      return { total: flat, perSecond: Math.round((flat / d) * 1000) / 1000 };
+    }
     var price = m.list_price_usd_per_second[r];
     if (price === undefined) throw new Error('resolution');
-    return { total: Math.round(toInt(duration) * price * 1000) / 1000, perSecond: price };
+    return { total: Math.round(d * price * 1000) / 1000, perSecond: price };
   }
 
   function rangeText(m) {
     var lo = m.durations[0], hi = m.durations[m.durations.length - 1];
-    var res = m.resolutions.map(function (r) { return r === '4k' ? '4K' : r; });
+    var res = m.resolutions.map(function (r) { return (r === '4k' || r === '2k') ? r.toUpperCase() : r; });
     return { seconds: lo + '–' + hi, resolutions: res.length > 1 ? res[0] + '–' + res[res.length - 1] : res[0] };
   }
 
@@ -383,8 +447,12 @@
     var allowed = {
       wan: ['first_frame', 'last_frame', 'reference_image', 'reference_video', 'reference_audio', 'file', 'link'],
       seedance: ['first_frame', 'last_frame', 'reference_image', 'reference_video', 'reference_audio'],
-      kling: ['first_frame', 'last_frame']
+      kling: ['first_frame', 'last_frame'],
+      h3: [],
+      hailuo: [],
+      vidu: ['first_frame', 'reference_image', 'reference_audio']
     }[m.family];
+    if (!allowed) allowed = [];
     media.forEach(function (item) {
       var url = item.url || '';
       if (/^https?:\/\//i.test(url)) {
@@ -422,6 +490,8 @@
     var ra = normalizeRatio(ratio, m.default_ratio);
     if (m.ratios.indexOf(ra) < 0) throw codeError('ratio_not_allowed');
     if (!prompt.trim() && !media.length) throw codeError('need_prompt_or_media');
+    if (m.family === 'vidu' && !media.length) throw codeError('vidu_need_image');
+    if (m.family === 'hailuo' && r === '1080p' && d !== 6) throw codeError('hailuo_1080_only_6s');
     validateMedia(m, media);
 
     if (m.family === 'wan') {
@@ -454,6 +524,61 @@
         pollKind: 'unified'
       };
     }
+    if (m.family === 'h3') {
+      if (media.length) throw codeError('model_t2v_only');
+      if (!prompt.trim()) throw codeError('need_prompt_or_media');
+      var h3res = r === '2k' ? '2K' : (r === '768p' ? '768P' : r.toUpperCase());
+      return {
+        body: {
+          model: m.id,
+          content: [{ type: 'text', text: prompt.trim() }],
+          resolution: h3res,
+          duration: d,
+          ratio: ra
+        },
+        submitPath: '/minimax/v2/video_generation',
+        pollKind: 'h3'
+      };
+    }
+    if (m.family === 'hailuo') {
+      if (media.length) throw codeError('model_t2v_only');
+      if (!prompt.trim()) throw codeError('need_prompt_or_media');
+      if (r === '1080p' && d !== 6) throw codeError('hailuo_1080_only_6s');
+      var hsize = r === '768p' ? '768P' : (r === '1080p' ? '1080P' : r.toUpperCase());
+      return {
+        body: { model: m.id, prompt: prompt.trim(), seconds: String(d), size: hsize },
+        submitPath: '/v1/videos',
+        pollKind: 'unified'
+      };
+    }
+    if (m.family === 'vidu') {
+      var vFirst = null, vRefs = [], vAudio = [];
+      media.forEach(function (x) {
+        if (x.type === 'first_frame' && vFirst === null) vFirst = x.url;
+        else if (x.type === 'reference_image') vRefs.push(x.url);
+        else if (x.type === 'reference_audio') vAudio.push(x.url);
+        else if (x.type === 'last_frame') throw codeError('vidu_media_limited');
+      });
+      if (!vFirst && !vRefs.length) throw codeError('vidu_need_image');
+      if (vFirst && vRefs.length) throw codeError('vidu_media_limited');
+      var vres = (r === '2k' || r === '4k') ? r.toUpperCase() : r;
+      var vbody = {
+        model: m.id,
+        duration: d,
+        resolution: vres,
+        audio: !!m.generate_audio_default
+      };
+      if (prompt.trim()) vbody.prompt = prompt.trim();
+      if (vFirst) {
+        vbody.images = [vFirst];
+        return { body: vbody, submitPath: '/vidu/ent/v2/img2video', pollKind: 'vidu' };
+      }
+      if (!prompt.trim()) throw codeError('need_prompt_or_media');
+      vbody.images = vRefs.slice(0, 15);
+      if (vAudio.length) vbody.sounds = vAudio.slice(0, 3);
+      vbody.aspect_ratio = ra;
+      return { body: vbody, submitPath: '/vidu/ent/v2/reference2video', pollKind: 'vidu' };
+    }
     // kling
     var mode = m.kling_mode_map[r];
     if (!mode) throw codeError('resolution_not_allowed');
@@ -482,6 +607,8 @@
     if (!/^[A-Za-z0-9_-]{1,200}$/.test(String(taskId || ''))) throw codeError('task_id_invalid');
     if (pollKind === 'kling_t2v') return '/kling/v1/videos/text2video/' + taskId;
     if (pollKind === 'kling_i2v') return '/kling/v1/videos/image2video/' + taskId;
+    if (pollKind === 'h3') return '/minimax/v2/query/video_generation/' + taskId;
+    if (pollKind === 'vidu') return '/vidu/ent/v2/tasks/' + taskId + '/creations';
     return '/v1/videos/' + taskId;
   }
 
@@ -491,6 +618,12 @@
     if (family === 'kling') {
       var data = body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data : {};
       id = data.task_id || body.task_id || body.id;
+    } else if (family === 'h3') {
+      var output = body.output && typeof body.output === 'object' && !Array.isArray(body.output) ? body.output : {};
+      id = body.task_id || output.task_id || body.id;
+      if (id != null) id = String(id);
+    } else if (family === 'vidu') {
+      id = body.task_id || body.id;
     } else {
       id = body.id || body.task_id;
     }
@@ -515,6 +648,29 @@
         if (typeof c === 'string' && c.indexOf('https://') === 0) url = c;
       }
       return { status: status, progress: null, url: url, message: String(data.task_status_msg || body.message || '') };
+    }
+    if (family === 'h3') {
+      var task = isObj(body.task) ? body.task : body;
+      var hraw = String(task.status || '').trim().toLowerCase();
+      var hmap = { pending: 'queued', queueing: 'queued', processing: 'in_progress', running: 'in_progress', succeed: 'succeeded', success: 'succeeded', succeeded: 'succeeded', failed: 'failed' };
+      var hstatus = hmap.hasOwnProperty(hraw) ? hmap[hraw] : hraw;
+      var hurl = '';
+      var hcontent = isObj(task.content) ? task.content : {};
+      var hc = hcontent.url || task.video_url || '';
+      if (typeof hc === 'string' && hc.indexOf('https://') === 0) hurl = hc;
+      return { status: hstatus, progress: null, url: hurl, message: String(task.message || body.message || '') };
+    }
+    if (family === 'vidu') {
+      var vraw = String(body.state || body.status || '').trim().toLowerCase();
+      var vmap = { created: 'queued', queueing: 'queued', processing: 'in_progress', success: 'succeeded', succeeded: 'succeeded', failed: 'failed' };
+      var vstatus = vmap.hasOwnProperty(vraw) ? vmap[vraw] : vraw;
+      var vurl = '';
+      var creations = Array.isArray(body.creations) ? body.creations : [];
+      if (creations.length && isObj(creations[0])) {
+        var vc = creations[0].url || '';
+        if (typeof vc === 'string' && vc.indexOf('https://') === 0) vurl = vc;
+      }
+      return { status: vstatus, progress: null, url: vurl, message: String(body.err_code || body.message || '') };
     }
     var st = String(body.status || '').trim().toLowerCase();
     var progress = body.progress === undefined || body.progress === null ? null : body.progress;

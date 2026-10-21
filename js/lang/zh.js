@@ -69,6 +69,10 @@ VSI18n.register('zh', {
   no_repeat_note: '提交后不会自动重复提交；刷新或关闭页面后，任务仍在云端继续，回来会接着查询原任务。',
   need_key: '请先在「API Key」页粘贴访问码（没有可先注册领 100 积分）。',
   need_prompt: '请先写一段视频描述，或填写首帧图片。',
+  vidu_need_image: 'Vidu Q4 需要首帧或参考图（不支持纯文生）。',
+  vidu_media_limited: 'Vidu Q4 仅支持首帧或参考图/参考音频。',
+  hailuo_1080_only_6s: 'Hailuo 2.3 在 1080p 仅支持 6 秒。',
+  model_t2v_only: '该模型当前仅支持文生视频（请先去掉参考图）。',
   result_title: '生成结果',
   result_empty: "提交后，进度和视频会显示在这里。",
   // Task states

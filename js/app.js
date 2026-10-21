@@ -1115,7 +1115,9 @@
   function errorText(code) {
     var map = {
       media_url_invalid: 'media_url_invalid', need_prompt_or_media: 'need_prompt',
-      duration_not_allowed: 'cost_invalid', resolution_not_allowed: 'cost_invalid', ratio_not_allowed: 'cost_invalid', duration_int: 'cost_invalid'
+      duration_not_allowed: 'cost_invalid', resolution_not_allowed: 'cost_invalid', ratio_not_allowed: 'cost_invalid', duration_int: 'cost_invalid',
+      vidu_need_image: 'vidu_need_image', vidu_media_limited: 'vidu_media_limited',
+      hailuo_1080_only_6s: 'hailuo_1080_only_6s', model_t2v_only: 'model_t2v_only'
     };
     return t(map[code] || 'cost_invalid');
   }
