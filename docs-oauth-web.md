@@ -19,9 +19,12 @@ https://powertokens.github.io/video-studio-web/oauth/callback.html
 
 ## SPA / Pages routing
 
-Tabs use hash routes (`#key`, `#generate`, …) on `/video-studio-web/`.
+Tabs use hash routes (`#generate`, `#key`, …) on `/video-studio-web/`.
 OAuth callback is a **real file** at `oauth/callback.html` (GitHub Pages 404s unknown paths).
-That page exchanges `code` + PKCE verifier, writes the session + API key into `localStorage`, then redirects to `/video-studio-web/#key`.
+That page exchanges `code` + PKCE verifier, writes the session + API key into `localStorage`, then redirects back into the SPA.
+
+**Default after login:** `/video-studio-web/#generate` (or bare `/video-studio-web/` which opens Generate).
+Return to `#key` **only** when the user started login from the Key tab (`vsw.oauth.return_hash`).
 
 ## Test notes
 
@@ -29,7 +32,7 @@ That page exchanges `code` + PKCE verifier, writes the session + API key into `l
 2. Open https://powertokens.github.io/video-studio-web/ (after deploy) or serve this branch locally.
 3. Click **登录 PowerTokens** / **Sign in with PowerTokens**.
 4. Complete login/consent on powertokens.ai; browser returns to `oauth/callback.html`.
-5. Expect redirect to `#key`, header shows name + credits, key pool has an active masked key.
+5. Expect redirect to `#generate` (or Key only if login was started from the Key tab); header shows name + credits; key pool has an active masked key.
 6. Generate a short clip to confirm the applied key works.
 7. **退出登录** / **Sign out** → revoke called; account chip clears; key can remain in pool (remove manually if desired).
 8. Negative: deny consent or break state → callback shows error + link back.

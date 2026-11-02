@@ -1509,13 +1509,14 @@
       var li = el('li', 'plan-item');
       var head = el('div', 'plan-head');
       head.appendChild(el('strong', '', M.label(p.spec, modelLang())));
-      head.appendChild(el('span', 'plan-params', t('param_seconds', p.duration) + ' · ' + resLabel(p.resolution) + ' · ' + ratioLabel(p.ratio) + ' · ' + t('compare_plan_cost', money(p.cost))));
+      head.appendChild(el('span', 'plan-params', t('param_seconds', p.duration) + ' · ' + resLabel(p.resolution) + ' · ' + ratioLabel(p.ratio) + ' · ' + t('compare_plan_cost', localeNum(M.estimateCreditsFromUsd(p.cost)), money(p.cost))));
       li.appendChild(head);
       if (p.notice) li.appendChild(el('div', 'badge', p.notice));
       list.appendChild(li);
     });
     var ok = plan.length >= MIN_CMP && plan.length <= MAX_CMP;
-    $('cmp-cost').textContent = ok ? t('compare_cost', money(total), plan.length) : t('compare_cost_invalid');
+    var totalCredits = M.estimateCreditsFromUsd(total);
+    $('cmp-cost').textContent = ok ? t('compare_cost', localeNum(totalCredits), money(total), plan.length) : t('compare_cost_invalid');
     $('cmp-submit').disabled = !ok || cmpBusy;
   }
 
@@ -1655,7 +1656,7 @@
     if (rec.duration) parts.push(t('param_seconds', rec.duration));
     if (rec.resolution) parts.push(resLabel(rec.resolution));
     if (rec.ratio) parts.push(ratioLabel(rec.ratio));
-    if (rec.cost !== null && rec.cost !== undefined && rec.cost !== '') parts.push(t('compare_plan_cost', money(rec.cost)));
+    if (rec.cost !== null && rec.cost !== undefined && rec.cost !== '') parts.push(t('compare_plan_cost', localeNum(M.estimateCreditsFromUsd(rec.cost)), money(rec.cost)));
     if (parts.length) card.appendChild(el('div', 'task-params', parts.join(' · ')));
     if (opts.showPrompt && rec.prompt) card.appendChild(el('div', 'task-prompt', rec.prompt));
 
@@ -1970,6 +1971,9 @@
       lang = saved && I.has(saved) ? saved : I.detectLanguage(navigator);
       document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
         b.addEventListener('click', function () { setTab(b.getAttribute('data-tab'), true); });
+      });
+      window.addEventListener('hashchange', function () {
+        setTab((location.hash || '').replace('#', '') || 'generate', false);
       });
       bindKey();
       bindOauth();
