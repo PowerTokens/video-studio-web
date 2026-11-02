@@ -10,15 +10,15 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261102-ChatPilot">
-<link rel="preload" href="js/i18n.js?v=20261102-ChatPilot" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261102-ChatPilot" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261102-ChatPilot" as="script">
-<link rel="preload" href="js/models.js?v=20261102-ChatPilot" as="script">
-<link rel="preload" href="js/api.js?v=20261102-ChatPilot" as="script">
-<link rel="preload" href="js/oauth.js?v=20261102-ChatPilot" as="script">
-<link rel="preload" href="js/chat-pilot.js?v=20261102-ChatPilot" as="script">
-<link rel="preload" href="js/app.js?v=20261102-ChatPilot" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261102-AccountLang">
+<link rel="preload" href="js/i18n.js?v=20261102-AccountLang" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261102-AccountLang" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261102-AccountLang" as="script">
+<link rel="preload" href="js/models.js?v=20261102-AccountLang" as="script">
+<link rel="preload" href="js/api.js?v=20261102-AccountLang" as="script">
+<link rel="preload" href="js/oauth.js?v=20261102-AccountLang" as="script">
+<link rel="preload" href="js/chat-pilot.js?v=20261102-AccountLang" as="script">
+<link rel="preload" href="js/app.js?v=20261102-AccountLang" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -32,17 +32,18 @@
       <span class="brand-name">PowerTokens Video Studio</span>
     </a>
     <div class="top-actions">
-      <div class="lang-switch" id="lang-switch" role="group" aria-label="Language"><button class="active" type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">English</button></div>
+      <div class="lang-switch" id="lang-switch" role="group" aria-label="Language"><select id="lang-select" aria-label="Language"></select></div>
     </div>
   </div>
   <div class="header-row sub-row">
     <div class="subtitle"><span data-i18n="subtitle">多模型 AI 视频生成 · 网页版</span></div>
-    <div class="header-actions">
+    <div class="header-actions account-cluster">
       <div id="oauth-account" class="oauth-account" hidden>
-        <span id="oauth-account-label" class="oauth-account-label"></span>
+        <span id="oauth-account-label" class="user-chip" title=""></span>
         <button type="button" id="oauth-logout" class="link link-small" data-i18n="oauth_logout">退出登录</button>
       </div>
-      <a id="billing-chip" class="btn-credits" href="https://powertokens.ai/zh-Hans/billing?utm_source=videostudio&utm_medium=web&utm_campaign=video-studio" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text">积分充值</span></a>
+      <a id="billing-chip" class="btn-credits credits-chip" href="https://powertokens.ai/zh-Hans/billing?utm_source=videostudio&utm_medium=web&utm_campaign=video-studio" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text">积分充值</span></a>
+      <span id="key-badge" class="key-status-pill is-soft header-key-pill" title="登录后自动填入 Key" aria-label="登录后自动填入 Key"><span class="key-status-dot key-status-dot-bad" aria-hidden="true"></span><span class="key-status-dot key-status-dot-warn" aria-hidden="true"></span><span class="key-status-dot key-status-dot-ok" aria-hidden="true"></span><span id="key-badge-text" class="key-status-text">去登录</span></span>
       <button type="button" id="header-oauth-login" class="btn btn-accent btn-small" data-i18n="oauth_login">登录 PowerTokens</button>
     </div>
   </div>
@@ -53,16 +54,15 @@
     <button role="tab" type="button" data-tab="chat" data-i18n="tab_chat" hidden>对话出片</button>
     <button role="tab" type="button" data-tab="generate" data-i18n="tab_generate">生成视频</button>
     <button role="tab" type="button" data-tab="tasks"><span data-i18n="tab_tasks">任务记录 / 恢复</span><span id="tasks-badge" class="badge-dot" hidden></span></button>
-    <button role="tab" type="button" data-tab="key"><span data-i18n="tab_key">API Key</span><span id="key-badge" class="key-status-pill is-soft" title="登录后自动填入 Key" aria-label="登录后自动填入 Key"><span class="key-status-dot key-status-dot-bad" aria-hidden="true"></span><span class="key-status-dot key-status-dot-warn" aria-hidden="true"></span><span class="key-status-dot key-status-dot-ok" aria-hidden="true"></span><span id="key-badge-text" class="key-status-text">去登录</span></span></button>
+    <button role="tab" type="button" data-tab="account" data-i18n="tab_account">账号</button>
   </div>
 </nav>
 
 <aside id="nokey-banner" class="nokey-banner" hidden>
   <div class="nokey-inner">
-    <p data-i18n="nokey_banner">先登录 PowerTokens，自动填入 API Key 并显示积分；登录后即可点预设生成。</p>
+    <p data-i18n="nokey_banner">请先点右上角「登录 PowerTokens」，自动填入 API Key 并显示积分；登录后即可点预设生成。</p>
     <div class="nokey-actions">
-      <button type="button" class="btn btn-accent btn-small" id="nokey-oauth-login" data-i18n="oauth_login">登录 PowerTokens</button>
-      <button type="button" class="link link-small" id="nokey-goto-keys" data-i18n="nokey_goto_keys">高级：到 API Key 页粘贴</button>
+      <button type="button" class="link link-small" id="nokey-goto-keys" data-i18n="nokey_goto_keys">高级：到账号页粘贴 Key</button>
     </div>
   </div>
 </aside>
@@ -234,28 +234,25 @@
     </section>
   </section>
 
-  <!-- ============ API Key ============ -->
-  <section id="panel-key" class="panel" role="tabpanel" hidden>
+  <!-- ============ Account / advanced key ============ -->
+  <section id="panel-account" class="panel" role="tabpanel" hidden>
     <div class="heading">
-      <h1 data-i18n="keys_title">API Key 管理</h1>
-      <p data-i18n="keys_desc">大多数人登录一次即可：默认 Key 与积分自动填入。已有 sk- Key 或多 Key 用户，再用右侧高级区粘贴进池子。</p>
+      <h1 data-i18n="account_title">账号</h1>
+      <p data-i18n="account_desc">登录后自动填入默认 Key 与积分。已有 sk- Key 或多 Key 用户，可在下方高级区粘贴进本浏览器。</p>
     </div>
     <div class="columns">
       <div class="col-left">
-        <section class="card oauth-login-card oauth-login-card--hero">
-          <p class="badge badge-soft" data-i18n="oauth_for_beginners">适合大多数用户</p>
-          <h3 class="card-title" data-i18n="oauth_card">登录 — Key 与积分自动填入</h3>
-          <p class="muted" data-i18n="oauth_card_desc">推荐路径：用 PowerTokens 账号登录一次。我们会把默认 API Key 保存在本浏览器，并显示昵称与积分，不必再复制粘贴。</p>
-          <button type="button" class="btn btn-accent btn-block" id="oauth-login-btn" data-i18n="oauth_login">登录 PowerTokens</button>
-          <button type="button" class="link link-small oauth-logout-secondary" id="oauth-logout-btn" data-i18n="oauth_logout" hidden>退出登录</button>
-          <p id="oauth-status" class="muted small" hidden></p>
+        <section class="card account-card">
+          <h3 class="card-title" data-i18n="account_card">登录状态</h3>
+          <p id="oauth-status" class="account-status muted" hidden></p>
           <p id="oauth-error" class="error" hidden></p>
-        </section>
-        <section class="card">
-          <h3 class="card-title" data-i18n="local_card">本机保存</h3>
+          <div class="account-actions">
+            <button type="button" class="btn btn-accent" id="oauth-login-btn" data-i18n="oauth_login">登录 PowerTokens</button>
+            <button type="button" class="link link-small" id="oauth-logout-btn" data-i18n="oauth_logout" hidden>退出登录</button>
+          </div>
+          <hr>
           <p class="badge" data-i18n="browser_badge">仅保存在这个浏览器</p>
           <p class="muted" data-i18n="key_privacy">Key 保存在这个浏览器的本地存储（localStorage）里，只会发送到 api.powertokens.ai，不经过任何其他服务器。在公用设备上用完请点对应 Key 的「忘记」。</p>
-          <hr>
           <p class="muted" data-i18n="no_repeat_key_note">任务已提交、网络超时或提交结果不明确时，不会自动重复生成。</p>
         </section>
       </div>
@@ -311,14 +308,16 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 登录 PowerTokens 即可开始</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261102-ChatPilot"></script>
+<script src="js/i18n.js?v=20261102-AccountLang"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261102-ChatPilot"></script>
-<script src="js/lang/en.js?v=20261102-ChatPilot"></script>
-<script src="js/models.js?v=20261102-ChatPilot"></script>
-<script src="js/api.js?v=20261102-ChatPilot"></script>
-<script src="js/oauth.js?v=20261102-ChatPilot"></script>
-<script src="js/chat-pilot.js?v=20261102-ChatPilot"></script>
-<script src="js/app.js?v=20261102-ChatPilot"></script>
+<script src="js/lang/zh.js?v=20261102-AccountLang"></script>
+<script src="js/lang/en.js?v=20261102-AccountLang"></script>
+<script src="js/lang/es.js?v=20261102-AccountLang"></script>
+<script src="js/lang/pt.js?v=20261102-AccountLang"></script>
+<script src="js/models.js?v=20261102-AccountLang"></script>
+<script src="js/api.js?v=20261102-AccountLang"></script>
+<script src="js/oauth.js?v=20261102-AccountLang"></script>
+<script src="js/chat-pilot.js?v=20261102-AccountLang"></script>
+<script src="js/app.js?v=20261102-AccountLang"></script>
 </body>
 </html>

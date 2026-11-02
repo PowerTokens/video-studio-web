@@ -37,7 +37,9 @@ body {
   color: var(--ink); background: var(--page); min-height: 100vh; display: flex; flex-direction: column;
 }
 /* English pages: Latin fonts first so quotes, apostrophes and middle dots don't take full-width CJK glyphs. */
-html:lang(en) body, html:lang(en) textarea, html:lang(en) input, html:lang(en) select, html:lang(en) button {
+html:lang(en) body, html:lang(en) textarea, html:lang(en) input, html:lang(en) select, html:lang(en) button,
+html:lang(es) body, html:lang(es) textarea, html:lang(es) input, html:lang(es) select, html:lang(es) button,
+html:lang(pt) body, html:lang(pt) textarea, html:lang(pt) input, html:lang(pt) select, html:lang(pt) button {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
 }
 a { color: var(--accent-link); text-decoration: none; }
@@ -63,16 +65,21 @@ p { margin: 0; }
 .subtitle .link { font-size: 12.5px; padding: 0 2px; }
 .header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 
-/* ---------- OAuth account chip ---------- */
+/* ---------- Account cluster (align PowerTokens console: name chip + credits pill) ---------- */
+.account-cluster { gap: 8px 10px; }
 .oauth-account {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   max-width: 100%;
 }
-.oauth-account-label {
-  font-size: 12.5px; font-weight: 600; color: var(--accent-text);
-  background: var(--pale); border: 1px solid #cfe6df; border-radius: 2px;
-  padding: 4px 10px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.user-chip, .oauth-account-label {
+  display: inline-flex; align-items: center;
+  font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+  background: #f3f7f6; border: 1px solid #d5e4df; border-radius: 999px;
+  padding: 5px 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.account-card .account-status { margin: 0 0 10px; font-size: 13.5px; line-height: 1.45; }
+.account-card .account-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 4px; }
+.header-key-pill { margin-left: 0; }
 .oauth-login-card .btn-block + .btn-block { margin-top: 8px; }
 .oauth-login-card--hero {
   border-color: #b9ddd4;
@@ -92,13 +99,15 @@ p { margin: 0; }
 }
 
 .top-actions { display: flex; align-items: center; gap: 4px; flex: none; }
-.lang-switch { display: flex; flex: none; }
-.lang-switch button, .lang-switch select {
-  font: inherit; font-size: 12.5px; border: 1px solid transparent; background: var(--white); color: var(--muted);
-  padding: 4px 8px; cursor: pointer; border-radius: 2px;
+.lang-switch { display: flex; flex: none; align-items: center; }
+.lang-switch select {
+  font: inherit; font-size: 12.5px; border: 1px solid var(--line); background: var(--white); color: var(--ink-2);
+  padding: 5px 28px 5px 10px; cursor: pointer; border-radius: 999px;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235f7388' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
 }
-.lang-switch button.active { background: var(--pale); color: var(--accent-text); }
-.lang-switch select { border-color: var(--line); }
+.lang-switch select:hover, .lang-switch select:focus { border-color: #b9ddd4; outline: none; }
 
 .badge {
   display: inline-block; background: var(--pale); color: var(--accent-text); padding: 6px 12px; font-size: 13px;
@@ -117,12 +126,15 @@ p { margin: 0; }
 }
 .link:hover { text-decoration: underline; }
 .link-small { font-size: 12px; padding: 0 2px; }
-.btn-credits {
-  font-size: 12.5px; color: var(--accent-text); border: 1px solid #bfe2da; background: var(--white);
-  padding: 4px 10px; border-radius: 2px; white-space: nowrap; font-weight: 600;
+.btn-credits, .credits-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12.5px; color: #0e8f85; border: 1px solid rgba(16, 182, 168, .35);
+  background: linear-gradient(180deg, #f3fcfa 0%, #eafaf7 100%);
+  padding: 5px 12px; border-radius: 999px; white-space: nowrap; font-weight: 650;
+  box-shadow: 0 1px 0 rgba(16, 182, 168, .08);
 }
-.btn-credits::after { content: " ↗"; font-weight: 400; }
-.btn-credits:hover { background: var(--hover); text-decoration: none; }
+.btn-credits::after, .credits-chip::after { content: " ↗"; font-weight: 500; opacity: .75; }
+.btn-credits:hover, .credits-chip:hover { background: #e2f7f3; text-decoration: none; border-color: rgba(16, 182, 168, .5); }
 
 
 /* ---------- empty-key login strip (under tabs) ---------- */
@@ -579,7 +591,7 @@ select option, select optgroup {
   .brand-name { font-size: 26px; }
   .sub-row { margin-top: 8px; flex-wrap: nowrap; }
   .subtitle { width: auto; font-size: 13.5px; display: block; }
-  .lang-switch button { font-size: 13.5px; padding: 6px 22px; }
+  .lang-switch select { font-size: 13.5px; padding: 6px 30px 6px 12px; }
   .header-actions { gap: 8px 14px; }
   .badge-btn, .btn-credits { font-size: 13.5px; padding: 6px 12px; }
   .tabs-inner { padding: 0 24px; }
