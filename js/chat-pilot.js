@@ -1,11 +1,14 @@
 /**
- * Chat-to-video pilot (MVP): glm-4.7-flash plans a clip, then fills classic Generate.
+ * Chat-to-video pilot (MVP): cheap chat models plan a clip, then fills classic Generate.
+ * Prefer glm-4.7-flash; on repeated upstream 429/1305 fall back to glm-4.5-air / deepseek-flash.
  * Toggle with ?pilot=chat (persist) or ?pilot=off. Keep classic Generate available.
  */
 (function (root) {
   'use strict';
 
-  var FLASH_MODEL = 'glm-4.7-flash';
+  // Prefer flash first; keep short allowlist of cheap chat models that support /v1/chat/completions.
+  var FLASH_MODELS = ['glm-4.7-flash', 'glm-4.5-air', 'deepseek-flash'];
+  var FLASH_MODEL = FLASH_MODELS[0];
   var STORE_FLAG = 'vsw.pilot.chat';
   var EXAMPLE_IDS = ['shopping', 'canyon', 'seal', 'locker'];
   var CHEAP_DEFAULT = {
@@ -253,56 +256,96 @@
     return content ? String(content) : '';
   }
 
-  function chatCompletionsOnce(apiMessages) {
+  function wantsThinkingDisabled(modelId) {
+    var id = String(modelId || '').toLowerCase();
+    // Zhipu GLM flash/air: default thinking can empty content or worsen load; disable when allowed.
+    return id.indexOf('glm-') === 0;
+  }
+
+  function chatCompletionsOnce(apiMessages, modelId) {
     var A = root.VSApi;
     var key = deps.getKey && deps.getKey();
+    var model = modelId || FLASH_MODEL;
     if (!A || !key) {
-      return Promise.resolve({ ok: false, kind: 'NO_KEY', detail: t('chat_need_login') });
+      return Promise.resolve({ ok: false, kind: 'NO_KEY', detail: t('chat_need_login'), model: model });
     }
     var body = {
-      model: FLASH_MODEL,
+      model: model,
       temperature: 0.4,
       max_tokens: 2048,
-      // glm-4.7-flash defaults thinking=on upstream; that often returns empty content
-      // or 429/1305 under load. Pilot only needs plain JSON text.
-      thinking: { type: 'disabled' },
       messages: [{ role: 'system', content: systemPrompt() }].concat(apiMessages)
     };
+    // glm-4.7-flash defaults thinking=on upstream; that often returns empty content
+    // or 429/1305 under load. Pilot only needs plain JSON text.
+    if (wantsThinkingDisabled(model)) body.thinking = { type: 'disabled' };
     return A.api('POST', '/v1/chat/completions', key, body, 60000).then(function (r) {
-      if (r.networkError) return { ok: false, kind: 'NETWORK', detail: r.error || t('chat_flash_network') };
+      if (r.networkError) {
+        return { ok: false, kind: 'NETWORK', detail: r.error || t('chat_flash_network'), model: model };
+      }
       if (r.code === 401 || r.code === 403) {
         return {
           ok: false,
           kind: 'AUTH',
           detail: formatHttpDetail(r.code, r.body) || (A.serverMessage ? A.serverMessage(r.body) : t('chat_flash_auth')),
-          http: r.code
+          http: r.code,
+          model: model
         };
       }
       if (r.code !== 200) {
-        return { ok: false, kind: 'HTTP', detail: formatHttpDetail(r.code, r.body), http: r.code };
+        return { ok: false, kind: 'HTTP', detail: formatHttpDetail(r.code, r.body), http: r.code, model: model };
       }
       var choice = r.body && r.body.choices && r.body.choices[0];
       var content = extractChoiceContent(choice);
-      if (!content) return { ok: false, kind: 'EMPTY', detail: t('chat_flash_empty'), http: 200 };
-      return { ok: true, content: content };
+      if (!content) return { ok: false, kind: 'EMPTY', detail: t('chat_flash_empty'), http: 200, model: model };
+      return { ok: true, content: content, model: model };
     });
   }
 
-  /** Retry transient upstream 429/1305 / empty / network a few times. */
+  /**
+   * Retry transient 429/1305 / empty / network with backoff, then fall through the
+   * cheap-model allowlist (glm-4.7-flash first).
+   */
   function chatCompletions(apiMessages) {
-    var attempts = 0;
-    var maxAttempts = 3;
-    var delays = [0, 1200, 2800];
+    var models = FLASH_MODELS.slice();
+    var modelIndex = 0;
+    var attemptOnModel = 0;
+    var maxAttemptsPerModel = 3;
+    // Longer backoff: upstream 1305 is capacity, not a quick blip.
+    var delays = [0, 1600, 4200];
 
     function next() {
-      var wait = delays[attempts] || 0;
-      attempts += 1;
-      var run = wait ? sleep(wait).then(function () { return chatCompletionsOnce(apiMessages); })
-        : chatCompletionsOnce(apiMessages);
+      var model = models[modelIndex] || FLASH_MODEL;
+      var wait = delays[attemptOnModel] || delays[delays.length - 1];
+      attemptOnModel += 1;
+      var run = wait ? sleep(wait).then(function () { return chatCompletionsOnce(apiMessages, model); })
+        : chatCompletionsOnce(apiMessages, model);
       return run.then(function (res) {
-        if (res.ok) return res;
-        if (attempts < maxAttempts && isRetryableFlash(res)) {
-          track('chat_flash_retry', { attempt: attempts, kind: res.kind || 'unknown', http: res.http || 0 });
+        if (res.ok) {
+          if (modelIndex > 0) {
+            track('chat_flash_fallback_ok', { model: model, from: models[0], attempt: attemptOnModel });
+          }
+          return res;
+        }
+        var retryable = isRetryableFlash(res);
+        if (retryable && attemptOnModel < maxAttemptsPerModel) {
+          track('chat_flash_retry', {
+            attempt: attemptOnModel,
+            kind: res.kind || 'unknown',
+            http: res.http || 0,
+            model: model
+          });
+          return next();
+        }
+        // Exhausted this model on capacity / transient errors → try next allowlisted id.
+        if (retryable && modelIndex < models.length - 1) {
+          track('chat_flash_fallback', {
+            from: model,
+            to: models[modelIndex + 1],
+            kind: res.kind || 'unknown',
+            http: res.http || 0
+          });
+          modelIndex += 1;
+          attemptOnModel = 0;
           return next();
         }
         return res;
