@@ -110,10 +110,7 @@ p { margin: 0; }
 .btn-credits:hover { background: var(--hover); text-decoration: none; }
 
 
-/* ---------- empty-key signup strip (under tabs) ---------- */
-.header-signup { text-decoration: none; font-weight: 600; }
-.header-signup::after { content: " ↗"; font-weight: 400; }
-.header-signup:hover { text-decoration: none; }
+/* ---------- empty-key login strip (under tabs) ---------- */
 .nokey-banner {
   background: var(--pale); border-bottom: 1px solid #cfe6df;
 }

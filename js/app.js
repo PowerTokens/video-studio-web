@@ -514,7 +514,7 @@
     var panelLogin = $('oauth-login-btn');
     var panelLogout = $('oauth-logout-btn');
     var status = $('oauth-status');
-    var getKey = $('header-get-key');
+    var nokeyLogin = $('nokey-oauth-login');
     var profile = O && O.getProfile ? O.getProfile() : null;
     var loggedIn = !!(profile && O && O.getAccessToken && O.getAccessToken());
     if (!loggedIn && profile && O && !O.getAccessToken()) {
@@ -525,7 +525,7 @@
     var signed = !!profile;
     if (box) show(box, signed);
     if (loginBtn) show(loginBtn, !signed);
-    if (getKey) show(getKey, !signed);
+    if (nokeyLogin) show(nokeyLogin, !signed);
     if (panelLogin) show(panelLogin, !signed);
     if (panelLogout) show(panelLogout, signed);
     if (label) {
@@ -554,7 +554,7 @@
   }
 
   function setOauthBusy(on) {
-    ['header-oauth-login', 'oauth-login-btn', 'oauth-logout', 'oauth-logout-btn'].forEach(function (id) {
+    ['header-oauth-login', 'oauth-login-btn', 'nokey-oauth-login', 'oauth-logout', 'oauth-logout-btn'].forEach(function (id) {
       var el = $(id);
       if (!el) return;
       el.disabled = !!on;
@@ -602,14 +602,28 @@
     });
   }
 
+
+  function promptForKeyOrLogin() {
+    var profile = O && O.getProfile ? O.getProfile() : null;
+    if (!profile) {
+      toast(t('need_key'));
+      startOauthLogin();
+      return;
+    }
+    toast(t('need_key'));
+    setTab('key', true);
+  }
+
   function bindOauth() {
     if (!O) return;
     var headerLogin = $('header-oauth-login');
     var panelLogin = $('oauth-login-btn');
+    var nokeyLogin = $('nokey-oauth-login');
     var headerLogout = $('oauth-logout');
     var panelLogout = $('oauth-logout-btn');
     if (headerLogin) headerLogin.addEventListener('click', startOauthLogin);
     if (panelLogin) panelLogin.addEventListener('click', startOauthLogin);
+    if (nokeyLogin) nokeyLogin.addEventListener('click', startOauthLogin);
     if (headerLogout) headerLogout.addEventListener('click', doOauthLogout);
     if (panelLogout) panelLogout.addEventListener('click', doOauthLogout);
   }
@@ -769,7 +783,7 @@
     if (expandBtn) expandBtn.addEventListener('click', expand);
     var nokeyGoto = $('nokey-goto-keys');
     if (nokeyGoto) {
-      // Expand tip ① and focus paste (Key tab pool still available too).
+      // Advanced path: expand tip ① and focus paste (Key tab pool still available too).
       nokeyGoto.addEventListener('click', function () { focusOnboardKey(); });
     }
     // Header "使用提示 / Tips" expands tip ① + contextual tip bars anytime.
@@ -1674,7 +1688,7 @@
       rs.type = 'button';
       rs.addEventListener('click', function () {
         var key = A.getKey();
-        if (!key) { toast(t('need_key')); setTab('key', true); return; }
+        if (!key) { promptForKeyOrLogin(); return; }
         A.update(rec.local_id, { state: 'queued', error: '', error_detail: '' });
         A.startPolling(rec.local_id, key);
       });
@@ -1781,7 +1795,7 @@
     // 刷新: query every unfinished task again (never resubmits).
     $('tasks-refresh').addEventListener('click', function () {
       var key = A.getKey();
-      if (!key) { toast(t('need_key')); setTab('key', true); return; }
+      if (!key) { promptForKeyOrLogin(); return; }
       A.loadTasks().forEach(function (r) {
         if (r.task_id && ['queued', 'running', 'stopped', 'timeout', 'query_down', 'ready_no_url'].indexOf(r.state) >= 0 && !A.isPolling(r.local_id)) {
           A.update(r.local_id, { state: 'queued', error: '', error_detail: '' });
