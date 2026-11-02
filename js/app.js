@@ -7,9 +7,6 @@
   var O = window.VSOauth;
 
   var lang = 'en';
-  var MIN_CMP = 2, MAX_CMP = 3;
-  var ALL_RES = ['480p', '720p', '1080p', '4k'];
-  var ALL_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'];
   var EXAMPLE_IDS = ['shopping', 'canyon', 'seal', 'locker'];
   /** Recommended model per example preset. null = any model (do not change Settings). */
   var EXAMPLE_MODELS = {
@@ -56,7 +53,7 @@
 
 
   // White + teal custom selects (replace OS cement-gray dropdown chrome).
-  var CSELECT_IDS = ['gen-model', 'gen-res', 'gen-ratio', 'cmp-res', 'cmp-ratio', 'manual-kind'];
+  var CSELECT_IDS = ['gen-model', 'gen-res', 'gen-ratio', 'manual-kind'];
   var openCSelect = null;
 
   function closeCSelect() {
@@ -256,8 +253,6 @@
     renderCredits();
     renderGenModels();
     renderGenParams(false);
-    renderCmpModels();
-    renderCmpParams();
     renderResults();
     renderTasks();
     renderManualKinds();
@@ -266,16 +261,20 @@
   }
 
   // ---------------- tabs ----------------
-  var TABS = ['generate', 'compare', 'batch', 'tasks', 'key'];
+  var TABS = ['generate', 'tasks', 'key'];
   function setTab(name, push) {
-    if (TABS.indexOf(name) < 0) name = 'generate';
+    var invalid = TABS.indexOf(name) < 0;
+    if (invalid) name = 'generate';
     TABS.forEach(function (n) { show($('panel-' + n), n === name); });
     document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
       var on = b.getAttribute('data-tab') === name;
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    if (push && history.replaceState) history.replaceState(null, '', location.pathname + location.search + (name === 'generate' ? '' : '#' + name));
+    // push=true updates URL; also clear dead hashes (#batch / #compare) when falling back.
+    if ((push || invalid) && history.replaceState) {
+      history.replaceState(null, '', location.pathname + location.search + (name === 'generate' ? '' : '#' + name));
+    }
     window.scrollTo(0, 0);
   }
 
@@ -977,34 +976,28 @@
 
   // ---------------- examples ----------------
   function renderExamples() {
-    [['gen-example-chips', 'gen'], ['cmp-example-chips', 'cmp']].forEach(function (pair) {
-      var box = $(pair[0]);
-      if (!box) return;
-      box.innerHTML = '';
-      EXAMPLE_IDS.forEach(function (id) {
-        var label = t('example_' + id + '_label');
-        var blurb = t('example_' + id + '_blurb');
-        var b = el('button', 'example-chip example-preset');
-        b.type = 'button';
-        var family = EXAMPLE_FAMILIES[id];
-        b.appendChild(el('span', 'chip-title', label));
-        if (blurb && blurb.indexOf('example_') !== 0) {
-          b.appendChild(el('span', 'preset-blurb', blurb));
-        }
-        // All Generate presets are Wan 3.0 — no family badge/logo on chips.
-        b.setAttribute('data-example', id);
-        b.setAttribute('data-target', pair[1]);
-        if (family) b.setAttribute('data-family', family);
-        b.title = t('example_' + id + '_prompt');
-        b.setAttribute('aria-pressed', 'false');
-        b.addEventListener('click', function () { applyExample(id, pair[1], b); });
-        box.appendChild(b);
-      });
+    var box = $('gen-example-chips');
+    if (!box) return;
+    box.innerHTML = '';
+    EXAMPLE_IDS.forEach(function (id) {
+      var label = t('example_' + id + '_label');
+      var blurb = t('example_' + id + '_blurb');
+      var b = el('button', 'example-chip example-preset');
+      b.type = 'button';
+      var family = EXAMPLE_FAMILIES[id];
+      b.appendChild(el('span', 'chip-title', label));
+      if (blurb && blurb.indexOf('example_') !== 0) {
+        b.appendChild(el('span', 'preset-blurb', blurb));
+      }
+      // All Generate presets are Wan 3.0 — no family badge/logo on chips.
+      b.setAttribute('data-example', id);
+      b.setAttribute('data-target', 'gen');
+      if (family) b.setAttribute('data-family', family);
+      b.title = t('example_' + id + '_prompt');
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', function () { applyExample(id, 'gen', b); });
+      box.appendChild(b);
     });
-    var drama = $('batch-sample-drama');
-    var product = $('batch-sample-product');
-    if (drama) drama.href = t('batch_sample_drama_url');
-    if (product) product.href = t('batch_sample_product_url');
     // Keep Generate chip selected across i18n re-renders.
     if (previewPresetId) {
       var activeBtn = document.querySelector('#gen-example-chips .example-chip[data-example="' + previewPresetId + '"]');
@@ -1013,7 +1006,7 @@
   }
 
   function setExampleActive(target, btn) {
-    var sel = target === 'cmp' ? '#cmp-example-chips .example-chip' : '#gen-example-chips .example-chip';
+    var sel = '#gen-example-chips .example-chip';
     document.querySelectorAll(sel).forEach(function (n) {
       var on = btn && n === btn;
       n.classList.toggle('active', on);
@@ -1059,18 +1052,6 @@
   function applyExampleSpecs(id, target) {
     var spec = EXAMPLE_SPECS[id];
     if (!spec) return;
-    if (target === 'cmp') {
-      if (spec.duration != null) {
-        cmp.duration = spec.duration;
-        var elDur = $('cmp-duration');
-        if (elDur) elDur.value = spec.duration;
-      }
-      if (spec.ratio != null) cmp.ratio = spec.ratio;
-      if (spec.resolution != null) cmp.resolution = spec.resolution;
-      saveCmp();
-      renderCmpParams();
-      return;
-    }
     var m = M.getModel(gen.model);
     var s = M.snapParams(
       m,
@@ -1084,23 +1065,6 @@
     genNotice = s.changes.length ? { model: gen.model, changes: s.changes } : '';
     saveGen();
     renderGenParams();
-  }
-
-  function applyInferredDuration(prompt, id, target) {
-    var d = inferPromptDuration(prompt);
-    if (d === null && EXAMPLE_SPECS[id] && EXAMPLE_SPECS[id].duration != null) {
-      d = EXAMPLE_SPECS[id].duration;
-    }
-    if (d === null) return;
-    if (target === 'cmp') {
-      cmp.duration = d;
-      var elDur = $('cmp-duration');
-      if (elDur) elDur.value = d;
-      saveCmp();
-      renderCmpParams();
-    } else {
-      applyGenEdit('duration', d);
-    }
   }
 
   /** After filling a long prompt, show the start (browsers often jump to the end). */
@@ -1119,7 +1083,7 @@
 
   /** After filling a preset, bring Settings / Generate into view on short viewports. */
   function scrollParamsIntoView(target) {
-    var anchor = target === 'cmp' ? $('cmp-submit') : $('gen-submit');
+    var anchor = $('gen-submit');
     if (!anchor) return;
     var card = anchor.closest ? anchor.closest('.card') : null;
     var el = card || anchor;
@@ -1129,43 +1093,28 @@
   function applyExample(id, target, btn) {
     var wasActive = btn && btn.classList.contains('active');
     if (wasActive) {
-      if (target === 'cmp') {
-        $('cmp-prompt').value = '';
-        cmp.prompt = '';
-        saveCmp();
-        showPromptStart($('cmp-prompt'));
-      } else {
-        $('gen-prompt').value = '';
-        gen.prompt = '';
-        saveGen();
-        showPromptStart($('gen-prompt'));
-        previewPresetId = null;
-        renderResults();
-      }
+      $('gen-prompt').value = '';
+      gen.prompt = '';
+      saveGen();
+      showPromptStart($('gen-prompt'));
+      previewPresetId = null;
+      renderResults();
       setExampleActive(target, null);
       return;
     }
 
     var prompt = t('example_' + id + '_prompt');
-    if (target === 'cmp') {
-      $('cmp-prompt').value = prompt;
-      cmp.prompt = prompt;
-      saveCmp();
-      setExampleActive(target, btn);
-      showPromptStart($('cmp-prompt'));
-    } else {
-      $('gen-prompt').value = prompt;
-      gen.prompt = prompt;
-      saveGen();
-      setExampleActive(target, btn);
-      var modelId = EXAMPLE_MODELS[id];
-      if (modelId && M.MODELS[modelId] && gen.model !== modelId) {
-        selectGenModel(modelId);
-      }
-      showPromptStart($('gen-prompt'));
-      previewPresetId = id;
-      renderResults();
+    $('gen-prompt').value = prompt;
+    gen.prompt = prompt;
+    saveGen();
+    setExampleActive(target, btn);
+    var modelId = EXAMPLE_MODELS[id];
+    if (modelId && M.MODELS[modelId] && gen.model !== modelId) {
+      selectGenModel(modelId);
     }
+    showPromptStart($('gen-prompt'));
+    previewPresetId = id;
+    renderResults();
     // Match Settings to showcase prompt specs (duration / ratio / resolution), then snap to model.
     applyExampleSpecs(id, target);
     scrollParamsIntoView(target);
@@ -1378,139 +1327,6 @@
     if (pending) { A.store.set('last_single', pending.local_id); renderResults(); }
     var pc = $('progress-card');
     if (pc.scrollIntoView) pc.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }
-
-  // ---------------- compare ----------------
-  var cmp = A.store.get('cmp_form', null) || {};
-  cmp = {
-    models: Array.isArray(cmp.models) && cmp.models.length ? cmp.models.filter(function (x) { return M.MODELS[x]; }) : ['wan3.0-video', 'dreamina-seedance-2-0-fast-260128'],
-    duration: cmp.duration || 5,
-    resolution: cmp.resolution || '720p',
-    ratio: cmp.ratio || '16:9',
-    prompt: cmp.prompt || ''
-  };
-  function saveCmp() { A.store.set('cmp_form', cmp); }
-
-  function renderCmpModels() {
-    var box = $('cmp-models');
-    box.innerHTML = '';
-    M.listModels().forEach(function (m) {
-      var on = cmp.models.indexOf(m.id) >= 0;
-      var item = el('label', 'check-item' + (on ? ' selected' : ''));
-      var cb = el('input');
-      cb.type = 'checkbox';
-      cb.value = m.id;
-      cb.checked = on;
-      cb.disabled = !on && cmp.models.length >= MAX_CMP;
-      cb.addEventListener('change', function () {
-        if (cb.checked && cmp.models.indexOf(m.id) < 0) cmp.models.push(m.id);
-        if (!cb.checked) cmp.models = cmp.models.filter(function (x) { return x !== m.id; });
-        cmp.models = M.listModels().map(function (m) { return m.id; }).filter(function (x) { return cmp.models.indexOf(x) >= 0; });
-        saveCmp();
-        renderCmpModels();
-        renderCmpParams();
-      });
-      item.appendChild(cb);
-      var txt = el('span', 'check-text');
-      var nameRow = el('span', 'model-name-row');
-      nameRow.appendChild(el('span', 'model-name', M.label(m, modelLang())));
-      var pct = M.discountPercent(m);
-      if (pct) nameRow.appendChild(el('span', 'discount-badge', t('discount_badge', pct)));
-      txt.appendChild(nameRow);
-      var rt = M.rangeText(m);
-      txt.appendChild(el('span', 'model-limits', t('model_limits', rt.seconds, rt.resolutions)));
-      item.appendChild(txt);
-      box.appendChild(item);
-    });
-  }
-
-  function cmpPlan() {
-    return cmp.models.map(function (id) {
-      var m = M.getModel(id);
-      var s = M.snapParams(m, cmp.duration, cmp.resolution, cmp.ratio);
-      return {
-        model: id, spec: m, duration: s.duration, resolution: s.resolution, ratio: s.ratio, changes: s.changes,
-        notice: M.formatAdjustNotice(m, s.changes, modelLang()),
-        cost: M.estimateCost(s.duration, s.resolution, id).total
-      };
-    });
-  }
-
-  function renderCmpParams() {
-    $('cmp-duration').value = cmp.duration;
-    fillResSelect($('cmp-res'), ALL_RES, cmp.resolution);
-    fillSelect($('cmp-ratio'), ALL_RATIOS, cmp.ratio);
-    var list = $('cmp-plan');
-    list.innerHTML = '';
-    var plan = cmpPlan();
-    var total = 0;
-    plan.forEach(function (p) {
-      total += p.cost;
-      var li = el('li', 'plan-item');
-      var head = el('div', 'plan-head');
-      head.appendChild(el('strong', '', M.label(p.spec, modelLang())));
-      head.appendChild(el('span', 'plan-params', t('param_seconds', p.duration) + ' · ' + resLabel(p.resolution) + ' · ' + ratioLabel(p.ratio) + ' · ' + t('compare_plan_cost', localeNum(M.estimateCreditsFromUsd(p.cost)), money(p.cost))));
-      li.appendChild(head);
-      if (p.notice) li.appendChild(el('div', 'badge', p.notice));
-      list.appendChild(li);
-    });
-    var ok = plan.length >= MIN_CMP && plan.length <= MAX_CMP;
-    var totalCredits = M.estimateCreditsFromUsd(total);
-    $('cmp-cost').textContent = ok ? t('compare_cost', localeNum(totalCredits), money(total), plan.length) : t('compare_cost_invalid');
-    $('cmp-submit').disabled = !ok || cmpBusy;
-  }
-
-  var cmpBusy = false;
-  function bindCmp() {
-    var prompt = $('cmp-prompt');
-    prompt.value = cmp.prompt;
-    prompt.addEventListener('input', function () { cmp.prompt = prompt.value; saveCmp(); });
-    // Shared duration: any whole number 2–30; each model then snaps to its own limits (shown in the plan).
-    $('cmp-duration').addEventListener('change', function (e) {
-      var v = Math.round(parseFloat(e.target.value));
-      cmp.duration = isFinite(v) ? Math.min(30, Math.max(2, v)) : cmp.duration;
-      saveCmp(); renderCmpParams();
-    });
-    $('cmp-res').addEventListener('change', function (e) { cmp.resolution = e.target.value; saveCmp(); renderCmpParams(); });
-    $('cmp-ratio').addEventListener('change', function (e) { cmp.ratio = e.target.value; saveCmp(); renderCmpParams(); });
-    $('cmp-submit').addEventListener('click', submitCmp);
-  }
-
-  function submitCmp() {
-    if (cmpBusy) return;
-    var errBox = $('cmp-error');
-    show(errBox, false);
-    var key = A.getKey();
-    if (!key) { promptForKeyOrLogin(errBox); return; }
-    if (cmp.models.length < MIN_CMP) { errBox.textContent = t('compare_need_models', MIN_CMP); show(errBox, true); return; }
-    if (cmp.models.length > MAX_CMP) { errBox.textContent = t('compare_max_models', MAX_CMP); show(errBox, true); return; }
-    var prompt = $('cmp-prompt').value;
-    if (!prompt.trim()) { errBox.textContent = t('need_prompt'); show(errBox, true); return; }
-    var plan = cmpPlan();
-    var builds;
-    try {
-      builds = plan.map(function (p) { return M.buildRequest(p.model, prompt, p.duration, p.resolution, p.ratio, []); });
-    } catch (e) { errBox.textContent = errorText(e.code); show(errBox, true); return; }
-    var compareId = 'c' + Date.now().toString(36);
-    A.store.set('last_compare', compareId);
-    cmpBusy = true;
-    $('cmp-submit').disabled = true;
-    $('cmp-submit').textContent = t('generating_btn');
-    // Sequential submissions, like the desktop app; each item is its own saved task.
-    var chain = Promise.resolve();
-    plan.forEach(function (p, i) {
-      chain = chain.then(function () {
-        var pr = A.submit({ model: p.model, prompt: prompt, duration: p.duration, resolution: p.resolution, ratio: p.ratio, cost: p.cost, compare_id: compareId },
-          builds[i], key, function (info) { if (info.rateLimited) toast(t('rate_limited_retry', info.seconds, info.attempt, info.max)); });
-        renderResults();
-        return pr.then(renderResults);
-      });
-    });
-    chain.finally(function () {
-      cmpBusy = false;
-      $('cmp-submit').textContent = t('compare_start');
-      renderCmpParams();
-    });
   }
 
   // ---------------- task cards ----------------
@@ -1749,12 +1565,6 @@
       syncCards(box, [], {}, 'result_empty');
     }
     syncStopVisibility();
-
-    var cbox = $('cmp-results');
-    var cid = A.store.get('last_compare', null);
-    var recs = cid ? A.loadTasks().filter(function (r) { return r.compare_id === cid; }).reverse() : [];
-    syncCards(cbox, recs, {}, 'compare_results_empty');
-    cbox.classList.toggle('cols-3', recs.length >= 3);
   }
 
   function renderTasks() {
@@ -1919,7 +1729,6 @@
       bindOauth();
       bindNokeyAdvanced();
       bindGen();
-      bindCmp();
       bindTasks();
       enhanceAllSelects();
       document.addEventListener('click', function () { closeCSelect(); });
