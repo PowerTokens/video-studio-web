@@ -15,7 +15,7 @@ Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=rea
 ## Try it
 
 1. Open the [live page](https://powertokens.github.io/video-studio-web/).
-2. Add a PowerTokens API key.
+2. Sign in with PowerTokens (header), or paste an API key under **Account → Advanced**.
 3. On **Generate video**, click an example chip (Product · Wan / Short drama · Seedance / Café / Cinematic · Kling) to fill the prompt (click again to clear). Model-tagged chips also switch Settings to that model; then **Generate video**.
 4. Batch import, model compare, storyboard, and continue-from-previous stay in the [Windows desktop app](https://github.com/PowerTokens/video-studio/releases/latest).
 
@@ -36,5 +36,9 @@ Video Studio Web can sign in with PowerTokens OAuth 2.0 (Authorization Code + PK
 
 After userinfo, the default account `key` is saved into the same local key pool as a manual paste; the header shows name + credits. Sign-out calls `/oauth/revoke` and clears the OAuth session (keys already in the pool stay until you remove them).
 
-Manual API Key paste remains supported.
+Manual API Key paste remains under **Account → Advanced** (collapsed).
+
+## Languages
+
+Language is a dropdown in the header. On first visit it follows the browser language (zh / en / es / pt). Unrecognized locales default to English. After you pick a language, that choice is stored and always honored.
 

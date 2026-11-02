@@ -216,30 +216,21 @@
       var href = t(key);
       n.href = PT_OUTBOUND_HREF[key] ? buildPtOutbound(href) : href;
     });
-    // Desktop-style language buttons (中文 | English); falls back to a select once there are many languages.
+    // Language dropdown (browser detect → EN default; persist after user choice).
     var box = $('lang-switch');
     if (!box) return;
     box.innerHTML = '';
     var codes = I.languages();
-    if (codes.length > 3) {
-      var sel = el('select');
-      sel.setAttribute('aria-label', 'Language');
-      codes.forEach(function (code) {
-        var o = el('option', '', I.meta(code).name);
-        o.value = code; o.selected = code === lang; sel.appendChild(o);
-      });
-      sel.addEventListener('change', function () { setLang(sel.value, true); });
-      box.appendChild(sel);
-    } else {
-      codes.forEach(function (code) {
-        var b = el('button', code === lang ? 'active' : '', I.meta(code).name);
-        b.type = 'button';
-        b.setAttribute('data-lang', code);
-        b.setAttribute('aria-pressed', code === lang ? 'true' : 'false');
-        b.addEventListener('click', function () { setLang(code, true); });
-        box.appendChild(b);
-      });
-    }
+    var sel = el('select');
+    sel.id = 'lang-select';
+    sel.setAttribute('aria-label', 'Language');
+    codes.forEach(function (code) {
+      var meta = I.meta(code) || {};
+      var o = el('option', '', meta.name || code);
+      o.value = code; o.selected = code === lang; sel.appendChild(o);
+    });
+    sel.addEventListener('change', function () { setLang(sel.value, true); });
+    box.appendChild(sel);
     renderFirstFrameCard();
     renderModelDetailsBtn();
   }
@@ -269,8 +260,9 @@
   }
 
   // ---------------- tabs ----------------
-  var TABS = ['chat', 'generate', 'tasks', 'key'];
+  var TABS = ['chat', 'generate', 'tasks', 'account'];
   function setTab(name, push) {
+    if (name === 'key' || name === 'keys') name = 'account'; // legacy Key tab → Account
     var invalid = TABS.indexOf(name) < 0;
     if (invalid) name = 'generate';
     if (name === 'chat' && !(rootChatPilotEnabled())) {
@@ -466,7 +458,7 @@
 
   /**
    * Parse → live verify (GET /v1/models) → save only on success.
-   * Used by the API Key tab paste form. Returns a Promise.
+   * Used by the Account tab advanced paste form. Returns a Promise.
    */
   function verifyAndSaveKey(raw, opts) {
     opts = opts || {};
@@ -529,7 +521,6 @@
     var panelLogin = $('oauth-login-btn');
     var panelLogout = $('oauth-logout-btn');
     var status = $('oauth-status');
-    var nokeyLogin = $('nokey-oauth-login');
     var profile = O && O.getProfile ? O.getProfile() : null;
     var loggedIn = !!(profile && O && O.getAccessToken && O.getAccessToken());
     if (!loggedIn && profile && O && !O.getAccessToken()) {
@@ -540,18 +531,17 @@
     var signed = !!profile;
     if (box) show(box, signed);
     if (loginBtn) show(loginBtn, !signed);
-    if (nokeyLogin) show(nokeyLogin, !signed);
     if (panelLogin) show(panelLogin, !signed);
     if (panelLogout) show(panelLogout, signed);
     if (label) {
       if (signed) {
         var name = profile.name || profile.email || profile.user_id || 'PowerTokens';
-        var parts = [t('oauth_signed_in', name)];
-        if (typeof profile.credits === 'number') parts.push(t('oauth_credits', localeNum(profile.credits)));
-        label.textContent = parts.join(' · ');
-        label.title = name;
+        // Name-only chip; credits live on the billing chip (official console pattern).
+        label.textContent = name;
+        label.title = t('oauth_signed_in', name);
       } else {
         label.textContent = '';
+        label.title = '';
       }
     }
     if (status) {
@@ -571,7 +561,7 @@
   }
 
   function setOauthBusy(on) {
-    ['header-oauth-login', 'oauth-login-btn', 'nokey-oauth-login', 'oauth-logout', 'oauth-logout-btn'].forEach(function (id) {
+    ['header-oauth-login', 'oauth-login-btn', 'oauth-logout', 'oauth-logout-btn'].forEach(function (id) {
       var el = $(id);
       if (!el) return;
       el.disabled = !!on;
@@ -607,7 +597,7 @@
       return;
     }
     setOauthBusy(true);
-    // Return to the tab the user left (Generate by default; Key only if they started from Key).
+    // Return to the tab the user left (Generate by default; Account if they started from Account).
     O.startLogin({ returnHash: currentTabName() }).catch(function (e) {
       setOauthBusy(false);
       var code = (e && e.message) || 'error';
@@ -640,19 +630,17 @@
       startOauthLogin();
       return;
     }
-    setTab('key', true);
+    setTab('account', true);
   }
 
   function bindOauth() {
     if (!O) return;
     var headerLogin = $('header-oauth-login');
     var panelLogin = $('oauth-login-btn');
-    var nokeyLogin = $('nokey-oauth-login');
     var headerLogout = $('oauth-logout');
     var panelLogout = $('oauth-logout-btn');
     if (headerLogin) headerLogin.addEventListener('click', startOauthLogin);
     if (panelLogin) panelLogin.addEventListener('click', startOauthLogin);
-    if (nokeyLogin) nokeyLogin.addEventListener('click', startOauthLogin);
     if (headerLogout) headerLogout.addEventListener('click', doOauthLogout);
     if (panelLogout) panelLogout.addEventListener('click', doOauthLogout);
   }
@@ -672,7 +660,7 @@
         var msg = oauthFailMessage((result && (result.error_description || result.error)) || 'callback_failed');
         var errEl = $('oauth-error');
         if (errEl) { errEl.textContent = msg; show(errEl, true); }
-        setTab('key', true);
+        setTab('account', true);
         toast(msg);
         return false;
       }
@@ -753,10 +741,10 @@
     }
   }
 
-  // ---------------- no-key advanced jump (API Key tab) ----------------
-  /** Advanced users: open API Key tab, expand paste panel, focus input. */
+  // ---------------- no-key advanced jump (Account tab) ----------------
+  /** Advanced users: open Account tab, expand paste panel, focus input. */
   function openKeyTabAdvanced() {
-    setTab('key', true);
+    setTab('account', true);
     var details = $('key-advanced-details');
     if (details) details.open = true;
     var input = $('key-input');
@@ -771,7 +759,7 @@
   function bindNokeyAdvanced() {
     var nokeyGoto = $('nokey-goto-keys');
     if (nokeyGoto) {
-      // Advanced path lives on the API Key tab only (no paste on Generate).
+      // Advanced path lives on the Account tab only (no paste on Generate).
       nokeyGoto.addEventListener('click', function () { openKeyTabAdvanced(); });
     }
   }
