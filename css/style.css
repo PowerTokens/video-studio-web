@@ -63,6 +63,18 @@ p { margin: 0; }
 .subtitle .link { font-size: 12.5px; padding: 0 2px; }
 .header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 
+/* ---------- OAuth account chip ---------- */
+.oauth-account {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  max-width: 100%;
+}
+.oauth-account-label {
+  font-size: 12.5px; font-weight: 600; color: var(--accent-text);
+  background: var(--pale); border: 1px solid #cfe6df; border-radius: 2px;
+  padding: 4px 10px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.oauth-login-card .btn-block + .btn-block { margin-top: 8px; }
+
 .top-actions { display: flex; align-items: center; gap: 4px; flex: none; }
 .lang-switch { display: flex; flex: none; }
 .tips-wide { display: none; }

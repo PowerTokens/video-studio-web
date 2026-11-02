@@ -19,3 +19,17 @@ Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=rea
 3. On **Generate video**, click an example chip (Product · Wan / Short drama · Seedance / Café / Cinematic · Kling) to fill the prompt (click again to clear). Model-tagged chips also switch Settings to that model; then **Generate video**.
 4. For spreadsheet samples (desktop Batch tab), see the **Batch import** tab on the web page — links download the same Excel files as the desktop app.
 
+## OAuth sign-in (web)
+
+Video Studio Web can sign in with PowerTokens OAuth 2.0 (Authorization Code + PKCE S256).
+
+- **Authorize (browser):** `https://www.powertokens.ai/oauth/authorize`
+- **Token / userinfo / revoke:** `https://powertokens.ai/api/oauth/*`
+- **client_id:** `powerbaze_desktop_v1`
+- **redirect_uri (whitelist this exact string):**
+  `https://powertokens.github.io/video-studio-web/oauth/callback.html`
+
+After userinfo, the default account `key` is saved into the same local key pool as a manual paste; the header shows name + credits. Sign-out calls `/oauth/revoke` and clears the OAuth session (keys already in the pool stay until you remove them).
+
+Manual API Key paste remains supported.
+
