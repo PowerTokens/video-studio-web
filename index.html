@@ -10,14 +10,14 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261102-BeginnerP0">
+<link rel="stylesheet" href="css/style.css?v=20261102-SceneTitles">
 <link rel="preload" href="js/i18n.js?v=20261015-DefaultPreset" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261102-WebP1" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261102-WebP1" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261102-SceneTitles" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261102-SceneTitles" as="script">
 <link rel="preload" href="js/models.js?v=20261102-BeginnerP0" as="script">
 <link rel="preload" href="js/api.js?v=20261021-Wave2" as="script">
 <link rel="preload" href="js/oauth.js?v=20261102-BeginnerP0" as="script">
-<link rel="preload" href="js/app.js?v=20261102-WebP1" as="script">
+<link rel="preload" href="js/app.js?v=20261102-SceneTitles" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -32,11 +32,10 @@
     </a>
     <div class="top-actions">
       <div class="lang-switch" id="lang-switch" role="group" aria-label="Language"><button class="active" type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">English</button></div>
-      <button id="tips-btn" class="link tips-btn tips-wide" type="button" data-i18n="onboard_help">使用提示</button>
     </div>
   </div>
   <div class="header-row sub-row">
-    <div class="subtitle"><span data-i18n="subtitle">多模型 AI 视频生成 · 网页版</span><button id="tips-btn-m" class="link tips-btn tips-narrow" type="button" data-i18n="onboard_help">使用提示</button></div>
+    <div class="subtitle"><span data-i18n="subtitle">多模型 AI 视频生成 · 网页版</span></div>
     <div class="header-actions">
       <div id="oauth-account" class="oauth-account" hidden>
         <span id="oauth-account-label" class="oauth-account-label"></span>
@@ -71,25 +70,6 @@
 <main class="page">
   <!-- ============ 生成视频 ============ -->
   <section id="panel-generate" class="panel" role="tabpanel">
-    <section id="onboard-expand-bar" class="card onboard-expand-bar" hidden>
-      <button type="button" class="onboard-expand-btn" id="onboard-expand">
-        <span class="onboard-chevron" aria-hidden="true">▸</span>
-        <span data-i18n="onboard_expand">展开新手提示</span>
-      </button>
-    </section>
-    <section id="onboard" class="onboard" hidden>
-      <div class="onboard-guide-top">
-        <p class="guide-tip guide-tip--embedded" id="guide-tip-key">
-          <span class="guide-tip-num" aria-hidden="true">1</span>
-          <span data-i18n="onboard_step1">点右上角「登录 PowerTokens」，自动填入 API Key 并显示积分。无需复制粘贴。</span>
-        </p>
-        <button type="button" class="link onboard-collapse-link" id="onboard-collapse" data-i18n="onboard_collapse">收起</button>
-      </div>
-      <div class="actions onboard-foot">
-        <button type="button" class="btn" id="onboard-collapse-btn" data-i18n="onboard_collapse">收起</button>
-      </div>
-    </section>
-
     <div class="heading">
       <h1 data-i18n="gen_title">生成视频</h1>
       <p data-i18n="gen_desc">点预设直接开拍，或自己写描述；调整参数，生成带原生音效的视频。</p>
@@ -103,7 +83,6 @@
               <p class="examples-label" data-i18n="examples_label">试试预设</p>
               <p class="examples-hint" data-i18n="examples_hint">点卡片填入 README 效果展示同款提示词，并自动对齐时长 / 比例 / 分辨率；再点一次清空。四个预设均为 Wan 3.0，与桌面版展示片段一致。</p>
             </div>
-            <p class="guide-tip" id="guide-tip-prompt" hidden><span class="guide-tip-num" aria-hidden="true">2</span><span data-i18n="onboard_step2">点这里的预设，或自己写一段视频描述</span></p>
             <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"></div>
           </div>
           <textarea id="gen-prompt" rows="3" data-i18n-ph="prompt_placeholder" placeholder="例如：清晨的海边咖啡馆，镜头缓缓推近一杯拿铁，窗外海浪声，柔和暖光。"></textarea>
@@ -140,7 +119,6 @@
 
         <section class="card">
           <h3 class="card-title" data-i18n="params_card">生成参数</h3>
-          <p class="guide-tip" id="guide-tip-model" hidden><span class="guide-tip-num" aria-hidden="true">3</span><span data-i18n="onboard_step3">在这里选模型（Wan / Seedance / Kling 等）</span></p>
           <label class="field-label" for="gen-model" data-i18n="param_model">模型</label>
           <select id="gen-model"></select>
           <div class="model-desc-row">
@@ -164,7 +142,6 @@
             </div>
           </div>
           <p id="gen-cost" class="muted small cost"></p>
-          <p class="guide-tip" id="guide-tip-generate" hidden><span class="guide-tip-num" aria-hidden="true">4</span><span data-i18n="onboard_step4">准备好后点击「生成视频」</span></p>
           <p id="gen-error" class="error" hidden></p>
           <p class="muted small" data-i18n="cloud_note">提交后不会自动重复提交；刷新或关闭页面，任务仍在云端继续，可在「任务记录 / 恢复」里找回。</p>
         </section>
@@ -392,11 +369,11 @@
 
 <script src="js/i18n.js?v=20261015-DefaultPreset"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261102-WebP1"></script>
-<script src="js/lang/en.js?v=20261102-WebP1"></script>
+<script src="js/lang/zh.js?v=20261102-SceneTitles"></script>
+<script src="js/lang/en.js?v=20261102-SceneTitles"></script>
 <script src="js/models.js?v=20261102-BeginnerP0"></script>
 <script src="js/api.js?v=20261015-DefaultPreset"></script>
 <script src="js/oauth.js?v=20261102-BeginnerP0"></script>
-<script src="js/app.js?v=20261102-WebP1"></script>
+<script src="js/app.js?v=20261102-SceneTitles"></script>
 </body>
 </html>

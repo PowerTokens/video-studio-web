@@ -283,9 +283,8 @@
   function renderNokeyBanner() {
     var banner = $('nokey-banner');
     if (!banner) return;
-    var key = A.getKey();
-    // Under-tabs strip only when tips are folded and there is no key — avoids stacking CTAs.
-    show(banner, !key && guidesCollapsed());
+    // Under-tabs strip when there is no key.
+    show(banner, !A.getKey());
   }
 
   // API Key tab pill: three dots (bad / warn / ok). Green = usable; red = auth/none; amber = quota (need top-up).
@@ -553,8 +552,6 @@
         status.textContent = '';
       }
     }
-    // Logged-in beginners should not keep seeing login/API-Key teaching.
-    syncGuideFold();
     renderNokeyBanner();
     try { renderGenCost(); } catch (e) { /* form may not be ready yet */ }
   }
@@ -742,48 +739,7 @@
     }
   }
 
-  // ---------------- onboarding (foldable tips ①–④) ----------------
-  var GUIDE_TIP_IDS = ['guide-tip-prompt', 'guide-tip-model', 'guide-tip-generate'];
-
-  function guidesCollapsed() {
-    var stored = A.store.get('onboard_collapsed', null);
-    if (stored === true || stored === false) return stored;
-    // Migrate legacy permanent dismiss → collapsed (still reopenable via Tips).
-    if (A.store.get('onboarded', false)) {
-      A.store.set('onboard_collapsed', true);
-      A.store.remove('onboarded');
-      return true;
-    }
-    return false;
-  }
-
-  function setGuidesCollapsed(collapsed) {
-    A.store.set('onboard_collapsed', !!collapsed);
-    if (A.store.get('onboarded', false)) A.store.remove('onboarded');
-    syncGuideFold();
-    renderNokeyBanner();
-  }
-
-  function syncGuideFold() {
-    var collapsed = guidesCollapsed();
-    var hasKey = !!(A.getKey && A.getKey());
-    // Tip ① teaches login / API Key — hide once the user already has a key (or is signed in with one).
-    show($('guide-tip-key'), !collapsed && !hasKey);
-    show($('onboard'), !collapsed && !hasKey);
-    // Expand bar still reopens tips ②–④; tip ① stays hidden when keyed.
-    show($('onboard-expand-bar'), collapsed);
-    GUIDE_TIP_IDS.forEach(function (id) {
-      var tip = $(id);
-      if (tip) show(tip, !collapsed);
-    });
-  }
-
-  function expandGuidesAndScroll() {
-    setGuidesCollapsed(false);
-    var card = $('onboard');
-    if (card) card.scrollIntoView({ block: 'start' });
-  }
-
+  // ---------------- no-key advanced jump (API Key tab) ----------------
   /** Advanced users: open API Key tab, expand paste panel, focus input. */
   function openKeyTabAdvanced() {
     setTab('key', true);
@@ -798,28 +754,12 @@
     }
   }
 
-  function bindOnboard() {
-    syncGuideFold();
-    function collapse() { setGuidesCollapsed(true); }
-    function expand() { expandGuidesAndScroll(); }
-    var collapseLink = $('onboard-collapse');
-    if (collapseLink) collapseLink.addEventListener('click', collapse);
-    var collapseBtn = $('onboard-collapse-btn');
-    if (collapseBtn) collapseBtn.addEventListener('click', collapse);
-    var expandBtn = $('onboard-expand');
-    if (expandBtn) expandBtn.addEventListener('click', expand);
+  function bindNokeyAdvanced() {
     var nokeyGoto = $('nokey-goto-keys');
     if (nokeyGoto) {
       // Advanced path lives on the API Key tab only (no paste on Generate).
       nokeyGoto.addEventListener('click', function () { openKeyTabAdvanced(); });
     }
-    // Header "使用提示 / Tips" expands tip ① + contextual tip bars anytime.
-    document.querySelectorAll('.tips-btn').forEach(function (b) {
-      b.addEventListener('click', function () {
-        setTab('generate', true);
-        expandGuidesAndScroll();
-      });
-    });
   }
 
   // ---------------- generate form ----------------
@@ -1977,7 +1917,7 @@
       });
       bindKey();
       bindOauth();
-      bindOnboard();
+      bindNokeyAdvanced();
       bindGen();
       bindCmp();
       bindTasks();
