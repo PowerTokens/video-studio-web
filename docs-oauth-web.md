@@ -38,3 +38,18 @@ Return to `#key` **only** when the user started login from the Key tab (`vsw.oau
 8. Negative: deny consent or break state → callback shows error + link back.
 
 Do not invent prices or model ids in this flow. Never log the userinfo `key`.
+
+## UTM on authorize (required)
+
+The authorize URL **must** carry last-touch UTM so the backend can attribute sign-in:
+
+- Defaults: `utm_source=videostudio` · `utm_medium=web` · `utm_campaign=video-studio`
+- Touchpoint: `utm_content=web.oauth_authorize`
+- First/last touch persist in `localStorage` keys `vsw.utm.first` / `vsw.utm.last`
+- Inbound landing `utm_*` / click ids update last-touch (and first if empty); outbound CTAs and OAuth use last-touch
+
+README / GitHub get-key links keep `utm_source=github` + `utm_medium=readme` (not in-app).
+
+## Follow-up (not in this change)
+
+Desktop download jump page on powertokens.ai (302 to the GitHub `.exe` with UTM) is deferred — keep linking the release URL for now.

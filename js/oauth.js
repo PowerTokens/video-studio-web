@@ -166,6 +166,17 @@
       q.set('state', state);
       q.set('code_challenge', challenge);
       q.set('code_challenge_method', 'S256');
+      // Required: last-touch UTM on authorize so backend can attribute OAuth.
+      var utm = root.VSUtm;
+      if (utm && typeof utm.applyToSearchParams === 'function') {
+        utm.applyToSearchParams(q, { content: (utm.CONTENT && utm.CONTENT.oauth) || 'web.oauth_authorize' });
+      } else {
+        // Hard fallback — authorize must never ship without UTM.
+        q.set('utm_source', 'videostudio');
+        q.set('utm_medium', 'web');
+        q.set('utm_campaign', 'video-studio');
+        q.set('utm_content', 'web.oauth_authorize');
+      }
       root.location.assign(AUTHORIZE_URL + '?' + q.toString());
     });
   }

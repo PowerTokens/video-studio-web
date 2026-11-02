@@ -174,35 +174,28 @@
   }
 
   // ---------------- language ----------------
-  // Forward Ads / paid click IDs from the landing URL onto PowerTokens CTAs.
-  // Do not overwrite inbound utm/gclid with the videostudio defaults.
+  // Outbound PowerTokens CTAs: last-touch UTM from VSUtm (persisted first/last).
   var PT_OUTBOUND_HREF = { signup_url: 1, site_url: 1, billing_url: 1 };
-  var PT_TRACK_KEYS = [
-    'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-    'gclid', 'gbraid', 'wbraid', 'fbclid', 'msclkid', 'dclid', 'ttclid', 'twclid',
-    'li_fat_id', 'yclid', 'epik', 'rdt_cid'
-  ];
-  var PT_DEFAULT_UTM = {
-    utm_source: 'videostudio',
-    utm_medium: 'web',
-    utm_campaign: 'video-studio'
+  var PT_OUTBOUND_CONTENT = {
+    signup_url: 'web.signup',
+    site_url: 'web.footer_site',
+    billing_url: 'web.billing'
   };
 
-  function buildPtOutbound(base) {
-    var url;
-    try { url = new URL(String(base || ''), location.href); }
-    catch (e) { return base; }
-    // Drop any baked-in tracking on the i18n base so inbound Ads params win cleanly.
-    PT_TRACK_KEYS.forEach(function (k) { url.searchParams.delete(k); });
-    var inbound = new URLSearchParams(location.search);
-    PT_TRACK_KEYS.forEach(function (k) {
-      var v = inbound.get(k);
-      if (v != null && v !== '') url.searchParams.set(k, v);
-    });
-    Object.keys(PT_DEFAULT_UTM).forEach(function (k) {
-      if (!url.searchParams.has(k)) url.searchParams.set(k, PT_DEFAULT_UTM[k]);
-    });
-    return url.toString();
+  function buildPtOutbound(base, content) {
+    var U = window.VSUtm;
+    if (U && typeof U.buildOutbound === 'function') {
+      return U.buildOutbound(base, content);
+    }
+    // Fallback if utm.js missing: still attach product defaults.
+    try {
+      var url = new URL(String(base || ''), location.href);
+      url.searchParams.set('utm_source', 'videostudio');
+      url.searchParams.set('utm_medium', 'web');
+      url.searchParams.set('utm_campaign', 'video-studio');
+      if (content) url.searchParams.set('utm_content', content);
+      return url.toString();
+    } catch (e) { return base; }
   }
 
   function applyStatic() {
@@ -214,7 +207,7 @@
     document.querySelectorAll('[data-href]').forEach(function (n) {
       var key = n.getAttribute('data-href');
       var href = t(key);
-      n.href = PT_OUTBOUND_HREF[key] ? buildPtOutbound(href) : href;
+      n.href = PT_OUTBOUND_HREF[key] ? buildPtOutbound(href, PT_OUTBOUND_CONTENT[key]) : href;
     });
     // Language dropdown (browser detect → EN default; persist after user choice).
     // Update in place — recreating <select> on every setLang leaves native teal/arrow paint over the label.
@@ -1799,7 +1792,7 @@
           gotoGenerate: function () { setTab('generate', true); },
           gotoChat: function () { setTab('chat', true); },
           promptLogin: startOauthLogin,
-          billingUrl: function () { return buildPtOutbound(t('billing_url')); },
+          billingUrl: function () { return buildPtOutbound(t('billing_url'), (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.chat_billing) || 'web.chat_billing'); },
           toast: toast,
           copyText: copyText
         });
