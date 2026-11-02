@@ -201,7 +201,59 @@
     return { assistant_message: msg, ready: ready, plan: plan, parse_ok: true };
   }
 
-  function chatCompletions(apiMessages) {
+  function sleep(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  function errorDetail(body) {
+    if (!body || typeof body !== 'object') return { message: '', code: '' };
+    var err = body.error;
+    var message = '';
+    var code = '';
+    if (err && typeof err === 'object') {
+      message = String(err.message || '');
+      code = String(err.code || '');
+      if (!code && err.metadata && err.metadata.error && err.metadata.error.code) {
+        code = String(err.metadata.error.code);
+      }
+    } else if (typeof err === 'string') {
+      message = err;
+    }
+    if (!message) message = String(body.message || body.msg || '');
+    return { message: message, code: code };
+  }
+
+  function formatHttpDetail(http, body) {
+    var info = errorDetail(body);
+    var parts = [];
+    if (http != null) parts.push('HTTP ' + http);
+    if (info.code) parts.push(info.code);
+    var head = parts.join(' · ');
+    var msg = info.message || t('chat_flash_unknown');
+    return String(head ? (head + ': ' + msg) : msg).slice(0, 360);
+  }
+
+  function isRetryableFlash(res) {
+    if (!res || res.ok) return false;
+    if (res.kind === 'NETWORK' || res.kind === 'EMPTY') return true;
+    var http = res.http;
+    if (http === 429 || http === 502 || http === 503 || http === 504) return true;
+    var detail = String(res.detail || '').toLowerCase();
+    return detail.indexOf('overloaded') >= 0 || detail.indexOf('1305') >= 0 ||
+      detail.indexOf('retry later') >= 0 || detail.indexOf('temporarily') >= 0;
+  }
+
+  function extractChoiceContent(choice) {
+    if (!choice) return '';
+    var msg = choice.message || {};
+    var content = msg.content;
+    if (!content && choice.delta) content = choice.delta.content;
+    // Default thinking mode can leave content empty while putting text in reasoning_content.
+    if (!content && msg.reasoning_content) content = msg.reasoning_content;
+    return content ? String(content) : '';
+  }
+
+  function chatCompletionsOnce(apiMessages) {
     var A = root.VSApi;
     var key = deps.getKey && deps.getKey();
     if (!A || !key) {
@@ -211,26 +263,52 @@
       model: FLASH_MODEL,
       temperature: 0.4,
       max_tokens: 2048,
+      // glm-4.7-flash defaults thinking=on upstream; that often returns empty content
+      // or 429/1305 under load. Pilot only needs plain JSON text.
+      thinking: { type: 'disabled' },
       messages: [{ role: 'system', content: systemPrompt() }].concat(apiMessages)
     };
     return A.api('POST', '/v1/chat/completions', key, body, 60000).then(function (r) {
       if (r.networkError) return { ok: false, kind: 'NETWORK', detail: r.error || t('chat_flash_network') };
-      if (r.code === 401 || r.code === 403) return { ok: false, kind: 'AUTH', detail: A.serverMessage ? A.serverMessage(r.body) : t('chat_flash_auth') };
+      if (r.code === 401 || r.code === 403) {
+        return {
+          ok: false,
+          kind: 'AUTH',
+          detail: formatHttpDetail(r.code, r.body) || (A.serverMessage ? A.serverMessage(r.body) : t('chat_flash_auth')),
+          http: r.code
+        };
+      }
       if (r.code !== 200) {
-        var detail = '';
-        try { detail = (root.VSApi && root.VSApi.api && r.body && (r.body.error && r.body.error.message)) || ''; } catch (e) {}
-        if (!detail && r.body) {
-          var err = r.body.error;
-          detail = (err && (err.message || err.code)) || r.body.message || r.body.msg || '';
-        }
-        return { ok: false, kind: 'HTTP', detail: String(detail || ('HTTP ' + r.code)).slice(0, 300), http: r.code };
+        return { ok: false, kind: 'HTTP', detail: formatHttpDetail(r.code, r.body), http: r.code };
       }
       var choice = r.body && r.body.choices && r.body.choices[0];
-      var content = choice && choice.message && choice.message.content;
-      if (!content && choice && choice.delta) content = choice.delta.content;
-      if (!content) return { ok: false, kind: 'EMPTY', detail: t('chat_flash_empty') };
-      return { ok: true, content: String(content) };
+      var content = extractChoiceContent(choice);
+      if (!content) return { ok: false, kind: 'EMPTY', detail: t('chat_flash_empty'), http: 200 };
+      return { ok: true, content: content };
     });
+  }
+
+  /** Retry transient upstream 429/1305 / empty / network a few times. */
+  function chatCompletions(apiMessages) {
+    var attempts = 0;
+    var maxAttempts = 3;
+    var delays = [0, 1200, 2800];
+
+    function next() {
+      var wait = delays[attempts] || 0;
+      attempts += 1;
+      var run = wait ? sleep(wait).then(function () { return chatCompletionsOnce(apiMessages); })
+        : chatCompletionsOnce(apiMessages);
+      return run.then(function (res) {
+        if (res.ok) return res;
+        if (attempts < maxAttempts && isRetryableFlash(res)) {
+          track('chat_flash_retry', { attempt: attempts, kind: res.kind || 'unknown', http: res.http || 0 });
+          return next();
+        }
+        return res;
+      });
+    }
+    return next();
   }
 
   function scrollThread() {
@@ -404,11 +482,59 @@
     if (wrap) wrap.hidden = true;
   }
 
-  function showError(detail) {
+  function lastUserText() {
+    for (var i = messages.length - 1; i >= 0; i--) {
+      if (messages[i] && messages[i].role === 'user') return String(messages[i].content || '').trim();
+    }
+    return '';
+  }
+
+  function draftPlanFromUser() {
+    var raw = lastUserText();
+    if (!raw) return null;
+    // Strip example metadata seed if present
+    var prompt = raw.split('\n\n[example_id=')[0].trim() || raw;
+    prompt = prompt.replace(/^\[[^\]]*\]\s*/m, '').trim();
+    if (prompt.length < 8) return null;
+    return clampPlan({
+      title: t('chat_draft_title'),
+      summary: t('chat_draft_summary'),
+      prompt: prompt.slice(0, 1800),
+      model: CHEAP_DEFAULT.model,
+      duration: CHEAP_DEFAULT.duration,
+      resolution: CHEAP_DEFAULT.resolution,
+      ratio: CHEAP_DEFAULT.ratio
+    });
+  }
+
+  function showError(detail, opts) {
+    opts = opts || {};
     appendBubble('assistant', t('chat_flash_error', detail || t('chat_flash_unknown')));
     var mount = $('chat-plan-mount');
     if (!mount) return;
     var actions = el('div', 'chat-fallback-actions');
+
+    var retry = el('button', 'btn btn-accent', t('chat_retry'));
+    retry.type = 'button';
+    retry.addEventListener('click', function () {
+      track('chat_flash_retry_click', {});
+      if (busy) return;
+      runFlash();
+    });
+    actions.appendChild(retry);
+
+    var draft = draftPlanFromUser();
+    if (draft) {
+      var draftBtn = el('button', 'btn', t('chat_use_draft'));
+      draftBtn.type = 'button';
+      draftBtn.addEventListener('click', function () {
+        track('chat_fallback_draft', {});
+        appendBubble('assistant', t('chat_draft_ready'));
+        renderPlanCard(draft);
+      });
+      actions.appendChild(draftBtn);
+    }
+
     var btn = el('button', 'btn', t('chat_goto_classic'));
     btn.type = 'button';
     btn.addEventListener('click', function () {
