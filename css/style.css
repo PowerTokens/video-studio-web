@@ -93,7 +93,6 @@ p { margin: 0; }
 
 .top-actions { display: flex; align-items: center; gap: 4px; flex: none; }
 .lang-switch { display: flex; flex: none; }
-.tips-wide { display: none; }
 .lang-switch button, .lang-switch select {
   font: inherit; font-size: 12.5px; border: 1px solid transparent; background: var(--white); color: var(--muted);
   padding: 4px 8px; cursor: pointer; border-radius: 2px;
@@ -355,20 +354,7 @@ select option, select optgroup {
 @media (min-width: 640px) {
   .cselect-trigger { font-size: 14px; }
 }
-/* ---------- examples / how-to (preset cards) ---------- */
-.howto {
-  list-style: none; margin: 14px 0 0; padding: 12px 14px; display: grid; gap: 8px;
-  background: #f7fcfa; border: 1px solid #d5ebe5; border-radius: 12px; counter-reset: howto;
-}
-.howto li {
-  display: flex; align-items: flex-start; gap: 10px; margin: 0;
-  color: var(--ink-2); font-size: 13px; line-height: 1.45; counter-increment: howto;
-}
-.howto li::before {
-  content: counter(howto); flex: none; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--pale); color: var(--accent-text); border: 1px solid #c5e4dc;
-  font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
-}
+/* ---------- examples (preset cards) ---------- */
 .examples {
   margin: 0 0 12px; padding: 14px; border-radius: 12px;
   background: linear-gradient(180deg, #f3faf7 0%, #f9fcfb 100%);
@@ -472,66 +458,9 @@ select option, select optgroup {
 .spend-line { margin: -2px 0 12px; font-size: 12px; color: var(--muted); }
 
 
-/* Foldable get-started: tip ① container + expand stub (same teal tip language as ②–④) */
-.onboard {
-  margin-bottom: 14px;
-  padding: 8px 10px 12px;
-  background: #f7fcfa;
-  border: 1px solid #d5ebe5;
-  border-radius: 10px;
-}
-.onboard-guide-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.onboard-collapse-link {
-  flex: none;
-  margin-top: 2px;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.onboard-expand-bar {
-  padding: 10px 14px;
-  background: #f7fcfa;
-  border: 1px dashed #c9e4dc;
-}
-.onboard-expand-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  width: 100%; margin: 0; padding: 0;
-  border: 0; background: transparent; cursor: pointer;
-  color: var(--accent-text); font: inherit; font-size: 13.5px; font-weight: 600;
-  text-align: left;
-}
-.onboard-expand-btn:hover { color: var(--accent); }
+/* Chevron reused by first-frame / key-advanced <details> summaries */
 .onboard-chevron { flex: none; font-size: 12px; line-height: 1; color: var(--muted); }
 
-.onboard-foot { margin-top: 10px; }
-
-/* Shared compact tip bars: ① (embedded) + ②③④ */
-.guide-tip {
-  display: flex; align-items: flex-start; gap: 8px;
-  margin: 0 0 10px; padding: 8px 10px;
-  background: #f7fcfa; border: 1px solid #d5ebe5; border-radius: 10px;
-  color: var(--ink-2); font-size: 13px; line-height: 1.45;
-}
-.guide-tip-num {
-  flex: none; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--pale); color: var(--accent-text); border: 1px solid #c5e4dc;
-  font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
-}
-/* Tip ① reuses .guide-tip layout but borrows the parent .onboard border/bg */
-.guide-tip--embedded {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: 0;
-}
-#gen-examples .guide-tip { margin: 0 0 12px; }
-#guide-tip-generate { margin: 4px 0 10px; }
 /* ---------- history / keys ---------- */
 .manual { display: grid; gap: 8px; }
 .key-row { display: flex; gap: 12px; align-items: center; }
@@ -651,8 +580,6 @@ select option, select optgroup {
   .sub-row { margin-top: 8px; flex-wrap: nowrap; }
   .subtitle { width: auto; font-size: 13.5px; display: block; }
   .lang-switch button { font-size: 13.5px; padding: 6px 22px; }
-  .tips-wide { display: inline-block; padding: 6px 22px; font-size: 13.5px; }
-  .tips-narrow { display: none; }
   .header-actions { gap: 8px 14px; }
   .badge-btn, .btn-credits { font-size: 13.5px; padding: 6px 12px; }
   .tabs-inner { padding: 0 24px; }
