@@ -4,6 +4,7 @@
   var M = window.VSModels;
   var A = window.VSApi;
   var I = window.VSI18n;
+  var O = window.VSOauth;
 
   var lang = 'en';
   var MIN_CMP = 2, MAX_CMP = 3;
@@ -251,6 +252,7 @@
     if (persist) A.store.set('lang', lang);
     applyStatic();
     renderKeyState();
+    renderOauthAccount();
     renderCredits();
     renderGenModels();
     renderGenParams(false);
@@ -392,6 +394,7 @@
     renderKeyPoolList();
     renderNokeyBanner();
     renderStatus();
+    renderOauthAccount();
   }
 
   // Desktop-style status line at the bottom: 就绪 · 请先在「API Key」页添加 Key / 就绪 · N 个任务进行中
@@ -402,20 +405,37 @@
     bar.textContent = !A.getKey() ? t('status_ready') : running ? t('status_running', running) : t('status_idle');
   }
 
-  // Header "积分 / 充值" chip. Shows a real balance only if VSApi's balance stub is enabled.
+  // Header "积分 / 充值" chip. Prefers OAuth userinfo credits; else VSApi balance stub when enabled.
   var balance = null;
+  function localeNum(n) {
+    return n.toLocaleString(I.meta(lang) ? I.meta(lang).htmlLang : undefined);
+  }
+  function oauthCredits() {
+    if (!O || !O.getProfile) return null;
+    var p = O.getProfile();
+    return p && typeof p.credits === 'number' && isFinite(p.credits) ? p.credits : null;
+  }
   function renderCredits() {
-    var txt = typeof balance === 'number'
-      ? t('credits_balance', balance.toLocaleString(I.meta(lang) ? I.meta(lang).htmlLang : undefined))
+    var oc = oauthCredits();
+    var shown = typeof balance === 'number' ? balance : oc;
+    var txt = typeof shown === 'number'
+      ? t('credits_balance', localeNum(shown))
       : t('credits_btn');
     $('billing-chip-text').textContent = txt;
     $('billing-chip').title = t('credits_btn');
   }
   function refreshBalance() {
-    if (!A.balanceEnabled()) return;
+    var oc = oauthCredits();
+    if (typeof oc === 'number') balance = oc;
+    if (!A.balanceEnabled()) { renderCredits(); return; }
     var key = A.getKey();
-    if (!key) { balance = null; renderCredits(); return; }
-    A.fetchBalance(key).then(function (v) { balance = v; renderCredits(); renderKeyState(); });
+    if (!key) { if (typeof oc !== 'number') balance = null; renderCredits(); return; }
+    A.fetchBalance(key).then(function (v) {
+      if (typeof v === 'number') balance = v;
+      else if (typeof oc === 'number') balance = oc;
+      renderCredits();
+      renderKeyState();
+    });
   }
 
   /** Map verifyKey failure to a user-facing string. */
@@ -484,6 +504,148 @@
       return true;
     }, function () {
       return fail(t('err_network'));
+    });
+  }
+
+  function renderOauthAccount() {
+    var box = $('oauth-account');
+    var label = $('oauth-account-label');
+    var loginBtn = $('header-oauth-login');
+    var panelLogin = $('oauth-login-btn');
+    var panelLogout = $('oauth-logout-btn');
+    var status = $('oauth-status');
+    var getKey = $('header-get-key');
+    var profile = O && O.getProfile ? O.getProfile() : null;
+    var loggedIn = !!(profile && O && O.getAccessToken && O.getAccessToken());
+    if (!loggedIn && profile && O && !O.getAccessToken()) {
+      // Token expired: keep profile credits for display but treat as logged out for revoke UI.
+      loggedIn = false;
+    }
+    // Soft login: profile present counts as signed-in for UI even if token near expiry.
+    var signed = !!profile;
+    if (box) show(box, signed);
+    if (loginBtn) show(loginBtn, !signed);
+    if (getKey) show(getKey, !signed);
+    if (panelLogin) show(panelLogin, !signed);
+    if (panelLogout) show(panelLogout, signed);
+    if (label) {
+      if (signed) {
+        var name = profile.name || profile.email || profile.user_id || 'PowerTokens';
+        var parts = [t('oauth_signed_in', name)];
+        if (typeof profile.credits === 'number') parts.push(t('oauth_credits', localeNum(profile.credits)));
+        label.textContent = parts.join(' · ');
+        label.title = name;
+      } else {
+        label.textContent = '';
+      }
+    }
+    if (status) {
+      if (signed) {
+        var sName = profile.name || profile.email || '';
+        status.hidden = false;
+        status.textContent = typeof profile.credits === 'number'
+          ? (t('oauth_signed_in', sName) + ' · ' + t('oauth_credits', localeNum(profile.credits)))
+          : t('oauth_signed_in', sName);
+      } else {
+        status.hidden = true;
+        status.textContent = '';
+      }
+    }
+  }
+
+  function setOauthBusy(on) {
+    ['header-oauth-login', 'oauth-login-btn', 'oauth-logout', 'oauth-logout-btn'].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.disabled = !!on;
+    });
+    var status = $('oauth-status');
+    if (on && status) {
+      status.hidden = false;
+      status.textContent = t('oauth_busy');
+    }
+  }
+
+  function oauthFailMessage(err) {
+    if (err === 'pkce_unsupported') return t('oauth_pkce_unsupported');
+    return t('oauth_fail', err || 'error');
+  }
+
+  function startOauthLogin() {
+    var errEl = $('oauth-error');
+    if (errEl) show(errEl, false);
+    if (!O || !O.startLogin) {
+      toast(oauthFailMessage('unavailable'));
+      return;
+    }
+    setOauthBusy(true);
+    O.startLogin({ returnHash: 'key' }).catch(function (e) {
+      setOauthBusy(false);
+      var code = (e && e.message) || 'error';
+      var msg = oauthFailMessage(code);
+      if (errEl) { errEl.textContent = msg; show(errEl, true); }
+      toast(msg);
+    });
+  }
+
+  function doOauthLogout() {
+    if (!O || !O.logout) return;
+    setOauthBusy(true);
+    O.logout().then(function () {
+      setOauthBusy(false);
+      // Keep API keys in the pool; only clear OAuth session / display credits from profile.
+      if (typeof oauthCredits() !== 'number') balance = null;
+      renderOauthAccount();
+      renderCredits();
+      renderKeyState();
+      toast(t('oauth_logged_out'));
+    });
+  }
+
+  function bindOauth() {
+    if (!O) return;
+    var headerLogin = $('header-oauth-login');
+    var panelLogin = $('oauth-login-btn');
+    var headerLogout = $('oauth-logout');
+    var panelLogout = $('oauth-logout-btn');
+    if (headerLogin) headerLogin.addEventListener('click', startOauthLogin);
+    if (panelLogin) panelLogin.addEventListener('click', startOauthLogin);
+    if (headerLogout) headerLogout.addEventListener('click', doOauthLogout);
+    if (panelLogout) panelLogout.addEventListener('click', doOauthLogout);
+  }
+
+  /** If authorize redirected to the SPA root with ?code=, finish here then clean the URL. */
+  function maybeHandleOauthQuery() {
+    if (!O || !O.handleCallback) return Promise.resolve(false);
+    var params = new URLSearchParams(location.search || '');
+    if (!params.get('code') || !params.get('state')) return Promise.resolve(false);
+    setOauthBusy(true);
+    return O.handleCallback(location.search).then(function (result) {
+      setOauthBusy(false);
+      if (history.replaceState) {
+        history.replaceState(null, '', location.pathname + (location.hash || ''));
+      }
+      if (!result || !result.ok) {
+        var msg = oauthFailMessage((result && (result.error_description || result.error)) || 'callback_failed');
+        var errEl = $('oauth-error');
+        if (errEl) { errEl.textContent = msg; show(errEl, true); }
+        setTab('key', true);
+        toast(msg);
+        return false;
+      }
+      var oc = oauthCredits();
+      if (typeof oc === 'number') balance = oc;
+      renderOauthAccount();
+      renderCredits();
+      renderKeyState();
+      A.resumeOnLoad(A.getKey());
+      setTab('key', true);
+      toast(result.keyApplied ? t('oauth_ok') : t('oauth_ok_nokey'));
+      return true;
+    }, function () {
+      setOauthBusy(false);
+      toast(oauthFailMessage('network'));
+      return false;
     });
   }
 
@@ -1718,6 +1880,7 @@
         b.addEventListener('click', function () { setTab(b.getAttribute('data-tab'), true); });
       });
       bindKey();
+      bindOauth();
       bindOnboard();
       bindGen();
       bindCmp();
@@ -1737,6 +1900,8 @@
       renderResults();
       renderTasks();
       renderKeyState();
+      renderOauthAccount();
+      maybeHandleOauthQuery();
       setInterval(tick, 1000);
     } catch (err) {
       try { if (window.console && console.error) console.error('Video Studio boot failed', err); } catch (e) { /* ignore */ }

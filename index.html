@@ -10,13 +10,14 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261021-DiscountBadge">
+<link rel="stylesheet" href="css/style.css?v=20261102-OAuth">
 <link rel="preload" href="js/i18n.js?v=20261015-DefaultPreset" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261021-Wave2" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261021-Wave2" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261102-OAuth" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261102-OAuth" as="script">
 <link rel="preload" href="js/models.js?v=20261021-Wave2" as="script">
 <link rel="preload" href="js/api.js?v=20261021-Wave2" as="script">
-<link rel="preload" href="js/app.js?v=20261021-Wave2" as="script">
+<link rel="preload" href="js/oauth.js?v=20261102-OAuth" as="script">
+<link rel="preload" href="js/app.js?v=20261102-OAuth" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -37,8 +38,13 @@
   <div class="header-row sub-row">
     <div class="subtitle"><span data-i18n="subtitle">多模型 AI 视频生成 · 网页版</span><button id="tips-btn-m" class="link tips-btn tips-narrow" type="button" data-i18n="onboard_help">使用提示</button></div>
     <div class="header-actions">
+      <div id="oauth-account" class="oauth-account" hidden>
+        <span id="oauth-account-label" class="oauth-account-label"></span>
+        <button type="button" id="oauth-logout" class="link link-small" data-i18n="oauth_logout">退出登录</button>
+      </div>
       <a id="billing-chip" class="btn-credits" href="https://powertokens.ai/zh-Hans/billing?utm_source=videostudio&utm_medium=web&utm_campaign=video-studio" target="_blank" rel="noopener" data-href="billing_url"><span id="billing-chip-text">积分充值</span></a>
-      <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" id="header-get-key" class="btn btn-accent btn-small header-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key">注册领 100 积分</a>
+      <button type="button" id="header-oauth-login" class="btn btn-accent btn-small" data-i18n="oauth_login">登录 PowerTokens</button>
+      <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" id="header-get-key" class="btn btn-small header-signup" target="_blank" rel="noopener" data-href="signup_url" data-i18n="header_get_key">注册领 100 积分</a>
     </div>
   </div>
 </header>
@@ -334,6 +340,14 @@
         </section>
       </div>
       <div class="col-right">
+        <section class="card oauth-login-card">
+          <h3 class="card-title" data-i18n="oauth_card">账号登录</h3>
+          <p class="muted" data-i18n="oauth_card_desc">用 PowerTokens 账号一键登录：自动填入默认 API Key，并显示昵称与积分。</p>
+          <button type="button" class="btn btn-accent btn-block" id="oauth-login-btn" data-i18n="oauth_login">登录 PowerTokens</button>
+          <button type="button" class="btn btn-block" id="oauth-logout-btn" data-i18n="oauth_logout" hidden>退出登录</button>
+          <p id="oauth-status" class="muted small" hidden></p>
+          <p id="oauth-error" class="error" hidden></p>
+        </section>
         <section class="card">
           <h3 class="card-title" data-i18n="get_card">获取 Key</h3>
           <p class="muted" data-i18n="get_card_desc">还没有 Key？去 PowerTokens 注册即可使用。支持 Wan、Seedance、Kling 等多种视频模型。</p>
@@ -376,10 +390,11 @@
 
 <script src="js/i18n.js?v=20261015-DefaultPreset"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261021-DiscountBadge"></script>
-<script src="js/lang/en.js?v=20261021-DiscountBadge"></script>
+<script src="js/lang/zh.js?v=20261102-OAuth"></script>
+<script src="js/lang/en.js?v=20261102-OAuth"></script>
 <script src="js/models.js?v=20261021-DiscountBadge"></script>
 <script src="js/api.js?v=20261015-DefaultPreset"></script>
-<script src="js/app.js?v=20261021-DiscountBadge"></script>
+<script src="js/oauth.js?v=20261102-OAuth"></script>
+<script src="js/app.js?v=20261102-OAuth"></script>
 </body>
 </html>
