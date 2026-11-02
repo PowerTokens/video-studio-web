@@ -12,6 +12,8 @@
   // In-tool links use source=videostudio + medium=web (desktop app: videostudio/app; GitHub README/docs: github/oss).
   var UTM = 'utm_source=videostudio&utm_medium=web&utm_campaign=video-studio';
   var PRICE_CHECKED_DATE = '2026-10-21';
+  /** PowerTokens public pricing: credits ≈ USD × 1000 (e.g. Wan 720p $0.10/s = 100 credits/s). */
+  var CREDITS_PER_USD = 1000;
 
   function range(lo, hi) {
     var out = [];
@@ -430,6 +432,13 @@
     return { total: Math.round(d * price * 1000) / 1000, perSecond: price };
   }
 
+  /** Convert a USD estimate to whole credits using CREDITS_PER_USD (no separate billing API). */
+  function estimateCreditsFromUsd(usd) {
+    var n = Number(usd);
+    if (!isFinite(n) || n < 0) return null;
+    return Math.round(n * CREDITS_PER_USD);
+  }
+
   function rangeText(m) {
     var lo = m.durations[0], hi = m.durations[m.durations.length - 1];
     var res = m.resolutions.map(function (r) { return (r === '4k' || r === '2k') ? r.toUpperCase() : r; });
@@ -704,6 +713,8 @@
     API_BASE: API_BASE,
     UTM: UTM,
     PRICE_CHECKED_DATE: PRICE_CHECKED_DATE,
+    CREDITS_PER_USD: CREDITS_PER_USD,
+    estimateCreditsFromUsd: estimateCreditsFromUsd,
     MODELS: MODELS,
     MODEL_ORDER: MODEL_ORDER,
     DEFAULT_MODEL_ID: DEFAULT_MODEL_ID,
