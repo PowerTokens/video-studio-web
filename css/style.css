@@ -122,14 +122,52 @@ p { margin: 0; }
 
 .top-actions { display: flex; align-items: center; gap: 4px; flex: none; }
 .lang-switch { display: flex; flex: none; align-items: center; margin-right: 2px; }
-.lang-switch select {
-  font: inherit; font-size: 12.5px; border: 1px solid var(--line); background: var(--white); color: var(--ink-2);
-  padding: 5px 28px 5px 10px; cursor: pointer; border-radius: 999px;
-  appearance: none; -webkit-appearance: none; max-width: 9.5rem;
+.lang-switch select,
+.lang-switch #lang-select {
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.3;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  /* Avoid `background` shorthand fighting the custom chevron / native arrow. */
+  background-color: var(--white);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235f7388' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 10px center;
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+  padding: 5px 28px 5px 10px;
+  cursor: pointer;
+  border-radius: 999px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  max-width: 9.5rem;
+  min-width: 5.5rem;
+  min-height: 30px;
+  color-scheme: light;
+  accent-color: transparent;
+  box-shadow: none;
 }
-.lang-switch select:hover, .lang-switch select:focus { border-color: #b9ddd4; outline: none; }
+.lang-switch select::-ms-expand { display: none; }
+.lang-switch select option {
+  background-color: #ffffff;
+  color: var(--ink);
+}
+.lang-switch select:hover,
+.lang-switch select:focus,
+.lang-switch select:focus-visible,
+.lang-switch select:active {
+  border-color: #b9ddd4;
+  outline: none;
+  /* Override global `select:focus` teal ring so native highlight does not look like a filled pill. */
+  box-shadow: none;
+  background-color: var(--white);
+  color: var(--ink-2);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235f7388' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+}
 
 .badge {
   display: inline-block; background: var(--pale); color: var(--accent-text); padding: 6px 12px; font-size: 13px;
