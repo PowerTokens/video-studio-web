@@ -22,7 +22,7 @@ Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=rea
 
 ## Chat to video pilot (optional)
 
-Open with `?pilot=chat` to enable the **对话出片** tab (persists in `localStorage`). It calls `glm-4.7-flash` via `POST https://api.powertokens.ai/v1/chat/completions` using the same Bearer key as Generate, then offers **填进生成表**. Classic Generate stays available. Use `?pilot=off` to disable.
+Open with `?pilot=chat` to enable the **对话出片** tab (persists in `localStorage`). It calls `glm-4.7-flash` via `POST https://api.powertokens.ai/v1/chat/completions` (with `thinking` disabled) using the same Bearer key as Generate, then offers **填进生成表**. Transient upstream 429/1305 retries a few times; on failure you can retry, draft from your text, or fall back to classic Generate. Use `?pilot=off` to disable.
 
 ## OAuth sign-in (web)
 
