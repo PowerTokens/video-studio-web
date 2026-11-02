@@ -86,7 +86,7 @@
   }
 
   function homeUrl(hash) {
-    var h = hash ? String(hash).replace(/^#/, '') : 'key';
+    var h = hash ? String(hash).replace(/^#/, '') : 'generate';
     return appBaseUrl() + (h && h !== 'generate' ? '#' + h : '');
   }
 
@@ -155,7 +155,7 @@
     var state = randomHex(16);
     ssSet(SS_VERIFIER, verifier);
     ssSet(SS_STATE, state);
-    ssSet(SS_RETURN, opts.returnHash || 'key');
+    ssSet(SS_RETURN, opts.returnHash || 'generate');
     return sha256Base64Url(verifier).then(function (challenge) {
       var uri = redirectUri();
       var q = new URLSearchParams();
@@ -357,7 +357,7 @@
   }
 
   function consumeReturnHash() {
-    var h = ssGet(SS_RETURN) || 'key';
+    var h = ssGet(SS_RETURN) || 'generate';
     ssRemove(SS_RETURN);
     return h;
   }
