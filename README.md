@@ -19,6 +19,11 @@ Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=rea
 3. On **Generate video**, click an example chip (Product · Wan / Short drama · Seedance / Café / Cinematic · Kling) to fill the prompt (click again to clear). Model-tagged chips also switch Settings to that model; then **Generate video**.
 4. Batch import, model compare, storyboard, and continue-from-previous stay in the [Windows desktop app](https://github.com/PowerTokens/video-studio/releases/latest).
 
+
+## Chat to video pilot (optional)
+
+Open with `?pilot=chat` to enable the **对话出片** tab (persists in `localStorage`). It calls `glm-4.7-flash` via `POST https://api.powertokens.ai/v1/chat/completions` using the same Bearer key as Generate, then offers **填进生成表**. Classic Generate stays available. Use `?pilot=off` to disable.
+
 ## OAuth sign-in (web)
 
 Video Studio Web can sign in with PowerTokens OAuth 2.0 (Authorization Code + PKCE S256).
