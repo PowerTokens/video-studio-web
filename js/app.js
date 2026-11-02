@@ -248,6 +248,9 @@
     lang = I.has(code) ? code : 'en';
     if (persist) A.store.set('lang', lang);
     applyStatic();
+    if (window.VSChatPilot && window.VSChatPilot.refreshUi) {
+      try { window.VSChatPilot.refreshUi(); } catch (eRefresh) { /* ignore */ }
+    }
     renderKeyState();
     renderOauthAccount();
     renderCredits();
@@ -260,11 +263,20 @@
     renderExamples();
   }
 
+
+  function rootChatPilotEnabled() {
+    return !!(window.VSChatPilot && window.VSChatPilot.isEnabled && window.VSChatPilot.isEnabled());
+  }
+
   // ---------------- tabs ----------------
-  var TABS = ['generate', 'tasks', 'key'];
+  var TABS = ['chat', 'generate', 'tasks', 'key'];
   function setTab(name, push) {
     var invalid = TABS.indexOf(name) < 0;
     if (invalid) name = 'generate';
+    if (name === 'chat' && !(rootChatPilotEnabled())) {
+      name = 'generate';
+      invalid = true;
+    }
     TABS.forEach(function (n) { show($('panel-' + n), n === name); });
     document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
       var on = b.getAttribute('data-tab') === name;
@@ -276,6 +288,9 @@
       history.replaceState(null, '', location.pathname + location.search + (name === 'generate' ? '' : '#' + name));
     }
     window.scrollTo(0, 0);
+    if (name === 'chat' && window.VSChatPilot && window.VSChatPilot.onShow) {
+      try { window.VSChatPilot.onShow(); } catch (eChat) { /* ignore */ }
+    }
   }
 
   // ---------------- key ----------------
@@ -1156,6 +1171,35 @@
     }
   }
 
+
+  /** Prefill classic Generate from a chat-pilot plan card (MVP: human still clicks Generate). */
+  function fillGenerateFromPlan(plan) {
+    if (!plan || !plan.prompt) return;
+    var promptEl = $('gen-prompt');
+    if (promptEl) promptEl.value = plan.prompt;
+    gen.prompt = plan.prompt;
+    if (plan.model && M.MODELS[plan.model] && gen.model !== plan.model) {
+      selectGenModel(plan.model);
+    }
+    var m = M.getModel(gen.model);
+    var s = M.snapParams(
+      m,
+      plan.duration != null ? plan.duration : gen.duration,
+      plan.resolution != null ? plan.resolution : gen.resolution,
+      plan.ratio != null ? plan.ratio : gen.ratio
+    );
+    gen.duration = s.duration;
+    gen.resolution = s.resolution;
+    gen.ratio = s.ratio;
+    genNotice = s.changes.length ? { model: gen.model, changes: s.changes } : '';
+    saveGen();
+    previewPresetId = null;
+    setExampleActive('gen', null);
+    renderGenParams();
+    renderResults();
+    showPromptStart(promptEl);
+  }
+
   function bindGen() {
     var prompt = $('gen-prompt');
     prompt.value = gen.prompt;
@@ -1736,8 +1780,36 @@
         if (e.key === 'Escape') closeCSelect();
       });
       setLang(lang, false);
-      setTab((location.hash || '').replace('#', '') || 'generate', false);
+      if (window.VSChatPilot && window.VSChatPilot.init) {
+        window.VSChatPilot.init({
+          t: t,
+          getLang: function () { return lang; },
+          getKey: function () { return A.getKey(); },
+          getCredits: oauthCredits,
+          fillGenerate: fillGenerateFromPlan,
+          gotoGenerate: function () { setTab('generate', true); },
+          gotoChat: function () { setTab('chat', true); },
+          promptLogin: startOauthLogin,
+          billingUrl: function () { return buildPtOutbound(t('billing_url')); },
+          toast: toast
+        });
+      }
+      var initialTab = (location.hash || '').replace(/^#/, '');
+      if (!initialTab && rootChatPilotEnabled()) {
+        try {
+          var pq = (new URLSearchParams(location.search || '').get('pilot') || '').toLowerCase();
+          if (pq === 'chat' || pq === '1' || pq === 'on' || pq === 'true') initialTab = 'chat';
+        } catch (ePilot) { /* ignore */ }
+      }
+      if (!initialTab) initialTab = 'generate';
+      setTab(initialTab, false);
       maybeDefaultGenPreset();
+      if (!window.__vswHashBound) {
+        window.__vswHashBound = true;
+        window.addEventListener('hashchange', function () {
+          setTab((location.hash || '').replace(/^#/, '') || 'generate', false);
+        });
+      }
       A.onChange(scheduleRender);
       hydrateKeyBlockFromHistory();
       A.resumeOnLoad(A.getKey());

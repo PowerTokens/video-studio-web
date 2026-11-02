@@ -143,6 +143,42 @@
       }
       if (method === 'GET' && path === '/v1/models') return json(200, { object: 'list', data: [] });
       if (method === 'GET' && path === '/v1/mock-balance') return json(200, { balance: 128000 });
+      if (method === 'POST' && path === '/v1/chat/completions') {
+        var msgs = (body && body.messages) || [];
+        var lastUser = '';
+        for (var i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i] && msgs[i].role === 'user') { lastUser = String(msgs[i].content || ''); break; }
+        }
+        if (lastUser.indexOf('#failchat') >= 0) {
+          return json(500, { error: { message: 'mock chat failure' } });
+        }
+        var ready = /方案|plan|出片|generate|拍|video|场景|短片/i.test(lastUser) || lastUser.indexOf('[example_id=') >= 0;
+        var payload = ready
+          ? {
+              assistant_message: '好的，我按便宜档整理了一版方案，你可以填进生成表。',
+              ready: true,
+              plan: {
+                title: 'Mock 短片',
+                summary: '竖屏 5 秒 · 720p 萌宠/生活向草稿',
+                prompt: 'A fluffy golden retriever puppy pushes a mini shopping cart in a bright supermarket aisle, vertical 9:16, soft natural light, cute, no text watermark.',
+                model: 'wan3.0-video',
+                duration: 5,
+                resolution: '720p',
+                ratio: '9:16'
+              }
+            }
+          : {
+              assistant_message: '想拍什么主体、场景和时长？可以说「金毛逛超市」这类方向。',
+              ready: false,
+              plan: null
+            };
+        return json(200, {
+          id: 'chatcmpl_mock',
+          object: 'chat.completion',
+          model: (body && body.model) || 'glm-4.7-flash',
+          choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify(payload) }, finish_reason: 'stop' }]
+        });
+      }
       if (method === 'POST') {
         if (key.indexOf('nobal') >= 0) return json(402, { error: { message: '账户余额不足，请充值后再试', type: 'insufficient_balance' } });
         if (key.indexOf('quota') >= 0) return json(403, { error: { message: 'user quota is not enough / insufficient balance', type: 'api_error' } });

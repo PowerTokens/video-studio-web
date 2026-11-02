@@ -10,14 +10,15 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261102-DropBatchCompare">
-<link rel="preload" href="js/i18n.js?v=20261102-DropBatchCompare" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261102-DropBatchCompare" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261102-DropBatchCompare" as="script">
-<link rel="preload" href="js/models.js?v=20261102-DropBatchCompare" as="script">
-<link rel="preload" href="js/api.js?v=20261102-DropBatchCompare" as="script">
-<link rel="preload" href="js/oauth.js?v=20261102-DropBatchCompare" as="script">
-<link rel="preload" href="js/app.js?v=20261102-DropBatchCompare" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261102-ChatPilot">
+<link rel="preload" href="js/i18n.js?v=20261102-ChatPilot" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261102-ChatPilot" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261102-ChatPilot" as="script">
+<link rel="preload" href="js/models.js?v=20261102-ChatPilot" as="script">
+<link rel="preload" href="js/api.js?v=20261102-ChatPilot" as="script">
+<link rel="preload" href="js/oauth.js?v=20261102-ChatPilot" as="script">
+<link rel="preload" href="js/chat-pilot.js?v=20261102-ChatPilot" as="script">
+<link rel="preload" href="js/app.js?v=20261102-ChatPilot" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -49,6 +50,7 @@
 
 <nav class="tabs" aria-label="Tabs">
   <div class="tabs-inner" role="tablist">
+    <button role="tab" type="button" data-tab="chat" data-i18n="tab_chat" hidden>对话出片</button>
     <button role="tab" type="button" data-tab="generate" data-i18n="tab_generate">生成视频</button>
     <button role="tab" type="button" data-tab="tasks"><span data-i18n="tab_tasks">任务记录 / 恢复</span><span id="tasks-badge" class="badge-dot" hidden></span></button>
     <button role="tab" type="button" data-tab="key"><span data-i18n="tab_key">API Key</span><span id="key-badge" class="key-status-pill is-soft" title="登录后自动填入 Key" aria-label="登录后自动填入 Key"><span class="key-status-dot key-status-dot-bad" aria-hidden="true"></span><span class="key-status-dot key-status-dot-warn" aria-hidden="true"></span><span class="key-status-dot key-status-dot-ok" aria-hidden="true"></span><span id="key-badge-text" class="key-status-text">去登录</span></span></button>
@@ -66,11 +68,40 @@
 </aside>
 
 <main class="page">
+
+  <!-- ============ 对话出片（试点） ============ -->
+  <section id="panel-chat" class="panel panel-chat" role="tabpanel" hidden>
+    <div class="chat-shell">
+      <header class="chat-top">
+        <div class="chat-top-main">
+          <h1 class="chat-title" data-i18n="chat_title">对话出片</h1>
+          <p class="chat-subtitle muted small" data-i18n="chat_subtitle">先用免费 Flash 聊清楚要拍什么，再填进生成表。</p>
+        </div>
+        <button type="button" id="chat-reset" class="link link-small" data-i18n="chat_reset">重新开始</button>
+      </header>
+      <div id="chat-thread" class="chat-thread" aria-live="polite"></div>
+      <div id="chat-examples" class="chat-examples">
+        <p class="chat-examples-label muted small" data-i18n="chat_examples_label">可以先试这些场景</p>
+        <div id="chat-example-chips" class="chat-example-chips" role="group" aria-label="Chat examples"></div>
+      </div>
+      <div id="chat-plan-mount" class="chat-plan-mount"></div>
+      <p id="chat-status" class="chat-status muted small" hidden></p>
+      <div class="chat-composer">
+        <textarea id="chat-input" rows="1" data-i18n-ph="chat_input_ph" placeholder="用白话说说你想拍什么…"></textarea>
+        <button type="button" id="chat-send" class="btn btn-accent chat-send" data-i18n="chat_send">发送</button>
+      </div>
+      <p class="chat-footnote muted small" data-i18n="chat_footnote">对话由 glm-4.7-flash 协助写提示词（通常不计视频积分）；真正出片仍走生成表。失败时可回经典生成。</p>
+    </div>
+  </section>
+
   <!-- ============ 生成视频 ============ -->
   <section id="panel-generate" class="panel" role="tabpanel">
     <div class="heading">
       <h1 data-i18n="gen_title">生成视频</h1>
       <p data-i18n="gen_desc">点预设直接开拍，或自己写描述；调整参数，生成带原生音效的视频。</p>
+      <p id="chat-pilot-entry-wrap" class="chat-pilot-entry-wrap">
+        <button type="button" id="chat-pilot-entry" class="btn btn-small chat-pilot-entry" hidden data-i18n="chat_entry_btn">试试对话出片（试点）</button>
+      </p>
     </div>
     <div class="columns">
       <div class="col-left">
@@ -280,13 +311,14 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 登录 PowerTokens 即可开始</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261102-DropBatchCompare"></script>
+<script src="js/i18n.js?v=20261102-ChatPilot"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261102-DropBatchCompare"></script>
-<script src="js/lang/en.js?v=20261102-DropBatchCompare"></script>
-<script src="js/models.js?v=20261102-DropBatchCompare"></script>
-<script src="js/api.js?v=20261102-DropBatchCompare"></script>
-<script src="js/oauth.js?v=20261102-DropBatchCompare"></script>
-<script src="js/app.js?v=20261102-DropBatchCompare"></script>
+<script src="js/lang/zh.js?v=20261102-ChatPilot"></script>
+<script src="js/lang/en.js?v=20261102-ChatPilot"></script>
+<script src="js/models.js?v=20261102-ChatPilot"></script>
+<script src="js/api.js?v=20261102-ChatPilot"></script>
+<script src="js/oauth.js?v=20261102-ChatPilot"></script>
+<script src="js/chat-pilot.js?v=20261102-ChatPilot"></script>
+<script src="js/app.js?v=20261102-ChatPilot"></script>
 </body>
 </html>
