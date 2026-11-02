@@ -602,15 +602,15 @@
     });
   }
 
-
-  function promptForKeyOrLogin() {
+  function promptForKeyOrLogin(errEl) {
+    var msg = t('need_key');
+    if (errEl) { errEl.textContent = msg; show(errEl, true); }
+    else toast(msg);
     var profile = O && O.getProfile ? O.getProfile() : null;
     if (!profile) {
-      toast(t('need_key'));
       startOauthLogin();
       return;
     }
-    toast(t('need_key'));
     setTab('key', true);
   }
 
@@ -1317,7 +1317,7 @@
     var errBox = $('gen-error');
     show(errBox, false);
     var key = A.getKey();
-    if (!key) { errBox.textContent = t('need_key'); show(errBox, true); return; }
+    if (!key) { promptForKeyOrLogin(errBox); return; }
     var media = [];
     var mSpec = M.getModel(gen.model);
     if (modelAllowsFirstFrame(mSpec)) {
@@ -1462,7 +1462,7 @@
     var errBox = $('cmp-error');
     show(errBox, false);
     var key = A.getKey();
-    if (!key) { errBox.textContent = t('need_key'); show(errBox, true); return; }
+    if (!key) { promptForKeyOrLogin(errBox); return; }
     if (cmp.models.length < MIN_CMP) { errBox.textContent = t('compare_need_models', MIN_CMP); show(errBox, true); return; }
     if (cmp.models.length > MAX_CMP) { errBox.textContent = t('compare_max_models', MAX_CMP); show(errBox, true); return; }
     var prompt = $('cmp-prompt').value;
@@ -1820,7 +1820,7 @@
       var err = $('manual-error');
       show(err, false);
       var key = A.getKey();
-      if (!key) { err.textContent = t('need_key'); show(err, true); return; }
+      if (!key) { promptForKeyOrLogin(err); return; }
       var parts = $('manual-kind').value.split('|');
       var id = $('manual-id').value.trim();
       try {

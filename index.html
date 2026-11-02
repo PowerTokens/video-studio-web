@@ -23,7 +23,7 @@
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
 <div id="mock-banner" class="mock-banner" hidden data-i18n="mock_banner">模拟模式：不会调用真实接口，也不会扣费。</div>
 
-<!-- Header: brand + language switch + Tips / subtitle + billing + signup -->
+<!-- Header: brand + language switch + Tips / subtitle + billing + OAuth login -->
 <header class="app-header">
   <div class="header-row brand-row">
     <a class="brand" href="./">
@@ -86,7 +86,7 @@
         <button type="button" class="link onboard-collapse-link" id="onboard-collapse" data-i18n="onboard_collapse">收起</button>
       </div>
       <div class="onboard-key">
-        <label class="field-label" for="onboard-key-input" data-i18n="onboard_key_label">访问码</label>
+        <label class="field-label" for="onboard-key-input" data-i18n="onboard_key_label">高级：手动粘贴访问码</label>
         <div class="key-row onboard-key-row">
           <input type="password" id="onboard-key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="onboard_key_ph" placeholder="粘贴访问码（sk-…）">
           <label class="check"><input type="checkbox" id="onboard-key-show"> <span data-i18n="key_show">显示</span></label>
@@ -315,17 +315,17 @@
   <section id="panel-key" class="panel" role="tabpanel" hidden>
     <div class="heading">
       <h1 data-i18n="keys_title">API Key 管理</h1>
-      <p data-i18n="keys_desc">把多个 Key 放进同一个池里切换使用；一个 Key 通吃全部模型，只以掩码显示。</p>
+      <p data-i18n="keys_desc">推荐先登录自动填入默认 Key；也可在此维护多个 Key 并随时切换。一个 Key 通吃全部模型，只以掩码显示。</p>
     </div>
     <div class="columns">
       <div class="col-left">
         <section class="card key-pool-card">
           <h3 class="card-title" data-i18n="pool_card">API Keys</h3>
-          <p class="muted" data-i18n="pool_card_desc">可添加多个 Key，随时点选切换；一个 Key 通吃全部模型。额度与有效期可按 Key 分开管理——这是 PowerTokens 的优势。</p>
+          <p class="muted" data-i18n="pool_card_desc">进阶：可添加多个 Key 并点选切换；一个 Key 通吃全部模型。也可在官网按 Key 设置额度与有效期。</p>
           <p id="key-status" class="badge badge-block badge-bad" role="status" hidden></p>
           <ul id="key-pool-list" class="key-pool-list" hidden></ul>
           <div class="key-pool-add">
-            <label class="field-label" for="key-input" data-i18n="pool_add_label">粘贴新 Key 加入池中</label>
+            <label class="field-label" for="key-input" data-i18n="pool_add_label">粘贴新的 API Key（进阶）</label>
             <div class="key-row">
               <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph" placeholder="粘贴 Key（sk-…）">
               <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show">显示</span></label>
@@ -379,7 +379,7 @@
   <span><a href="https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe" id="footer-desktop" target="_blank" rel="noopener" data-href="desktop_download_url" data-i18n="footer_desktop">下载 Windows 桌面版</a></span>
 </footer>
 
-<div id="statusbar" class="statusbar" role="status">就绪 · 请先在「API Key」页添加 Key</div>
+<div id="statusbar" class="statusbar" role="status">就绪 · 登录 PowerTokens 即可开始</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="js/i18n.js?v=20261015-DefaultPreset"></script>
