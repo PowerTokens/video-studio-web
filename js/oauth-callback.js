@@ -21,7 +21,8 @@
     showError('OAuth module missing');
     return;
   }
-  if (backLink) backLink.href = O.homeUrl('key');
+  // Default back link = Generate; showError() overrides to Key so users can see oauth-error.
+  if (backLink) backLink.href = O.homeUrl('generate');
 
   O.handleCallback(window.location.search).then(function (result) {
     if (!result || !result.ok) {
@@ -29,7 +30,7 @@
       showError(String(detail));
       return;
     }
-    var hash = O.consumeReturnHash() || 'key';
+    var hash = O.consumeReturnHash() || 'generate';
     title.textContent = 'Signed in';
     msg.textContent = 'Redirecting back to Video Studio…';
     window.location.replace(O.homeUrl(hash));

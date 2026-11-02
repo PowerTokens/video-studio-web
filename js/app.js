@@ -573,6 +573,17 @@
     return t('oauth_fail', err || 'error');
   }
 
+  function currentTabName() {
+    var h = (location.hash || '').replace(/^#/, '');
+    if (TABS.indexOf(h) >= 0) return h;
+    var active = document.querySelector('.tabs [data-tab].active');
+    if (active) {
+      var n = active.getAttribute('data-tab');
+      if (TABS.indexOf(n) >= 0) return n;
+    }
+    return 'generate';
+  }
+
   function startOauthLogin() {
     var errEl = $('oauth-error');
     if (errEl) show(errEl, false);
@@ -581,7 +592,8 @@
       return;
     }
     setOauthBusy(true);
-    O.startLogin({ returnHash: 'key' }).catch(function (e) {
+    // Return to the tab the user left (Generate by default; Key only if they started from Key).
+    O.startLogin({ returnHash: currentTabName() }).catch(function (e) {
       setOauthBusy(false);
       var code = (e && e.message) || 'error';
       var msg = oauthFailMessage(code);
@@ -655,7 +667,9 @@
       renderCredits();
       renderKeyState();
       A.resumeOnLoad(A.getKey());
-      setTab('key', true);
+      var ret = (O.consumeReturnHash && O.consumeReturnHash()) || 'generate';
+      if (TABS.indexOf(ret) < 0) ret = 'generate';
+      setTab(ret, true);
       toast(result.keyApplied ? t('oauth_ok') : t('oauth_ok_nokey'));
       return true;
     }, function () {
