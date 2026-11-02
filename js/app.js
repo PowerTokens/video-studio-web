@@ -217,20 +217,41 @@
       n.href = PT_OUTBOUND_HREF[key] ? buildPtOutbound(href) : href;
     });
     // Language dropdown (browser detect → EN default; persist after user choice).
+    // Update in place — recreating <select> on every setLang leaves native teal/arrow paint over the label.
     var box = $('lang-switch');
     if (!box) return;
-    box.innerHTML = '';
     var codes = I.languages();
-    var sel = el('select');
-    sel.id = 'lang-select';
-    sel.setAttribute('aria-label', 'Language');
-    codes.forEach(function (code) {
-      var meta = I.meta(code) || {};
-      var o = el('option', '', meta.name || code);
-      o.value = code; o.selected = code === lang; sel.appendChild(o);
-    });
-    sel.addEventListener('change', function () { setLang(sel.value, true); });
-    box.appendChild(sel);
+    var sel = $('lang-select');
+    if (!sel || sel.tagName !== 'SELECT') {
+      box.innerHTML = '';
+      sel = el('select');
+      sel.id = 'lang-select';
+      sel.setAttribute('aria-label', 'Language');
+      sel.addEventListener('change', function () { setLang(sel.value, true); });
+      box.appendChild(sel);
+    }
+    var needRebuild = sel.options.length !== codes.length;
+    if (!needRebuild) {
+      for (var i = 0; i < codes.length; i++) {
+        if (sel.options[i].value !== codes[i]) { needRebuild = true; break; }
+      }
+    }
+    if (needRebuild) {
+      sel.innerHTML = '';
+      codes.forEach(function (code) {
+        var meta = I.meta(code) || {};
+        var o = el('option', '', meta.name || code);
+        o.value = code;
+        sel.appendChild(o);
+      });
+    } else {
+      codes.forEach(function (code, idx) {
+        var meta = I.meta(code) || {};
+        sel.options[idx].textContent = meta.name || code;
+      });
+    }
+    if (sel.value !== lang) sel.value = lang;
+    try { sel.blur(); } catch (eBlur) { /* ignore */ }
     renderFirstFrameCard();
     renderModelDetailsBtn();
   }
