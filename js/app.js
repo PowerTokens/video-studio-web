@@ -10,33 +10,33 @@
   var MIN_CMP = 2, MAX_CMP = 3;
   var ALL_RES = ['480p', '720p', '1080p', '4k'];
   var ALL_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9', 'adaptive'];
-  var EXAMPLE_IDS = ['locker', 'shopping', 'canyon', 'seal'];
+  var EXAMPLE_IDS = ['shopping', 'canyon', 'seal', 'locker'];
   /** Recommended model per example preset. null = any model (do not change Settings). */
   var EXAMPLE_MODELS = {
-    locker: 'wan3.0-video',
     shopping: 'wan3.0-video',
     canyon: 'wan3.0-video',
-    seal: 'wan3.0-video'
+    seal: 'wan3.0-video',
+    locker: 'wan3.0-video'
   };
   var EXAMPLE_FAMILIES = {
-    locker: 'wan',
     shopping: 'wan',
     canyon: 'wan',
-    seal: 'wan'
+    seal: 'wan',
+    locker: 'wan'
   };
   /** Local showcase GIFs (from PowerTokens/video-studio README) shown in Progress on preset click. */
   var EXAMPLE_PREVIEW = {
-    locker: 'assets/presets/drama.gif',
     shopping: 'assets/presets/product.gif',
     canyon: 'assets/presets/cinematic.gif',
-    seal: 'assets/presets/fantasy.gif'
+    seal: 'assets/presets/fantasy.gif',
+    locker: 'assets/presets/drama.gif'
   };
-  /** Settings to apply with each Generate preset (from prompt / README showcase). Snapped via M.snapParams. */
+  /** Settings to apply with each Generate preset. Default first card stays beginner-cheap (~5s · 720p). */
   var EXAMPLE_SPECS = {
-    locker: { duration: 16, ratio: '16:9', resolution: '1080p' },
-    shopping: { duration: 10, ratio: '9:16', resolution: '1080p' },
-    canyon: { duration: 10, ratio: '9:16', resolution: '1080p' },
-    seal: { duration: 10, ratio: '9:16', resolution: '1080p' }
+    shopping: { duration: 5, ratio: '9:16', resolution: '720p' },
+    canyon: { duration: 5, ratio: '9:16', resolution: '720p' },
+    seal: { duration: 5, ratio: '9:16', resolution: '720p' },
+    locker: { duration: 16, ratio: '16:9', resolution: '1080p' }
   };
   /** Active Generate-tab preset id for Progress sample; cleared on generate / preset clear. */
   var previewPresetId = null;
@@ -553,6 +553,10 @@
         status.textContent = '';
       }
     }
+    // Logged-in beginners should not keep seeing login/API-Key teaching.
+    syncGuideFold();
+    renderNokeyBanner();
+    try { renderGenCost(); } catch (e) { /* form may not be ready yet */ }
   }
 
   function setOauthBusy(on) {
@@ -762,12 +766,15 @@
 
   function syncGuideFold() {
     var collapsed = guidesCollapsed();
-    // Tip ① panel + contextual tip bars ②–④ share one fold flag.
-    show($('onboard'), !collapsed);
+    var hasKey = !!(A.getKey && A.getKey());
+    // Tip ① teaches login / API Key — hide once the user already has a key (or is signed in with one).
+    show($('guide-tip-key'), !collapsed && !hasKey);
+    show($('onboard'), !collapsed && !hasKey);
+    // Expand bar still reopens tips ②–④; tip ① stays hidden when keyed.
     show($('onboard-expand-bar'), collapsed);
     GUIDE_TIP_IDS.forEach(function (id) {
-      var el = $(id);
-      if (el) show(el, !collapsed);
+      var tip = $(id);
+      if (tip) show(tip, !collapsed);
     });
   }
 
@@ -879,13 +886,17 @@
     var ok = modelAllowsFirstFrame(m);
     card.classList.toggle('is-unsupported', !ok);
     show($('gen-ff-unsupported'), !ok);
-    show($('gen-ff-tip'), ok);
+    // Tip lives on the summary; keep the inner copy hidden to avoid duplication.
+    show($('gen-ff-tip'), false);
     show($('gen-ff-controls'), ok);
     // Wan local-embed warning only when supported + local image present
     show($('gen-ff-note'), ok && !!genImage && m.family === 'wan');
-    if (ok && $('gen-ff-url').value.trim()) {
-      var details = $('gen-ff-url-details');
-      if (details) details.open = true;
+    var hasMedia = !!(genImage || ($('gen-ff-url') && $('gen-ff-url').value.trim()));
+    // Beginner default: collapsed. Auto-open only when the user already attached media.
+    if (ok && hasMedia) card.open = true;
+    if (ok && $('gen-ff-url') && $('gen-ff-url').value.trim()) {
+      var urlDetails = $('gen-ff-url-details');
+      if (urlDetails) urlDetails.open = true;
     }
   }
 
@@ -964,12 +975,63 @@
   }
 
   function renderGenCost() {
+    var costEl = $('gen-cost');
+    var stickyCost = $('gen-sticky-cost');
+    if (!costEl || typeof gen === 'undefined' || !gen) return;
     try {
       var c = M.estimateCost(gen.duration, gen.resolution, gen.model);
-      $('gen-cost').textContent = t('cost_estimate', M.PRICE_CHECKED_DATE, money(c.total), money(c.perSecond));
+      var credits = M.estimateCreditsFromUsd(c.total);
+      var costText = t(
+        'cost_estimate',
+        M.PRICE_CHECKED_DATE,
+        localeNum(credits),
+        money(c.total),
+        money(c.perSecond)
+      );
+      costEl.textContent = costText;
+      if (stickyCost) stickyCost.textContent = costText;
+      syncGenerateAvailability(credits);
     } catch (e) {
-      $('gen-cost').textContent = t('cost_invalid');
+      costEl.textContent = t('cost_invalid');
+      if (stickyCost) stickyCost.textContent = t('cost_invalid');
+      syncGenerateAvailability(null);
     }
+  }
+
+  /** Disable Generate when OAuth credits are known and below the estimate; point to billing chip. */
+  function syncGenerateAvailability(creditsNeeded) {
+    var btn = $('gen-submit');
+    var hint = $('gen-insufficient');
+    var oc = oauthCredits();
+    var insuff = typeof creditsNeeded === 'number' && typeof oc === 'number' && creditsNeeded > oc;
+    if (btn && !genBusy) {
+      btn.disabled = !!insuff;
+      btn.title = insuff ? t('credits_insufficient') : '';
+    }
+    if (hint) {
+      show(hint, !!insuff);
+      if (insuff) hint.textContent = t('credits_insufficient');
+    }
+  }
+
+  function focusBillingChip() {
+    var chip = $('billing-chip');
+    if (!chip) return;
+    try { chip.focus(); } catch (e) { /* ignore */ }
+    try { chip.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e2) { /* ignore */ }
+    // Soft pulse so beginners notice the existing top-up control.
+    chip.classList.add('is-pulse');
+    window.setTimeout(function () { chip.classList.remove('is-pulse'); }, 1200);
+  }
+
+  function syncStopVisibility() {
+    var stop = $('gen-stop');
+    if (!stop) return;
+    var id = A.store.get('last_single', null);
+    var rec = id ? A.getTask(id) : null;
+    var active = !!(rec && (rec.state === 'queued' || rec.state === 'running') && A.isPolling(rec.local_id));
+    stop.disabled = !active;
+    show(stop, active);
   }
 
 
@@ -1226,6 +1288,19 @@
       var id = A.store.get('last_single', null);
       if (id && A.isPolling(id)) A.stopPolling(id);
     });
+    syncStopVisibility();
+    var insuff = $('gen-insufficient');
+    if (insuff) {
+      insuff.addEventListener('click', function (e) {
+        e.preventDefault();
+        focusBillingChip();
+        var chip = $('billing-chip');
+        if (chip && chip.href) {
+          // Keep existing billing fallback tab; user already asked not to build in-app checkout yet.
+          try { chip.click(); } catch (err) { /* ignore */ }
+        }
+      });
+    }
 
     $('gen-ff-url').addEventListener('input', function () {
       if ($('gen-ff-url').value.trim() && genImage) clearImage();
@@ -1310,6 +1385,17 @@
     show(errBox, false);
     var key = A.getKey();
     if (!key) { promptForKeyOrLogin(errBox); return; }
+    try {
+      var preCost = M.estimateCost(gen.duration, gen.resolution, gen.model);
+      var need = M.estimateCreditsFromUsd(preCost.total);
+      var have = oauthCredits();
+      if (typeof need === 'number' && typeof have === 'number' && need > have) {
+        errBox.textContent = t('credits_insufficient');
+        show(errBox, true);
+        focusBillingChip();
+        return;
+      }
+    } catch (ignoreCost) { /* ignore — generate still allowed if estimate fails */ }
     var media = [];
     var mSpec = M.getModel(gen.model);
     if (modelAllowsFirstFrame(mSpec)) {
@@ -1343,9 +1429,9 @@
       renderResults();
     }).finally(function () {
       genBusy = false;
-      btn.disabled = false;
       btn.textContent = t('generate_btn');
       btn.setAttribute('data-i18n', 'generate_btn');
+      renderGenCost();
     });
     // Show the "submitting" card right away.
     var pending = A.loadTasks()[0];
@@ -1721,7 +1807,7 @@
     } else {
       syncCards(box, [], {}, 'result_empty');
     }
-    $('gen-stop').disabled = !(rec && (rec.state === 'queued' || rec.state === 'running') && A.isPolling(rec.local_id));
+    syncStopVisibility();
 
     var cbox = $('cmp-results');
     var cid = A.store.get('last_compare', null);
