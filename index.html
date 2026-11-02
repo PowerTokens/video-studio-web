@@ -10,14 +10,14 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261102-OauthFirst">
+<link rel="stylesheet" href="css/style.css?v=20261102-KeyTabAdv">
 <link rel="preload" href="js/i18n.js?v=20261015-DefaultPreset" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261102-OauthFirst" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261102-OauthFirst" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261102-KeyTabAdv" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261102-KeyTabAdv" as="script">
 <link rel="preload" href="js/models.js?v=20261021-Wave2" as="script">
 <link rel="preload" href="js/api.js?v=20261021-Wave2" as="script">
 <link rel="preload" href="js/oauth.js?v=20261102-OauthFirst" as="script">
-<link rel="preload" href="js/app.js?v=20261102-OauthFirst" as="script">
+<link rel="preload" href="js/app.js?v=20261102-KeyTabAdv" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -54,7 +54,7 @@
     <button role="tab" type="button" data-tab="compare" data-i18n="tab_compare">模型对比</button>
     <button role="tab" type="button" data-tab="batch" data-i18n="tab_batch">批量导入</button>
     <button role="tab" type="button" data-tab="tasks"><span data-i18n="tab_tasks">任务记录 / 恢复</span><span id="tasks-badge" class="badge-dot" hidden></span></button>
-    <button role="tab" type="button" data-tab="key"><span data-i18n="tab_key">API Key</span><span id="key-badge" class="key-status-pill is-bad" title="尚未添加 API Key" aria-label="尚未添加 API Key"><span class="key-status-dot key-status-dot-bad" aria-hidden="true"></span><span class="key-status-dot key-status-dot-warn" aria-hidden="true"></span><span class="key-status-dot key-status-dot-ok" aria-hidden="true"></span><span id="key-badge-text" class="key-status-text">要检查</span></span></button>
+    <button role="tab" type="button" data-tab="key"><span data-i18n="tab_key">API Key</span><span id="key-badge" class="key-status-pill is-soft" title="登录后自动填入 Key" aria-label="登录后自动填入 Key"><span class="key-status-dot key-status-dot-bad" aria-hidden="true"></span><span class="key-status-dot key-status-dot-warn" aria-hidden="true"></span><span class="key-status-dot key-status-dot-ok" aria-hidden="true"></span><span id="key-badge-text" class="key-status-text">去登录</span></span></button>
   </div>
 </nav>
 
@@ -63,7 +63,7 @@
     <p data-i18n="nokey_banner">先登录 PowerTokens，自动填入 API Key 并显示积分；登录后即可点预设生成。</p>
     <div class="nokey-actions">
       <button type="button" class="btn btn-accent btn-small" id="nokey-oauth-login" data-i18n="oauth_login">登录 PowerTokens</button>
-      <button type="button" class="link link-small" id="nokey-goto-keys" data-i18n="nokey_goto_keys">高级：粘贴访问码</button>
+      <button type="button" class="link link-small" id="nokey-goto-keys" data-i18n="nokey_goto_keys">高级：到 API Key 页粘贴</button>
     </div>
   </div>
 </aside>
@@ -74,27 +74,16 @@
     <section id="onboard-expand-bar" class="card onboard-expand-bar" hidden>
       <button type="button" class="onboard-expand-btn" id="onboard-expand">
         <span class="onboard-chevron" aria-hidden="true">▸</span>
-        <span data-i18n="onboard_expand">展开登录与访问码提示</span>
+        <span data-i18n="onboard_expand">展开新手提示</span>
       </button>
     </section>
     <section id="onboard" class="onboard" hidden>
       <div class="onboard-guide-top">
         <p class="guide-tip guide-tip--embedded" id="guide-tip-key">
           <span class="guide-tip-num" aria-hidden="true">1</span>
-          <span data-i18n="onboard_step1">点右上角「登录 PowerTokens」，自动填入 API Key 并显示积分。进阶用户也可在下方粘贴访问码。</span>
+          <span data-i18n="onboard_step1">点右上角「登录 PowerTokens」，自动填入 API Key 并显示积分。无需复制粘贴。</span>
         </p>
         <button type="button" class="link onboard-collapse-link" id="onboard-collapse" data-i18n="onboard_collapse">收起</button>
-      </div>
-      <div class="onboard-key">
-        <label class="field-label" for="onboard-key-input" data-i18n="onboard_key_label">高级：手动粘贴访问码</label>
-        <div class="key-row onboard-key-row">
-          <input type="password" id="onboard-key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="onboard_key_ph" placeholder="粘贴访问码（sk-…）">
-          <label class="check"><input type="checkbox" id="onboard-key-show"> <span data-i18n="key_show">显示</span></label>
-        </div>
-        <div class="actions onboard-key-actions">
-          <button type="button" class="btn btn-accent" id="onboard-key-verify" data-i18n="key_verify">校验并保存</button>
-        </div>
-        <p id="onboard-key-error" class="error" hidden></p>
       </div>
       <div class="actions onboard-foot">
         <button type="button" class="btn" id="onboard-collapse-btn" data-i18n="onboard_collapse">收起</button>
@@ -315,34 +304,14 @@
   <section id="panel-key" class="panel" role="tabpanel" hidden>
     <div class="heading">
       <h1 data-i18n="keys_title">API Key 管理</h1>
-      <p data-i18n="keys_desc">推荐先登录自动填入默认 Key；也可在此维护多个 Key 并随时切换。一个 Key 通吃全部模型，只以掩码显示。</p>
+      <p data-i18n="keys_desc">大多数人登录一次即可：默认 Key 与积分自动填入。已有 sk- Key 或多 Key 用户，再用右侧高级区粘贴进池子。</p>
     </div>
     <div class="columns">
       <div class="col-left">
-        <section class="card key-pool-card">
-          <h3 class="card-title" data-i18n="pool_card">API Keys</h3>
-          <p class="muted" data-i18n="pool_card_desc">进阶：可添加多个 Key 并点选切换；一个 Key 通吃全部模型。也可在官网按 Key 设置额度与有效期。</p>
-          <p id="key-status" class="badge badge-block badge-bad" role="status" hidden></p>
-          <ul id="key-pool-list" class="key-pool-list" hidden></ul>
-          <div class="key-pool-add">
-            <label class="field-label" for="key-input" data-i18n="pool_add_label">粘贴新的 API Key（进阶）</label>
-            <div class="key-row">
-              <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph" placeholder="粘贴 Key（sk-…）">
-              <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show">显示</span></label>
-            </div>
-            <p class="muted small" data-i18n="paste_hint">校验通过后 Key 只存在这个浏览器里；无效 Key 不会写入。</p>
-            <div class="actions">
-              <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_verify">校验并保存</button>
-              <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="key_quota_tip_btn">管理额度和有效期 →</a>
-            </div>
-            <p id="key-error" class="error" hidden></p>
-          </div>
-        </section>
-      </div>
-      <div class="col-right">
-        <section class="card oauth-login-card">
-          <h3 class="card-title" data-i18n="oauth_card">登录获取 Key</h3>
-          <p class="muted" data-i18n="oauth_card_desc">推荐：用 PowerTokens 账号登录，自动填入默认 API Key，并显示昵称与积分。左侧还可手动粘贴多个 Key（进阶）。</p>
+        <section class="card oauth-login-card oauth-login-card--hero">
+          <p class="badge badge-soft" data-i18n="oauth_for_beginners">适合大多数用户</p>
+          <h3 class="card-title" data-i18n="oauth_card">登录 — Key 与积分自动填入</h3>
+          <p class="muted" data-i18n="oauth_card_desc">推荐路径：用 PowerTokens 账号登录一次。我们会把默认 API Key 保存在本浏览器，并显示昵称与积分，不必再复制粘贴。</p>
           <button type="button" class="btn btn-accent btn-block" id="oauth-login-btn" data-i18n="oauth_login">登录 PowerTokens</button>
           <button type="button" class="btn btn-block" id="oauth-logout-btn" data-i18n="oauth_logout" hidden>退出登录</button>
           <p id="oauth-status" class="muted small" hidden></p>
@@ -354,6 +323,34 @@
           <p class="muted" data-i18n="key_privacy">Key 保存在这个浏览器的本地存储（localStorage）里，只会发送到 api.powertokens.ai，不经过任何其他服务器。在公用设备上用完请点对应 Key 的「忘记」。</p>
           <hr>
           <p class="muted" data-i18n="no_repeat_key_note">任务已提交、网络超时或提交结果不明确时，不会自动重复生成。</p>
+        </section>
+      </div>
+      <div class="col-right">
+        <section class="card key-pool-card">
+          <h3 class="card-title" data-i18n="pool_card">高级 · Key 池</h3>
+          <p class="muted" data-i18n="pool_card_desc">已经有自己的 sk- Key，或需要多把 Key 切换时，在这里粘贴进池子。新手登录左侧即可，不必使用本区。</p>
+          <p id="key-status" class="badge badge-block badge-bad" role="status" hidden></p>
+          <ul id="key-pool-list" class="key-pool-list" hidden></ul>
+          <details class="key-advanced-details" id="key-advanced-details">
+            <summary class="key-advanced-summary">
+              <span class="onboard-chevron" aria-hidden="true">▸</span>
+              <span data-i18n="pool_advanced_summary">粘贴自己的 API Key</span>
+            </summary>
+            <div class="key-pool-add">
+              <p class="muted small" data-i18n="pool_advanced_help">适用场景：官网已创建多把 Key、团队共用机、或暂时只用现有 Key 而不登录。粘贴后点「校验并保存」；通过才会写入本浏览器。</p>
+              <label class="field-label" for="key-input" data-i18n="pool_add_label">粘贴 API Key（sk-…）</label>
+              <div class="key-row">
+                <input type="password" id="key-input" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-ph="key_ph" placeholder="粘贴 Key（sk-…）">
+                <label class="check"><input type="checkbox" id="key-show"> <span data-i18n="key_show">显示</span></label>
+              </div>
+              <p class="muted small" data-i18n="paste_hint">校验通过后 Key 只存在这个浏览器里；无效 Key 不会写入。</p>
+              <div class="actions">
+                <button type="button" class="btn btn-accent" id="key-save" data-i18n="key_verify">校验并保存</button>
+                <a href="https://powertokens.ai/zh-Hans/api-keys?utm_source=videostudio&amp;utm_medium=web&amp;utm_campaign=video-studio" class="link" target="_blank" rel="noopener" data-href="signup_url" data-i18n="key_quota_tip_btn">管理额度和有效期 →</a>
+              </div>
+              <p id="key-error" class="error" hidden></p>
+            </div>
+          </details>
         </section>
       </div>
     </div>
@@ -384,11 +381,11 @@
 
 <script src="js/i18n.js?v=20261015-DefaultPreset"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261102-OauthFirst"></script>
-<script src="js/lang/en.js?v=20261102-OauthFirst"></script>
+<script src="js/lang/zh.js?v=20261102-KeyTabAdv"></script>
+<script src="js/lang/en.js?v=20261102-KeyTabAdv"></script>
 <script src="js/models.js?v=20261021-DiscountBadge"></script>
 <script src="js/api.js?v=20261015-DefaultPreset"></script>
 <script src="js/oauth.js?v=20261102-OauthFirst"></script>
-<script src="js/app.js?v=20261102-OauthFirst"></script>
+<script src="js/app.js?v=20261102-KeyTabAdv"></script>
 </body>
 </html>

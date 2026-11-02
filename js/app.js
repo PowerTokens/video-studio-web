@@ -369,17 +369,18 @@
     var block = currentKeyBlock();
     var ok = !!key && !block;
     var isQuota = block === 'quota';
-    var isBad = !ok && !isQuota; // none / auth
     var keyBadge = $('key-badge');
     var keyBadgeText = $('key-badge-text');
     if (keyBadge) {
       keyBadge.hidden = false;
+      var noKey = !key || block === 'none';
       keyBadge.classList.toggle('is-ok', ok);
       keyBadge.classList.toggle('is-warn', isQuota);
-      keyBadge.classList.toggle('is-bad', isBad);
+      keyBadge.classList.toggle('is-soft', !ok && !isQuota && noKey);
+      keyBadge.classList.toggle('is-bad', !ok && !isQuota && !noKey);
       keyBadge.setAttribute('aria-hidden', 'false');
       var title;
-      if (!key || block === 'none') title = t('key_chip_none');
+      if (noKey) title = t('key_chip_none');
       else if (block === 'auth') title = t('key_chip_auth');
       else if (block === 'quota') title = t('key_chip_quota');
       else title = t('key_chip_ok');
@@ -388,6 +389,7 @@
       if (keyBadgeText) {
         if (ok) keyBadgeText.textContent = t('key_status_ok');
         else if (isQuota) keyBadgeText.textContent = t('key_status_quota');
+        else if (noKey) keyBadgeText.textContent = t('key_status_signin');
         else keyBadgeText.textContent = t('key_status_check');
       }
     }
@@ -451,7 +453,7 @@
 
   /**
    * Parse → live verify (GET /v1/models) → save only on success.
-   * Shared by Key-tab save and onboard paste. Returns a Promise.
+   * Used by the API Key tab paste form. Returns a Promise.
    */
   function verifyAndSaveKey(raw, opts) {
     opts = opts || {};
@@ -761,13 +763,17 @@
     if (card) card.scrollIntoView({ block: 'start' });
   }
 
-  function focusOnboardKey() {
-    setTab('generate', true);
-    expandGuidesAndScroll();
-    var input = $('onboard-key-input');
+  /** Advanced users: open API Key tab, expand paste panel, focus input. */
+  function openKeyTabAdvanced() {
+    setTab('key', true);
+    var details = $('key-advanced-details');
+    if (details) details.open = true;
+    var input = $('key-input');
     if (input) {
-      input.focus();
-      try { input.select(); } catch (e) { /* ignore */ }
+      window.setTimeout(function () {
+        input.focus();
+        try { input.select(); } catch (e) { /* ignore */ }
+      }, 0);
     }
   }
 
@@ -783,8 +789,8 @@
     if (expandBtn) expandBtn.addEventListener('click', expand);
     var nokeyGoto = $('nokey-goto-keys');
     if (nokeyGoto) {
-      // Advanced path: expand tip ① and focus paste (Key tab pool still available too).
-      nokeyGoto.addEventListener('click', function () { focusOnboardKey(); });
+      // Advanced path lives on the API Key tab only (no paste on Generate).
+      nokeyGoto.addEventListener('click', function () { openKeyTabAdvanced(); });
     }
     // Header "使用提示 / Tips" expands tip ① + contextual tip bars anytime.
     document.querySelectorAll('.tips-btn').forEach(function (b) {
@@ -793,34 +799,6 @@
         expandGuidesAndScroll();
       });
     });
-    var showCb = $('onboard-key-show');
-    if (showCb) {
-      showCb.addEventListener('change', function () {
-        $('onboard-key-input').type = showCb.checked ? 'text' : 'password';
-      });
-    }
-    var verifyBtn = $('onboard-key-verify');
-    if (verifyBtn) {
-      verifyBtn.addEventListener('click', function () {
-        verifyAndSaveKey($('onboard-key-input').value, {
-          inputEl: $('onboard-key-input'),
-          errEl: $('onboard-key-error'),
-          btnEl: verifyBtn,
-          onSuccess: function () {
-            // Keep tips expanded so steps ②–④ stay in view; badge is already green.
-          }
-        });
-      });
-      var onboardInput = $('onboard-key-input');
-      if (onboardInput) {
-        onboardInput.addEventListener('keydown', function (ev) {
-          if (ev.key === 'Enter') {
-            ev.preventDefault();
-            verifyBtn.click();
-          }
-        });
-      }
-    }
   }
 
   // ---------------- generate form ----------------

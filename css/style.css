@@ -74,6 +74,22 @@ p { margin: 0; }
   padding: 4px 10px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .oauth-login-card .btn-block + .btn-block { margin-top: 8px; }
+.oauth-login-card--hero {
+  border-color: #b9ddd4;
+  background: linear-gradient(180deg, #f7fcfa 0%, #fff 55%);
+  box-shadow: 0 1px 0 rgba(83, 178, 165, .08);
+}
+.badge-soft {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #c9e4dc;
+  background: #eef8f4;
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 600;
+}
 
 .top-actions { display: flex; align-items: center; gap: 4px; flex: none; }
 .lang-switch { display: flex; flex: none; }
@@ -178,6 +194,14 @@ p { margin: 0; }
 .key-status-pill.is-ok .key-status-dot-ok {
   opacity: 1; transform: scale(1.15);
   box-shadow: 0 0 0 2px rgba(34, 197, 94, .28);
+}
+/* Soft cue when logged out / no key yet — point to Sign in, not a red alarm */
+.key-status-pill.is-soft {
+  color: var(--accent-text); border-color: #c9e4dc; background: #f7fcfa;
+}
+.key-status-pill.is-soft .key-status-dot-warn {
+  opacity: .85; background: var(--accent);
+  box-shadow: 0 0 0 2px rgba(83, 178, 165, .22);
 }
 
 /* ---------- page / headings / cards ---------- */
@@ -482,18 +506,6 @@ select option, select optgroup {
 .onboard-expand-btn:hover { color: var(--accent); }
 .onboard-chevron { flex: none; font-size: 12px; line-height: 1; color: var(--muted); }
 
-/* Access-code verify sits under tip ① inside the same lightweight tip container */
-.onboard-key {
-  margin: 8px 0 0;
-  padding: 12px;
-  border: 1px dashed #c9e4dc;
-  border-radius: 10px;
-  background: #fff;
-}
-.onboard-key .field-label { margin-bottom: 6px; }
-.onboard-key-row { margin-top: 2px; }
-.onboard-key-actions { margin-top: 10px; }
-.onboard-key .error { margin-top: 8px; }
 .onboard-foot { margin-top: 10px; }
 
 /* Shared compact tip bars: ① (embedded) + ②③④ */
@@ -524,7 +536,29 @@ select option, select optgroup {
 .manual { display: grid; gap: 8px; }
 .key-row { display: flex; gap: 12px; align-items: center; }
 .key-row input[type="password"], .key-row input[type="text"] { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-.key-pool-card .key-pool-add { margin-top: 14px; padding-top: 14px; border-top: 1px dashed #d5ebe5; }
+.key-pool-card .key-pool-add { margin-top: 12px; padding-top: 0; border-top: 0; }
+.key-advanced-details {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #d5ebe5;
+}
+.key-advanced-details > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-text);
+  font-size: 13.5px;
+  font-weight: 600;
+  user-select: none;
+}
+.key-advanced-details > summary::-webkit-details-marker { display: none; }
+.key-advanced-details[open] > summary { margin-bottom: 10px; }
+.key-advanced-details[open] > summary .onboard-chevron { transform: rotate(90deg); }
+.key-advanced-summary .onboard-chevron {
+  transition: transform .15s ease;
+}
 .key-pool-list {
   list-style: none; margin: 10px 0 0; padding: 0;
   display: flex; flex-direction: column; gap: 8px;
