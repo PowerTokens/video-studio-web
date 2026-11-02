@@ -1800,7 +1800,8 @@
           gotoChat: function () { setTab('chat', true); },
           promptLogin: startOauthLogin,
           billingUrl: function () { return buildPtOutbound(t('billing_url')); },
-          toast: toast
+          toast: toast,
+          copyText: copyText
         });
       }
       var initialTab = (location.hash || '').replace(/^#/, '');

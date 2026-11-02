@@ -1,7 +1,7 @@
 /**
- * Chat-to-video pilot (MVP): cheap chat models plan a clip, then fills classic Generate.
+ * Chat-to-video pilot (MVP): cheap chat models plan a clip; sunk-cost UX = chat until happy, then Copy.
  * Prefer glm-4.7-flash; on repeated upstream 429/1305 fall back to glm-4.5-air / deepseek-flash.
- * Toggle with ?pilot=chat (persist) or ?pilot=off. Keep classic Generate available.
+ * Credits never gate the plan card. Toggle ?pilot=chat / ?pilot=off. Classic Generate stays secondary.
  */
 (function (root) {
   'use strict';
@@ -100,27 +100,32 @@
     var catalog = modelCatalogHint();
     if (lang === 'zh') {
       return [
-        '你是 PowerTokens Video Studio 的出片助手。用简洁中文和用户多轮确认想拍的内容。',
+        '你是 PowerTokens Video Studio 的出片助手。用简洁中文和用户多轮打磨想拍的内容。',
+        '目标：先让用户投入对话、把方案聊满意；满意后再给出可复制的提示词。不要催充值或催立刻生成。',
         '底层视频模型目录（只能从中选 model）：' + catalog + '。',
         '默认便宜档：model=' + cheap.model + '，duration=' + cheap.duration + '，resolution=' + cheap.resolution + '，ratio=' + cheap.ratio + '。',
         '严禁默认 16 秒或 1080p/4k；除非用户明确要求更长/更高清，否则保持 5 秒、720p 或更低。',
         '每轮只回复一个 JSON 对象（不要 markdown 围栏外的闲聊），字段：',
         '{"assistant_message":"给用户看的白话","ready":false,"plan":null}',
-        '当信息足够出片时设 ready=true，并填 plan：',
+        '前几轮优先提问与改写（ready=false, plan=null），帮用户细化主体/动作/场景/镜头。',
+        '仅当用户明确说可以了/要提示词/要方案，或信息已足够且用户未再追问时，才设 ready=true 并填 plan：',
         '{"title":"短标题","prompt":"完整视频提示词","model":"模型id","duration":5,"resolution":"720p","ratio":"9:16","summary":"一句话方案摘要"}',
-        'prompt 要具体（主体、动作、场景、镜头、光影、声音），适合图生/文生视频。',
-        '若还缺关键信息，ready=false，plan=null，用 assistant_message 继续提问。'
+        'ready=true 时，assistant_message 应邀请用户继续改，或复制提示词；不要提积分不足或去充值。',
+        'prompt 要具体（主体、动作、场景、镜头、光影、声音），适合图生/文生视频。'
       ].join('\n');
     }
     return [
-      'You are the PowerTokens Video Studio chat planner. Confirm what to shoot in short turns.',
+      'You are the PowerTokens Video Studio chat planner. Invest sunk cost: refine in short turns until the user is happy, then offer a copyable prompt.',
+      'Do not push top-up or immediate Generate. Keep chatting and rewriting.',
       'Video model catalog (pick model only from this list): ' + catalog + '.',
       'Default cheap tier: model=' + cheap.model + ', duration=' + cheap.duration + ', resolution=' + cheap.resolution + ', ratio=' + cheap.ratio + '.',
       'Never default to 16s or 1080p/4k; keep 5s and 720p or lower unless the user explicitly asks for longer/higher.',
       'Reply with ONE JSON object only each turn (no prose outside JSON):',
       '{"assistant_message":"user-facing text","ready":false,"plan":null}',
-      'When ready to shoot, set ready=true and fill plan:',
+      'Early turns: ask and refine (ready=false, plan=null). Cover subject, action, scene, camera.',
+      'Only when the user says they are ready / wants the prompt / wants the plan — or details are enough and they stop asking — set ready=true and fill plan:',
       '{"title":"short title","prompt":"full video prompt","model":"model id","duration":5,"resolution":"720p","ratio":"9:16","summary":"one-line summary"}',
+      'When ready=true, invite them to keep refining or copy the prompt. Never mention low credits or top-up.',
       'If info is missing, ready=false, plan=null, and ask in assistant_message.'
     ].join('\n');
   }
@@ -380,6 +385,52 @@
     lastPlan = null;
   }
 
+  function fallbackCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function copyPlanPrompt(prompt) {
+    var text = String(prompt || '');
+    if (!text) return Promise.resolve(false);
+    if (deps && typeof deps.copyText === 'function') {
+      return Promise.resolve(deps.copyText(text)).then(function () { return true; }, function () {
+        return fallbackCopy(text);
+      });
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () {
+        return fallbackCopy(text);
+      });
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
+  function focusComposer() {
+    var input = $('chat-input');
+    if (!input) return;
+    try { input.focus(); } catch (e) { /* ignore */ }
+    try { input.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e2) { /* ignore */ }
+  }
+
+  function isBusyCapacityDetail(detail, http) {
+    var s = String(detail || '').toLowerCase();
+    if (http === 429 || http === 502 || http === 503 || http === 504) return true;
+    return s.indexOf('429') >= 0 || s.indexOf('1305') >= 0 || s.indexOf('1302') >= 0 ||
+      s.indexOf('rate limit') >= 0 || s.indexOf('overloaded') >= 0 || s.indexOf('busy') >= 0 ||
+      s.indexOf('retry later') >= 0 || s.indexOf('temporarily') >= 0;
+  }
+
   function renderPlanCard(plan) {
     var mount = $('chat-plan-mount');
     if (!mount || !plan) return;
@@ -414,49 +465,74 @@
     details.appendChild(pre);
     card.appendChild(details);
 
+    // Sunk-cost UX: never gate on credits. Primary = Copy; keep refining; Fill Generate secondary.
     var actions = el('div', 'chat-plan-actions');
+    var copyBtn = el('button', 'btn btn-accent', t('chat_copy_prompt'));
+    copyBtn.type = 'button';
+    copyBtn.addEventListener('click', function () {
+      track('chat_copy_prompt', {
+        model: plan.model,
+        duration: plan.duration,
+        resolution: plan.resolution,
+        credits: credits,
+        insuff: !!insuff
+      });
+      copyPlanPrompt(plan.prompt).then(function (ok) {
+        if (deps.toast) deps.toast(ok ? t('chat_copied_toast') : t('chat_copy_failed'));
+        if (ok) {
+          details.open = true;
+          if (insuff) revealSoftCredits(card, credits, have);
+        }
+      });
+    });
+    actions.appendChild(copyBtn);
+
+    var refine = el('button', 'btn', t('chat_keep_refining'));
+    refine.type = 'button';
+    refine.addEventListener('click', function () {
+      track('chat_keep_refining', { model: plan.model });
+      focusComposer();
+      if (deps.toast) deps.toast(t('chat_keep_refining_toast'));
+    });
+    actions.appendChild(refine);
+
+    var fill = el('button', 'btn', t('chat_fill_form'));
+    fill.type = 'button';
+    fill.addEventListener('click', function () {
+      track('chat_fill_form', {
+        model: plan.model,
+        duration: plan.duration,
+        resolution: plan.resolution,
+        credits: credits,
+        insuff: !!insuff
+      });
+      if (deps.fillGenerate) deps.fillGenerate(plan);
+      if (deps.gotoGenerate) deps.gotoGenerate();
+      if (deps.toast) deps.toast(t('chat_filled_toast'));
+    });
+    actions.appendChild(fill);
+    card.appendChild(actions);
+
+    // Soft credits hint only (muted). No blocking Top up CTA on the plan card.
     if (insuff) {
-      track('credits_insufficient_show', {
+      track('credits_insufficient_soft', {
         need: credits,
         have: have,
         model: plan.model,
         duration: plan.duration,
         resolution: plan.resolution
       });
-      var warn = el('p', 'chat-plan-warn', t('chat_credits_insufficient', String(credits), String(have)));
-      card.appendChild(warn);
-      var topup = el('a', 'btn btn-accent', t('chat_topup'));
-      topup.href = (deps.billingUrl && deps.billingUrl()) || t('billing_url');
-      topup.target = '_blank';
-      topup.rel = 'noopener';
-      topup.addEventListener('click', function () {
-        track('credits_topup_click', { need: credits, have: have });
-      });
-      actions.appendChild(topup);
-      var fallback = el('button', 'btn', t('chat_goto_classic'));
-      fallback.type = 'button';
-      fallback.addEventListener('click', function () {
-        track('chat_fallback_classic', { reason: 'credits_insufficient' });
-        if (deps.gotoGenerate) deps.gotoGenerate();
-      });
-      actions.appendChild(fallback);
+      var soft = el('p', 'chat-plan-soft muted small');
+      soft.setAttribute('data-soft-credits', '1');
+      soft.hidden = true; // reveal after copy, or leave a one-line tip below
+      soft.textContent = t('chat_credits_soft', String(credits), String(have));
+      card.appendChild(soft);
+      var tip = el('p', 'chat-plan-tip muted small', t('chat_plan_copy_tip'));
+      card.appendChild(tip);
     } else {
-      var fill = el('button', 'btn btn-accent', t('chat_fill_form'));
-      fill.type = 'button';
-      fill.addEventListener('click', function () {
-        track('chat_fill_form', {
-          model: plan.model,
-          duration: plan.duration,
-          resolution: plan.resolution,
-          credits: credits
-        });
-        if (deps.fillGenerate) deps.fillGenerate(plan);
-        if (deps.gotoGenerate) deps.gotoGenerate();
-        if (deps.toast) deps.toast(t('chat_filled_toast'));
-      });
-      actions.appendChild(fill);
+      card.appendChild(el('p', 'chat-plan-tip muted small', t('chat_plan_copy_tip')));
     }
-    card.appendChild(actions);
+
     mount.appendChild(card);
     scrollThread();
     track('chat_plan_ready', {
@@ -466,6 +542,14 @@
       credits: credits,
       insuff: !!insuff
     });
+  }
+
+  function revealSoftCredits(card, credits, have) {
+    if (!card) return;
+    var soft = card.querySelector('[data-soft-credits]');
+    if (!soft) return;
+    soft.hidden = false;
+    soft.textContent = t('chat_credits_soft', String(credits), String(have));
   }
 
   function renderExamples() {
@@ -552,7 +636,11 @@
 
   function showError(detail, opts) {
     opts = opts || {};
-    appendBubble('assistant', t('chat_flash_error', detail || t('chat_flash_unknown')));
+    var busyCap = isBusyCapacityDetail(detail, opts.http);
+    var msg = busyCap
+      ? t('chat_flash_busy')
+      : t('chat_flash_error', detail || t('chat_flash_unknown'));
+    appendBubble('assistant', msg);
     var mount = $('chat-plan-mount');
     if (!mount) return;
     var actions = el('div', 'chat-fallback-actions');
@@ -560,7 +648,7 @@
     var retry = el('button', 'btn btn-accent', t('chat_retry'));
     retry.type = 'button';
     retry.addEventListener('click', function () {
-      track('chat_flash_retry_click', {});
+      track('chat_flash_retry_click', { busy: !!busyCap });
       if (busy) return;
       runFlash();
     });
@@ -571,17 +659,28 @@
       var draftBtn = el('button', 'btn', t('chat_use_draft'));
       draftBtn.type = 'button';
       draftBtn.addEventListener('click', function () {
-        track('chat_fallback_draft', {});
+        track('chat_fallback_draft', { busy: !!busyCap });
         appendBubble('assistant', t('chat_draft_ready'));
         renderPlanCard(draft);
       });
       actions.appendChild(draftBtn);
+      // Soft path: for capacity blips, also keep refining without jumping to Generate.
+      if (busyCap) {
+        var keep = el('button', 'btn', t('chat_keep_refining'));
+        keep.type = 'button';
+        keep.addEventListener('click', function () {
+          track('chat_keep_refining', { from: 'flash_busy' });
+          focusComposer();
+        });
+        actions.appendChild(keep);
+      }
     }
 
+    // Classic Generate stays available but secondary — never the forced next step.
     var btn = el('button', 'btn', t('chat_goto_classic'));
     btn.type = 'button';
     btn.addEventListener('click', function () {
-      track('chat_fallback_classic', { reason: 'flash_error' });
+      track('chat_fallback_classic', { reason: busyCap ? 'flash_busy' : 'flash_error' });
       if (deps.gotoGenerate) deps.gotoGenerate();
     });
     actions.appendChild(btn);
@@ -594,8 +693,8 @@
     chatCompletions(messages).then(function (res) {
       setBusy(false);
       if (!res.ok) {
-        track('chat_flash_fail', { kind: res.kind || 'unknown', http: res.http || 0 });
-        showError(res.detail || res.kind);
+        track('chat_flash_fail', { kind: res.kind || 'unknown', http: res.http || 0, model: res.model || '' });
+        showError(res.detail || res.kind, { http: res.http, kind: res.kind, model: res.model });
         return;
       }
       var parsed = parseAssistantPayload(res.content);
