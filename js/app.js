@@ -182,10 +182,11 @@
     billing_url: 'web.billing'
   };
 
-  function buildPtOutbound(base, content) {
+  function buildPtOutbound(base, content, opts) {
+    opts = opts || {};
     var U = window.VSUtm;
     if (U && typeof U.buildOutbound === 'function') {
-      return U.buildOutbound(base, content);
+      return U.buildOutbound(base, content, opts);
     }
     // Fallback if utm.js missing: still attach product defaults.
     try {
@@ -198,6 +199,10 @@
     } catch (e) { return base; }
   }
 
+  function buildBillingOutbound(base, content) {
+    return buildPtOutbound(base, content || 'web.billing', { forceProduct: true });
+  }
+
   function applyStatic() {
     var meta = I.meta(lang) || {};
     document.documentElement.lang = meta.htmlLang || lang;
@@ -207,7 +212,12 @@
     document.querySelectorAll('[data-href]').forEach(function (n) {
       var key = n.getAttribute('data-href');
       var href = t(key);
-      n.href = PT_OUTBOUND_HREF[key] ? buildPtOutbound(href, PT_OUTBOUND_CONTENT[key]) : href;
+      if (PT_OUTBOUND_HREF[key]) {
+        var force = (key === 'billing_url');
+        n.href = buildPtOutbound(href, PT_OUTBOUND_CONTENT[key], force ? { forceProduct: true } : null);
+      } else {
+        n.href = href;
+      }
     });
     // Language dropdown (browser detect → EN default; persist after user choice).
     // Update in place — recreating <select> on every setLang leaves native teal/arrow paint over the label.
@@ -1481,7 +1491,7 @@
     if (err) card.appendChild(el('p', 'task-error', err));
     if (isBalanceError(rec)) {
       var top = el('a', 'btn btn-accent btn-small topup', t('topup_btn'));
-      top.href = t('billing_url');
+      top.href = buildBillingOutbound(t('billing_url'), (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.billing) || 'web.billing');
       top.target = '_blank';
       top.rel = 'noopener';
       card.appendChild(top);
@@ -1792,7 +1802,7 @@
           gotoGenerate: function () { setTab('generate', true); },
           gotoChat: function () { setTab('chat', true); },
           promptLogin: startOauthLogin,
-          billingUrl: function () { return buildPtOutbound(t('billing_url'), (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.chat_billing) || 'web.chat_billing'); },
+          billingUrl: function () { return buildBillingOutbound(t('billing_url'), (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.chat_billing) || 'web.chat_billing'); },
           toast: toast,
           copyText: copyText
         });
