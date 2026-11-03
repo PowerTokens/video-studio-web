@@ -709,6 +709,7 @@
     card.appendChild(meta);
 
     var details = el('details', 'chat-plan-prompt');
+    if (opts.openPrompt || keepOpen) details.open = true;
     var sum = el('summary', '', t('chat_plan_prompt_toggle'));
     details.appendChild(sum);
     var pre = el('pre', 'chat-plan-prompt-body', plan.prompt);
@@ -795,6 +796,9 @@
       return;
     }
     scrollThread();
+    if (opts.openPrompt) {
+      try { card.scrollIntoView({ block: 'start' }); } catch (eScroll) { /* ignore */ }
+    }
     track('chat_plan_ready', {
       model: plan.model,
       duration: plan.duration,
@@ -851,19 +855,64 @@
     track('chat_session_start', {});
   }
 
+  /**
+   * Chip → the stored example shot prompt, as written.
+   * Does not call the chat model. Free-text messages still do.
+   */
+  function buildExamplePlan(id) {
+    var prompt = planPromptForExample(id);
+    if (!prompt) return null;
+    var label = t('example_' + id + '_label');
+    if (!label || label.indexOf('example_') === 0) label = t('chat_plan_title_fallback');
+    return clampPlan({
+      title: label,
+      summary: t('chat_example_summary'),
+      prompt: prompt,
+      model: CHEAP_DEFAULT.model,
+      duration: CHEAP_DEFAULT.duration,
+      resolution: CHEAP_DEFAULT.resolution,
+      ratio: CHEAP_DEFAULT.ratio
+    });
+  }
+
   function onExample(id) {
     if (busy) return;
     ensureSession();
     track('chat_example_click', { example_id: id });
-    // Chip text is a short shootable description. The hidden reference is the full plan prompt.
+    var label = t('example_' + id + '_label');
     var userVisible = lookupString('chat_example_' + id + '_blurb') ||
-      t('chat_example_user', t('example_' + id + '_label'));
+      t('chat_example_user', label);
     var prompt = planPromptForExample(id) || t('example_' + id + '_prompt');
     var apiUser = userVisible + '\n\n[example_id=' + id + ']\n' + t('chat_example_ref_prefix') + '\n' + prompt;
     appendBubble('user', userVisible);
     hideExamples();
     messages.push({ role: 'user', content: apiUser });
-    runFlash();
+    var plan = buildExamplePlan(id);
+    if (!plan) {
+      runFlash();
+      return;
+    }
+    var reply = t('chat_example_ready', label);
+    appendBubble('assistant', reply);
+    messages.push({
+      role: 'assistant',
+      content: JSON.stringify({
+        assistant_message: reply,
+        ready: true,
+        plan: {
+          title: plan.title,
+          summary: plan.summary,
+          prompt: plan.prompt,
+          model: plan.model,
+          duration: plan.duration,
+          resolution: plan.resolution,
+          ratio: plan.ratio
+        }
+      })
+    });
+    clearPlanMount();
+    renderPlanCard(plan, { openPrompt: true, textModel: FLASH_MODEL });
+    track('chat_example_plan', { example_id: id });
   }
 
   function hideExamples() {

@@ -305,6 +305,8 @@ VSI18n.register('en', {
   chat_thinking: "Thinking…",
   chat_need_login: "Sign in to PowerTokens (or paste a key under Account → Advanced) so chat can call free Flash.",
   chat_example_user: "I want a “%s” style clip — please draft a cheap-tier plan.",
+  chat_example_ready: "This is the example shot prompt for “%s”, not a newly written one. Copy it, or say what to change.",
+  chat_example_summary: "Example shot prompt, used as written.",
   chat_example_ref_prefix: "Finished shot prompt for reference. plan.prompt must be this concrete: subject, scene, action and motion, camera, style and constraints. Keep this text or revise the same picture only. Do not return the short line above as the prompt. Do not write 16s or 1080p.",
   chat_example_shopping_blurb: "A six-month golden retriever puppy in a plain blue apron pushes a tiny shopping cart, freezes at the freezer, presses its wet nose to the glass, drools, and reaches one paw toward the handle. Eye-level follow into a close-up.",
   chat_example_canyon_blurb: "A narrow red-rock canyon at sunset. Three cuts in the same canyon: workers carry timber in; a deck, pergola, pool, and fire pit are standing; a worker sits by the water. Vertical, stabilized.",

@@ -299,6 +299,8 @@ VSI18n.register('pt', {
   chat_thinking: "A pensar…",
   chat_need_login: "Entre no PowerTokens (ou cole uma chave em Conta → Avançado) para o chat usar Flash gratuito.",
   chat_example_user: "Quero um clipe no estilo “%s” — monte um plano econômico.",
+  chat_example_ready: "Este é o prompt de exemplo de “%s”, sem reescrever. Copie ou diga o que mudar.",
+  chat_example_summary: "Prompt de exemplo, como está escrito.",
   chat_example_ref_prefix: "Prompt de plano já filmável. plan.prompt precisa ser tão concreto: sujeito, cena, ação e movimento, câmera, estilo e limites. Pode usar este texto ou revisar só a mesma imagem. Não devolva a frase curta acima como prompt. Não escreva 16s nem 1080p.",
   chat_example_shopping_blurb: "Filhote golden de seis meses, avental azul liso, empurra um carrinho infantil, trava no freezer, encosta o focinho no vidro, baba e estende uma pata à maçaneta. Acompanhamento na altura dos olhos até o close.",
   chat_example_canyon_blurb: "Cânion estreito de rocha vermelha ao pôr do sol. Três cortes no mesmo cânion: entram com madeira; surgem deck, pergolado, piscina e fogueira; um operário senta à beira da água. Vertical, câmera estável.",

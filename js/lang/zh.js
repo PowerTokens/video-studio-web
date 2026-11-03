@@ -310,6 +310,8 @@ VSI18n.register('zh', {
   chat_thinking: "思考中…",
   chat_need_login: "请先登录 PowerTokens（或到「账号 → 高级」粘贴 Key），对话才能调用免费 Flash。",
   chat_example_user: "我想拍「%s」这类场景，帮我出一版便宜档方案。",
+  chat_example_ready: "这是「%s」的示例成片提示词，没有另外生成一版。可以直接复制，想改再说。",
+  chat_example_summary: "示例成片提示词，按示例原样放上。",
   chat_example_ref_prefix: "成片提示词范例。plan.prompt 要达到同样具体（主体、场景、动作与运动、镜头、风格与限制）。可以沿用这一条，或只改同一画面。不要把上面那句短描述原样交回，不要写成 16 秒或 1080p。",
   chat_example_shopping_blurb: "六个月大金毛幼犬系着素蓝围裙，推着儿童购物车。冷柜前急停，湿鼻子贴上玻璃，口水滴下来，一只爪子伸向门把手。平视跟拍到近景。",
   chat_example_canyon_blurb: "高耸红岩夹着的窄峡谷，日落。同一峡谷里跳切三下：工人抬木料进来，小木台、凉亭、冷水池和火塘立起来，最后工人坐在池边。竖屏，稳定。",
