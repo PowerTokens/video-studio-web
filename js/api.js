@@ -132,6 +132,215 @@
     }).then(function (r) { if (timer) clearTimeout(timer); return r; });
   }
 
+  /**
+   * OpenAI-compatible SSE for POST /v1/chat/completions with stream:true.
+   * onDelta(chunk) is called for each non-empty content delta (string).
+   * Resolves { code, content, body, text, networkError, error, streamed }.
+   * Never throws for HTTP/network errors. Mid-stream read failures still return
+   * any content accumulated so far (callers may treat partial + error as STREAM).
+   */
+  function apiChatStream(path, key, payload, timeoutMs, onDelta) {
+    var url = apiUrl(path);
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, timeoutMs || 60000) : null;
+    var bodyObj = {};
+    var k;
+    for (k in (payload || {})) {
+      if (Object.prototype.hasOwnProperty.call(payload, k)) bodyObj[k] = payload[k];
+    }
+    bodyObj.stream = true;
+    var init = {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + key,
+        Accept: 'text/event-stream, application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(bodyObj),
+      credentials: 'omit',
+      cache: 'no-store',
+      referrerPolicy: 'no-referrer'
+    };
+    if (ctrl) init.signal = ctrl.signal;
+
+    function clearTimer() { if (timer) clearTimeout(timer); timer = null; }
+
+    function parseJsonSafe(text) {
+      try {
+        var parsed = JSON.parse(text);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+      } catch (e) { /* ignore */ }
+      return {};
+    }
+
+    function deltaFromChunk(obj) {
+      if (!obj || !obj.choices || !obj.choices[0]) return '';
+      var choice = obj.choices[0];
+      var delta = choice.delta || {};
+      var piece = delta.content;
+      if (!piece && choice.message) piece = choice.message.content;
+      // Some upstreams stream reasoning when thinking is on; pilot disables that, but tolerate.
+      if (!piece && delta.reasoning_content) piece = delta.reasoning_content;
+      if (!piece && choice.message && choice.message.reasoning_content) {
+        piece = choice.message.reasoning_content;
+      }
+      return piece ? String(piece) : '';
+    }
+
+    function choiceMessageContent(choice) {
+      if (!choice) return '';
+      var msg = choice.message || {};
+      var content = msg.content;
+      if (!content && choice.delta) content = choice.delta.content;
+      if (!content && msg.reasoning_content) content = msg.reasoning_content;
+      return content ? String(content) : '';
+    }
+
+    return root.fetch(url, init).then(function (res) {
+      var ctype = String(res.headers && res.headers.get && res.headers.get('content-type') || '').toLowerCase();
+      // Non-SSE bodies: errors (429 JSON) or rare full JSON replies despite stream:true.
+      if (!res.ok || ctype.indexOf('text/event-stream') < 0) {
+        return res.text().then(function (text) {
+          clearTimer();
+          var body = parseJsonSafe(text);
+          var content = '';
+          if (res.ok && body && body.choices && body.choices[0]) {
+            content = choiceMessageContent(body.choices[0]);
+            if (content && typeof onDelta === 'function') {
+              try { onDelta(content); } catch (e0) { /* ignore */ }
+            }
+          }
+          return {
+            code: res.status,
+            body: body,
+            text: String(text || '').slice(0, 500),
+            content: content,
+            networkError: false,
+            streamed: false
+          };
+        });
+      }
+
+      if (!res.body || typeof res.body.getReader !== 'function') {
+        // No ReadableStream (very old browsers): fall back to full text parse of SSE payload.
+        return res.text().then(function (text) {
+          clearTimer();
+          var content = '';
+          String(text || '').split(/\r?\n/).forEach(function (line) {
+            var s = line.replace(/^\s+/, '');
+            if (s.indexOf('data:') !== 0) return;
+            var data = s.slice(5).replace(/^\s+/, '');
+            if (!data || data === '[DONE]') return;
+            var obj = parseJsonSafe(data);
+            var piece = deltaFromChunk(obj);
+            if (piece) {
+              content += piece;
+              if (typeof onDelta === 'function') {
+                try { onDelta(piece); } catch (e1) { /* ignore */ }
+              }
+            }
+          });
+          return {
+            code: res.status,
+            body: {},
+            text: '',
+            content: content,
+            networkError: false,
+            streamed: true
+          };
+        });
+      }
+
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder('utf-8');
+      var buffer = '';
+      var content = '';
+      var sawDone = false;
+
+      function consumeLine(line) {
+        var s = String(line || '').replace(/^\uFEFF/, '');
+        if (!s) return;
+        // SSE comments / event: lines ignored; only data: carries the chunk JSON.
+        if (s.charAt(0) === ':') return;
+        if (s.indexOf('data:') !== 0) return;
+        var data = s.slice(5);
+        if (data.charAt(0) === ' ') data = data.slice(1);
+        if (!data) return;
+        if (data === '[DONE]') { sawDone = true; return; }
+        var obj = parseJsonSafe(data);
+        var piece = deltaFromChunk(obj);
+        if (!piece) return;
+        content += piece;
+        if (typeof onDelta === 'function') {
+          try { onDelta(piece); } catch (e2) { /* ignore */ }
+        }
+      }
+
+      function pump() {
+        return reader.read().then(function (result) {
+          if (result.done) {
+            // Flush any trailing line without final \n
+            if (buffer) { consumeLine(buffer); buffer = ''; }
+            clearTimer();
+            return {
+              code: res.status,
+              body: {},
+              text: '',
+              content: content,
+              networkError: false,
+              streamed: true,
+              done: sawDone
+            };
+          }
+          buffer += decoder.decode(result.value || new Uint8Array(), { stream: true });
+          var parts = buffer.split(/\r?\n/);
+          buffer = parts.pop();
+          var i;
+          for (i = 0; i < parts.length; i++) consumeLine(parts[i]);
+          if (sawDone) {
+            try { reader.cancel(); } catch (e3) { /* ignore */ }
+            clearTimer();
+            return {
+              code: res.status,
+              body: {},
+              text: '',
+              content: content,
+              networkError: false,
+              streamed: true,
+              done: true
+            };
+          }
+          return pump();
+        });
+      }
+
+      return pump().then(null, function (err) {
+        clearTimer();
+        return {
+          code: res.status,
+          body: {},
+          text: '',
+          content: content,
+          networkError: true,
+          streamed: true,
+          error: String(err && err.message || err),
+          partial: !!content
+        };
+      });
+    }, function (err) {
+      clearTimer();
+      return {
+        code: null,
+        body: {},
+        text: '',
+        content: '',
+        networkError: true,
+        streamed: false,
+        error: String(err && err.message || err)
+      };
+    });
+  }
+
   function serverMessage(body) {
     if (!body || typeof body !== 'object') return '';
     var e = body.error;
@@ -509,6 +718,8 @@
     keyHint: keyHint,
     verifyKey: verifyKey,
     api: api,
+    apiChatStream: apiChatStream,
+    serverMessage: serverMessage,
     loadTasks: loadTasks,
     getTask: getTask,
     update: update,

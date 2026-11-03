@@ -1,6 +1,7 @@
 /**
  * Chat-to-video pilot (MVP): cheap chat models plan a clip; sunk-cost UX = chat until happy, then Copy.
  * Prefer glm-4.7-flash; on repeated upstream 429/1305 fall back to glm-4.5-air / deepseek-flash.
+ * Chat completions stream (SSE) into the assistant bubble, then parse the full text into the plan card.
  * Credits never gate the plan card. Toggle ?pilot=chat / ?pilot=off. Classic Generate stays secondary.
  */
 (function (root) {
@@ -267,13 +268,8 @@
     return id.indexOf('glm-') === 0;
   }
 
-  function chatCompletionsOnce(apiMessages, modelId) {
-    var A = root.VSApi;
-    var key = deps.getKey && deps.getKey();
+  function buildChatBody(apiMessages, modelId) {
     var model = modelId || FLASH_MODEL;
-    if (!A || !key) {
-      return Promise.resolve({ ok: false, kind: 'NO_KEY', detail: t('chat_need_login'), model: model });
-    }
     var body = {
       model: model,
       temperature: 0.4,
@@ -283,47 +279,126 @@
     // glm-4.7-flash defaults thinking=on upstream; that often returns empty content
     // or 429/1305 under load. Pilot only needs plain JSON text.
     if (wantsThinkingDisabled(model)) body.thinking = { type: 'disabled' };
+    return body;
+  }
+
+  function mapChatHttpFailure(r, model) {
+    var A = root.VSApi;
+    if (r.networkError) {
+      return { ok: false, kind: 'NETWORK', detail: r.error || t('chat_flash_network'), model: model };
+    }
+    if (r.code === 401 || r.code === 403) {
+      return {
+        ok: false,
+        kind: 'AUTH',
+        detail: formatHttpDetail(r.code, r.body) || (A && A.serverMessage ? A.serverMessage(r.body) : t('chat_flash_auth')),
+        http: r.code,
+        model: model
+      };
+    }
+    if (r.code !== 200) {
+      return { ok: false, kind: 'HTTP', detail: formatHttpDetail(r.code, r.body), http: r.code, model: model };
+    }
+    return null;
+  }
+
+  /** Non-stream fallback (also used once if a stream dies mid-reply). */
+  function chatCompletionsOnceNonStream(apiMessages, modelId) {
+    var A = root.VSApi;
+    var key = deps.getKey && deps.getKey();
+    var model = modelId || FLASH_MODEL;
+    if (!A || !key) {
+      return Promise.resolve({ ok: false, kind: 'NO_KEY', detail: t('chat_need_login'), model: model });
+    }
+    var body = buildChatBody(apiMessages, model);
     return A.api('POST', '/v1/chat/completions', key, body, 60000).then(function (r) {
-      if (r.networkError) {
-        return { ok: false, kind: 'NETWORK', detail: r.error || t('chat_flash_network'), model: model };
-      }
-      if (r.code === 401 || r.code === 403) {
-        return {
-          ok: false,
-          kind: 'AUTH',
-          detail: formatHttpDetail(r.code, r.body) || (A.serverMessage ? A.serverMessage(r.body) : t('chat_flash_auth')),
-          http: r.code,
-          model: model
-        };
-      }
-      if (r.code !== 200) {
-        return { ok: false, kind: 'HTTP', detail: formatHttpDetail(r.code, r.body), http: r.code, model: model };
-      }
+      var fail = mapChatHttpFailure(r, model);
+      if (fail) return fail;
       var choice = r.body && r.body.choices && r.body.choices[0];
       var content = extractChoiceContent(choice);
       if (!content) return { ok: false, kind: 'EMPTY', detail: t('chat_flash_empty'), http: 200, model: model };
-      return { ok: true, content: content, model: model };
+      return { ok: true, content: content, model: model, streamed: false };
     });
   }
 
   /**
-   * Retry transient 429/1305 / empty / network with backoff, then fall through the
-   * cheap-model allowlist (glm-4.7-flash first).
+   * Prefer SSE stream so the bubble paints as tokens arrive.
+   * opts.onDelta(piece) optional. opts.allowNonStreamFallback (default true) retries once
+   * without stream if the stream errors after partial content, or if stream is unavailable.
    */
-  function chatCompletions(apiMessages) {
+  function chatCompletionsOnce(apiMessages, modelId, opts) {
+    opts = opts || {};
+    var A = root.VSApi;
+    var key = deps.getKey && deps.getKey();
+    var model = modelId || FLASH_MODEL;
+    var onDelta = typeof opts.onDelta === 'function' ? opts.onDelta : null;
+    if (!A || !key) {
+      return Promise.resolve({ ok: false, kind: 'NO_KEY', detail: t('chat_need_login'), model: model });
+    }
+    if (typeof A.apiChatStream !== 'function') {
+      return chatCompletionsOnceNonStream(apiMessages, modelId);
+    }
+    var body = buildChatBody(apiMessages, model);
+    return A.apiChatStream('/v1/chat/completions', key, body, 60000, onDelta).then(function (r) {
+      var fail = mapChatHttpFailure(r, model);
+      if (fail) {
+        // Stream never started (JSON 429 etc.) — retryable via outer allowlist loop.
+        return fail;
+      }
+      var content = String(r.content || '');
+      if (r.networkError && content) {
+        // Mid-stream drop after some tokens: optional one non-stream retry.
+        if (opts.allowNonStreamFallback !== false) {
+          track('chat_flash_stream_mid_retry', { model: model, partial_len: content.length });
+          return chatCompletionsOnceNonStream(apiMessages, modelId).then(function (res) {
+            if (res.ok) res.recovered_from_stream = true;
+            else {
+              res.kind = res.kind || 'STREAM';
+              res.partial = content;
+              res.detail = res.detail || t('chat_flash_stream_cut');
+            }
+            return res;
+          });
+        }
+        return {
+          ok: false,
+          kind: 'STREAM',
+          detail: r.error || t('chat_flash_stream_cut'),
+          http: r.code || 200,
+          model: model,
+          partial: content
+        };
+      }
+      if (r.networkError) {
+        return { ok: false, kind: 'NETWORK', detail: r.error || t('chat_flash_network'), model: model };
+      }
+      if (!content) return { ok: false, kind: 'EMPTY', detail: t('chat_flash_empty'), http: 200, model: model };
+      return { ok: true, content: content, model: model, streamed: !!r.streamed };
+    });
+  }
+
+  /**
+   * Retry transient 429/1305 / empty / network with short backoff, then fall through the
+   * cheap-model allowlist (glm-4.7-flash first). Keep silent waits short so streaming feels snappy.
+   */
+  function chatCompletions(apiMessages, opts) {
     var models = FLASH_MODELS.slice();
     var modelIndex = 0;
     var attemptOnModel = 0;
-    var maxAttemptsPerModel = 3;
-    // Longer backoff: upstream 1305 is capacity, not a quick blip.
-    var delays = [0, 1600, 4200];
+    var maxAttemptsPerModel = 2;
+    // Short backoff: capacity errors should flip models quickly; stream already paints progress.
+    var delays = [0, 700];
 
     function next() {
       var model = models[modelIndex] || FLASH_MODEL;
       var wait = delays[attemptOnModel] || delays[delays.length - 1];
       attemptOnModel += 1;
-      var run = wait ? sleep(wait).then(function () { return chatCompletionsOnce(apiMessages, model); })
-        : chatCompletionsOnce(apiMessages, model);
+      var onceOpts = {
+        onDelta: opts && opts.onDelta,
+        allowNonStreamFallback: opts && opts.allowNonStreamFallback
+      };
+      var run = wait ? sleep(wait).then(function () { return chatCompletionsOnce(apiMessages, model, onceOpts); })
+        : chatCompletionsOnce(apiMessages, model, onceOpts);
       return run.then(function (res) {
         if (res.ok) {
           if (modelIndex > 0) {
@@ -332,6 +407,8 @@
           return res;
         }
         var retryable = isRetryableFlash(res);
+        // Do not burn retries on mid-stream cuts — surface to the user (optional non-stream already tried).
+        if (res.kind === 'STREAM') return res;
         if (retryable && attemptOnModel < maxAttemptsPerModel) {
           track('chat_flash_retry', {
             attempt: attemptOnModel,
@@ -359,14 +436,14 @@
     return next();
   }
 
-  function scrollThread() {
+    function scrollThread() {
     var thread = $('chat-thread');
     if (thread) thread.scrollTop = thread.scrollHeight;
   }
 
   function appendBubble(role, text) {
     var thread = $('chat-thread');
-    if (!thread || !text) return;
+    if (!thread || !text) return null;
     var row = el('div', 'chat-row chat-row--' + role);
     if (role === 'assistant') {
       var av = el('div', 'chat-avatar', 'P');
@@ -377,6 +454,106 @@
     row.appendChild(bubble);
     thread.appendChild(row);
     scrollThread();
+    return { row: row, bubble: bubble };
+  }
+
+  /** Unescape a JSON string body (no surrounding quotes). */
+  function unescapeJsonString(s) {
+    return String(s || '').replace(/\\u([0-9a-fA-F]{4})/g, function (_, h) {
+      return String.fromCharCode(parseInt(h, 16));
+    }).replace(/\\(["\\/bfnrt])/g, function (_, c) {
+      return ({ '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' })[c] || c;
+    });
+  }
+
+  /**
+   * While the model streams plan JSON, prefer painting assistant_message text
+   * instead of raw braces — falls back to raw if the field is not open yet.
+   */
+  function streamPreviewText(raw) {
+    var s = String(raw || '');
+    if (!s) return '';
+    var key = '"assistant_message"';
+    var idx = s.indexOf(key);
+    if (idx < 0) {
+      // Still preamble / other fields — avoid flashing "{" at the user.
+      if (s.charAt(0) === '{' || s.charAt(0) === '[') return '';
+      return s;
+    }
+    var after = s.slice(idx + key.length);
+    var colon = after.search(/:\s*"/);
+    if (colon < 0) return '';
+    var body = after.slice(colon);
+    body = body.replace(/^:\s*"/, '');
+    // Scan until unescaped closing quote (or end of stream so far).
+    var out = '';
+    var i = 0;
+    var closed = false;
+    while (i < body.length) {
+      var ch = body.charAt(i);
+      if (ch === '\\') {
+        if (i + 1 < body.length) {
+          out += body.charAt(i) + body.charAt(i + 1);
+          i += 2;
+          continue;
+        }
+        out += ch;
+        break;
+      }
+      if (ch === '"') { closed = true; break; }
+      out += ch;
+      i += 1;
+    }
+    var text = unescapeJsonString(out);
+    // If the string has not closed yet, keep a caret feel via CSS class on bubble.
+    return text;
+  }
+
+  function beginAssistantStream() {
+    var thread = $('chat-thread');
+    if (!thread) return null;
+    var row = el('div', 'chat-row chat-row--assistant');
+    var av = el('div', 'chat-avatar', 'P');
+    av.setAttribute('aria-hidden', 'true');
+    row.appendChild(av);
+    var bubble = el('div', 'chat-bubble chat-bubble--assistant chat-bubble--streaming', '');
+    bubble.setAttribute('aria-live', 'polite');
+    row.appendChild(bubble);
+    thread.appendChild(row);
+    scrollThread();
+    var raw = '';
+    var lastPaint = 0;
+    function paint(force) {
+      var now = Date.now();
+      if (!force && now - lastPaint < 32) return; // ~30fps coalescing
+      lastPaint = now;
+      var preview = streamPreviewText(raw);
+      bubble.textContent = preview || (raw ? '' : '');
+      // Keep a thin placeholder so the streaming caret CSS still shows.
+      if (!preview) bubble.setAttribute('data-streaming-empty', '1');
+      else bubble.removeAttribute('data-streaming-empty');
+      scrollThread();
+    }
+    return {
+      row: row,
+      bubble: bubble,
+      appendDelta: function (piece) {
+        raw += String(piece || '');
+        paint(false);
+      },
+      finalize: function (displayText) {
+        bubble.classList.remove('chat-bubble--streaming');
+        bubble.removeAttribute('data-streaming-empty');
+        bubble.textContent = displayText || '';
+        scrollThread();
+      },
+      discard: function () {
+        try { row.remove(); } catch (e) {
+          if (row.parentNode) row.parentNode.removeChild(row);
+        }
+      },
+      getRaw: function () { return raw; }
+    };
   }
 
   function clearPlanMount() {
@@ -690,20 +867,49 @@
   function runFlash() {
     setBusy(true);
     clearPlanMount();
-    chatCompletions(messages).then(function (res) {
+    var streamUi = beginAssistantStream();
+    var firstToken = false;
+    function onDelta(piece) {
+      if (!streamUi) return;
+      if (!firstToken && piece) {
+        firstToken = true;
+        // Drop the "thinking…" status as soon as tokens paint — feels faster.
+        var status = $('chat-status');
+        if (status) { status.hidden = true; status.textContent = ''; }
+      }
+      streamUi.appendDelta(piece);
+    }
+    chatCompletions(messages, { onDelta: onDelta }).then(function (res) {
       setBusy(false);
       if (!res.ok) {
-        track('chat_flash_fail', { kind: res.kind || 'unknown', http: res.http || 0, model: res.model || '' });
+        if (streamUi) streamUi.discard();
+        track('chat_flash_fail', {
+          kind: res.kind || 'unknown',
+          http: res.http || 0,
+          model: res.model || '',
+          streamed: !!res.streamed
+        });
         showError(res.detail || res.kind, { http: res.http, kind: res.kind, model: res.model });
         return;
       }
       var parsed = parseAssistantPayload(res.content);
-      // Keep multi-turn: store assistant JSON/text for context (not shown raw if parse failed awkwardly)
+      // Keep multi-turn: store assistant JSON/text for context
       messages.push({ role: 'assistant', content: res.content });
-      appendBubble('assistant', parsed.assistant_message);
+      if (streamUi) {
+        streamUi.finalize(parsed.assistant_message);
+      } else {
+        appendBubble('assistant', parsed.assistant_message);
+      }
       if (parsed.ready && parsed.plan) renderPlanCard(parsed.plan);
+      track('chat_flash_ok', {
+        model: res.model || '',
+        streamed: res.streamed !== false,
+        recovered: !!res.recovered_from_stream,
+        ready: !!parsed.ready
+      });
     }, function (err) {
       setBusy(false);
+      if (streamUi) streamUi.discard();
       track('chat_flash_fail', { kind: 'throw' });
       showError(String(err && err.message || err));
     });

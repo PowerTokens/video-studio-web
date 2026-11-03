@@ -856,6 +856,30 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
   background: var(--accent); color: #fff;
   border-bottom-right-radius: 4px;
 }
+.chat-bubble--streaming {
+  min-height: 1.5em;
+}
+.chat-bubble--streaming::after {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  opacity: 0.55;
+  animation: chat-stream-caret 1s steps(1) infinite;
+}
+.chat-bubble--streaming[data-streaming-empty="1"]::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+}
+@keyframes chat-stream-caret {
+  0%, 49% { opacity: 0.55; }
+  50%, 100% { opacity: 0; }
+}
+
 
 .chat-examples { display: flex; flex-direction: column; gap: 8px; }
 .chat-examples-label { margin: 0; }

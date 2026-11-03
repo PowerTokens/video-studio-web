@@ -327,6 +327,7 @@ VSI18n.register('en', {
   chat_draft_summary: "Offline draft — edit the prompt before generating.",
   chat_draft_ready: "Helper was busy, so I drafted a plan from your last message. Keep refining in chat, or copy the prompt when you’re happy.",
   chat_flash_error: "Chat helper hiccup: %s. You can retry, keep drafting from your text, or continue chatting.",
+  chat_flash_stream_cut: "The reply cut off mid-stream. Please try again.",
   chat_flash_unknown: "Unknown error",
   chat_flash_network: "Network error",
   chat_flash_auth: "Sign-in or key invalid",
