@@ -806,11 +806,13 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 .chat-pilot-entry { display: none !important; }
 
 .panel-chat { padding-bottom: 0; }
+/* Chat layout: content-sized when short (composer under thread/examples);
+   sticky dock when the page scrolls. Do NOT force a full-viewport flex column
+   — that left a tall empty middle on phones (PR #39). */
 .chat-shell {
   display: flex; flex-direction: column; gap: 10px;
-  min-height: calc(100vh - 180px);
-  min-height: calc(100dvh - 180px);
   max-width: 720px; margin: 0 auto;
+  min-height: 0;
 }
 .chat-top {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
@@ -819,25 +821,20 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 .chat-title { margin: 0; font-size: 20px; letter-spacing: -.02em; }
 .chat-subtitle { margin-top: 4px; }
 
-/* Middle column scrolls; composer dock stays pinned below. */
 .chat-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 1 auto;
   display: flex; flex-direction: column; gap: 12px;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  min-height: 0;
   padding-bottom: 4px;
 }
 .chat-thread {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   display: flex; flex-direction: column; gap: 12px;
   background: var(--white);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 14px 12px;
-  min-height: 200px;
-  /* Thread itself can grow; overflow lives on .chat-scroll so examples/plan stay in one scroll. */
+  min-height: 0;
   max-height: none;
   overflow: visible;
 }
@@ -957,13 +954,16 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 .chat-fallback-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .chat-status { min-height: 1.2em; }
+/* Clear the sticky .statusbar (padding + safe-area). Statusbar owns home-indicator inset;
+   dock must NOT also add safe-area or it double-stacks into the gesture bar. */
 .chat-dock {
+  --chat-statusbar-clearance: calc(34px + env(safe-area-inset-bottom, 0px));
   flex: none;
   position: sticky;
-  bottom: 0;
-  z-index: 5;
-  margin-top: auto;
-  padding: 10px 0 calc(14px + env(safe-area-inset-bottom, 0px));
+  bottom: var(--chat-statusbar-clearance);
+  z-index: 12; /* above .statusbar (z-index: 9) */
+  margin-top: 8px; /* sit under examples when content is short — not margin-top:auto */
+  padding: 10px 0 8px;
   background: var(--page);
   border-top: 1px solid #e4efeb;
   box-shadow: 0 -8px 16px -12px rgba(27, 41, 60, .18);
@@ -983,6 +983,10 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 }
 .chat-send { flex: none; min-width: 72px; height: 44px; }
 .chat-footnote { margin: 8px 0 0; line-height: 1.4; }
+.chat-build {
+  display: inline-block; margin-left: 4px; font-size: 11px; opacity: .55;
+  font-variant-numeric: tabular-nums; letter-spacing: .02em;
+}
 
 
 /* Narrow phones: brand on its own row; short tab labels; less chrome stacking. */
@@ -1023,40 +1027,29 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 }
 
 @media (max-width: 640px) {
-  /* Only when Chat is the active panel: fill the phone viewport under header + tabs. */
+  /* Chat stays content-sized on phones. Sticky .chat-dock docks when the page scrolls.
+     Do not stretch panel/shell to 100dvh — that recreates the empty middle gap. */
   body.pilot-chat-on .page:has(#panel-chat:not([hidden])) {
-    padding-bottom: 0;
-    display: flex;
-    flex-direction: column;
+    padding-bottom: 8px;
   }
-  body.pilot-chat-on #panel-chat:not([hidden]) {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    min-height: calc(100vh - 150px);
-    min-height: calc(100dvh - 150px);
-  }
-  .chat-shell {
-    flex: 1 1 auto;
-    min-height: calc(100vh - 160px);
-    min-height: calc(100dvh - 160px);
-    gap: 8px;
-  }
+  .chat-shell { gap: 8px; }
   .chat-dock {
-    /* Extra air above the home indicator; keep Send tappable. */
-    padding: 12px 0 calc(18px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 0 10px;
   }
-  .chat-thread { min-height: 160px; }
-}
-
-@supports (height: 100dvh) {
-  .chat-shell { min-height: calc(100dvh - 180px); }
 }
 
 @media (min-width: 641px) {
-  /* Desktop: keep the dock in view; scroll the middle column instead of the whole page. */
+  /* Desktop: cap the middle column so a long thread scrolls while dock stays sticky. */
   .chat-scroll {
     max-height: min(58vh, 560px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .chat-dock {
+    /* No sticky statusbar collision as often on desktop; keep a modest clearance. */
+    --chat-statusbar-clearance: 12px;
+    bottom: 12px;
   }
 }
 
