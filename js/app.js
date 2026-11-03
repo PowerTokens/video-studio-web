@@ -33,7 +33,7 @@
     shopping: { duration: 5, ratio: '9:16', resolution: '720p' },
     canyon: { duration: 5, ratio: '9:16', resolution: '720p' },
     seal: { duration: 5, ratio: '9:16', resolution: '720p' },
-    locker: { duration: 16, ratio: '16:9', resolution: '1080p' }
+    locker: { duration: 5, ratio: '9:16', resolution: '720p' }
   };
   /** Active Generate-tab preset id for Progress sample; cleared on generate / preset clear. */
   var previewPresetId = null;
@@ -312,11 +312,15 @@
       var eid = EXAMPLE_IDS[i];
       for (var c = 0; c < codes.length; c++) {
         var known = I.t(codes[c], 'example_' + eid + '_prompt');
-        if (known && String(known).trim() === raw) { id = eid; break; }
+        var alt = I.t(codes[c], 'chat_example_' + eid + '_prompt');
+        if ((known && String(known).trim() === raw) || (alt && alt !== 'chat_example_' + eid + '_prompt' && String(alt).trim() === raw)) {
+          id = eid;
+          break;
+        }
       }
     }
     if (!id) return;
-    var next = String(t('example_' + id + '_prompt') || '');
+    var next = String(examplePrompt(id) || '');
     if (next && next !== ta.value) {
       ta.value = next;
       gen.prompt = next;
@@ -1044,6 +1048,14 @@
   }
 
 
+  /** Prompt shown on hover and filled into Generate. Prefer the per-language shot prompt. */
+  function examplePrompt(id) {
+    var alt = 'chat_example_' + id + '_prompt';
+    var localized = t(alt);
+    if (localized && localized !== alt) return localized;
+    return t('example_' + id + '_prompt');
+  }
+
   // ---------------- examples ----------------
   function renderExamples() {
     var box = $('gen-example-chips');
@@ -1063,7 +1075,7 @@
       b.setAttribute('data-example', id);
       b.setAttribute('data-target', 'gen');
       if (family) b.setAttribute('data-family', family);
-      b.title = t('example_' + id + '_prompt');
+      b.title = examplePrompt(id);
       b.setAttribute('aria-pressed', 'false');
       b.addEventListener('click', function () { applyExample(id, 'gen', b); });
       box.appendChild(b);
@@ -1173,7 +1185,7 @@
       return;
     }
 
-    var prompt = t('example_' + id + '_prompt');
+    var prompt = examplePrompt(id);
     $('gen-prompt').value = prompt;
     gen.prompt = prompt;
     saveGen();
