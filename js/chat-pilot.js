@@ -441,9 +441,9 @@
     return next();
   }
 
-    function scrollThread() {
-    var thread = $('chat-thread');
-    if (thread) thread.scrollTop = thread.scrollHeight;
+  function scrollThread() {
+    var scroller = document.querySelector('.chat-scroll') || $('chat-thread');
+    if (scroller) scroller.scrollTop = scroller.scrollHeight;
   }
 
   function appendBubble(role, text) {
