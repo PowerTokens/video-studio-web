@@ -332,6 +332,7 @@ VSI18n.register('ja', {
   chat_draft_summary: "オフラインで広げた下書きです。生成の前に、撮影できるプロンプトか確認してください。",
   chat_draft_ready: "助手が混んでいたので、依頼を撮影用のプロンプトに広げました。対話で直すか、気に入ったらコピーしてください。",
   chat_flash_error: "助手が一時的に失敗しました：%s。再試行、下書きを広げる、話し続ける、のどれかが可能です。",
+  chat_flash_free_down: "無料の対話が今はつながりませんでした。再試行するか、下書きを展開して続けて直せます。",
   chat_flash_stream_cut: "返信が途中で切れました。もう一度試してください。",
   chat_flash_unknown: "不明なエラー",
   chat_flash_network: "ネットワークエラー",

@@ -341,6 +341,7 @@ VSI18n.register('zh', {
   chat_draft_summary: "离线展开草稿 — 生成前请再核对可拍提示词。",
   chat_draft_ready: "助手有点忙，我先把你的需求展开成完整可拍提示词。可以继续聊着改，满意后再复制。",
   chat_flash_error: "对话助手暂时不顺：%s。可重试、展开完整草稿提示词，或继续聊。",
+  chat_flash_free_down: "免费对话这会儿没连上。可以再试一次，或先展开完整草稿提示词继续改。",
   chat_flash_stream_cut: "回复传到一半断了。请再试一次。",
   chat_flash_unknown: "未知错误",
   chat_flash_network: "网络异常",

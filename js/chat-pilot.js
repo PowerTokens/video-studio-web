@@ -669,6 +669,25 @@
       s.indexOf('retry later') >= 0 || s.indexOf('temporarily') >= 0;
   }
 
+  /** Gateway billing rejection (402 pre-consume / insufficient_user_quota), not a video estimate. */
+  function isBillingQuotaFailure(detail, http) {
+    if (http === 402) return true;
+    var s = String(detail || '').toLowerCase();
+    if (s.indexOf('insufficient_user_quota') >= 0) return true;
+    if (s.indexOf('pre-consume') >= 0 || s.indexOf('preconsume') >= 0) return true;
+    if (s.indexOf('quota') >= 0 && (s.indexOf('insufficient') >= 0 || s.indexOf('not enough') >= 0)) return true;
+    if (s.indexOf('余额不足') >= 0 || s.indexOf('积分不足') >= 0 || s.indexOf('额度不足') >= 0) return true;
+    return false;
+  }
+
+  /**
+   * glm-4.7-flash is $0. A pre-consume 402 must not be shown as “积分不足” in chat.
+   * Paid text models still surface their own billing detail.
+   */
+  function freeChatHidesBilling(modelId, detail, http) {
+    return textModelIsFree(modelId) && isBillingQuotaFailure(detail, http);
+  }
+
   function renderPlanCard(plan, opts) {
     opts = opts || {};
     var mount = $('chat-plan-mount');
@@ -1088,9 +1107,12 @@
   function showError(detail, opts) {
     opts = opts || {};
     var busyCap = isBusyCapacityDetail(detail, opts.http);
+    var quietQuota = freeChatHidesBilling(opts.model, detail, opts.http);
     var msg = busyCap
       ? t('chat_flash_busy')
-      : t('chat_flash_error', detail || t('chat_flash_unknown'));
+      : quietQuota
+        ? t('chat_flash_free_down')
+        : t('chat_flash_error', detail || t('chat_flash_unknown'));
     appendBubble('assistant', msg);
     var mount = $('chat-plan-mount');
     if (!mount) return;
@@ -1325,6 +1347,8 @@
     clampPlan: clampPlan,
     textModelIsFree: textModelIsFree,
     planCardShowsVideoCreditSoft: planCardShowsVideoCreditSoft,
+    freeChatHidesBilling: freeChatHidesBilling,
+    showError: showError,
     renderPlanCard: renderPlanCard,
     resetConversation: resetConversation
   };
