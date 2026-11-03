@@ -2,6 +2,9 @@
  * Chat-to-video pilot (MVP): cheap chat models plan a clip; sunk-cost UX = chat until happy, then Copy.
  * Prefer glm-4.7-flash; on repeated upstream 429/1305 fall back to glm-4.5-air / deepseek-flash.
  * Chat completions stream (SSE) into the assistant bubble, then parse the full text into the plan card.
+ * Example chips skip the network: a short preamble, then the curated shot prompt pops open on the plan card.
+ * A chat 402 / 余额不足 does not stay on the system error; the example or draft plan opens instead.
+ * Free-typed messages still call /v1/chat/completions.
  * Credits never gate the plan card. A free text model (glm-4.7-flash, price 0) must not
  * show a video estimateCost “credits insufficient” soft tip; that warning belongs
  * on Generate, when the user actually renders. Toggle ?pilot=chat / ?pilot=off.
@@ -713,6 +716,7 @@
     details.appendChild(sum);
     var pre = el('pre', 'chat-plan-prompt-body', plan.prompt);
     details.appendChild(pre);
+    if (opts.openPrompt) details.open = true;
     card.appendChild(details);
 
     // Sunk-cost UX: never gate on credits. Primary = Copy; keep refining; Fill Generate secondary.
@@ -795,6 +799,10 @@
       return;
     }
     scrollThread();
+    var popped = mount.querySelector('.chat-plan-card');
+    if (popped && popped.scrollIntoView) {
+      try { popped.scrollIntoView({ block: 'nearest' }); } catch (ePop) { /* ignore */ }
+    }
     track('chat_plan_ready', {
       model: plan.model,
       duration: plan.duration,
@@ -853,19 +861,73 @@
     track('chat_session_start', {});
   }
 
+  /** Card summary is capped at 160 characters. Stop on a word, not mid-word. */
+  function summaryForCard(text) {
+    var s = String(text || '').replace(/\s+/g, ' ').trim();
+    if (s.length <= 160) return s;
+    var cut = s.slice(0, 157);
+    var sp = cut.lastIndexOf(' ');
+    if (sp < 40) sp = cut.lastIndexOf('，');
+    if (sp < 40) sp = cut.lastIndexOf('、');
+    if (sp >= 40) return cut.slice(0, sp).trim() + '…';
+    return cut.trim() + '…';
+  }
+
+  function localExampleTurn(id) {
+    var label = lookupString('example_' + id + '_label') || id;
+    var blurb = lookupString('chat_example_' + id + '_blurb');
+    var userText = blurb || t('chat_example_user', label);
+    var prompt = planPromptForExample(id);
+    var preamble = t('chat_example_preamble', label);
+    if (!preamble || preamble === 'chat_example_preamble') preamble = t('chat_plan_ready_fallback');
+    var plan = prompt ? clampPlan({
+      title: label,
+      summary: summaryForCard(blurb || t('chat_draft_summary')),
+      prompt: prompt,
+      model: CHEAP_DEFAULT.model,
+      duration: CHEAP_DEFAULT.duration,
+      resolution: CHEAP_DEFAULT.resolution,
+      ratio: CHEAP_DEFAULT.ratio
+    }) : null;
+    return { userText: userText, preamble: preamble, plan: plan };
+  }
+
+  /**
+   * Chips are local. A live model here often 402s, and the shot prompt is already written.
+   * Show the user's scene, a short lead-in, then the plan card. Do not call chat completions.
+   */
   function onExample(id) {
     if (busy) return;
+    if (EXAMPLE_IDS.indexOf(id) < 0) return;
     ensureSession();
-    track('chat_example_click', { example_id: id });
-    // Chip text is a short shootable description. The hidden reference is the full plan prompt.
-    var userVisible = lookupString('chat_example_' + id + '_blurb') ||
-      t('chat_example_user', t('example_' + id + '_label'));
-    var prompt = planPromptForExample(id) || t('example_' + id + '_prompt');
-    var apiUser = userVisible + '\n\n[example_id=' + id + ']\n' + t('chat_example_ref_prefix') + '\n' + prompt;
-    appendBubble('user', userVisible);
+    track('chat_example_click', { example_id: id, transport: 'local' });
+    var turn = localExampleTurn(id);
+    appendBubble('user', turn.userText);
     hideExamples();
-    messages.push({ role: 'user', content: apiUser });
-    runFlash();
+    messages.push({ role: 'user', content: turn.userText });
+    if (!turn.plan) {
+      appendBubble('assistant', t('chat_flash_bad_json'));
+      return;
+    }
+    appendBubble('assistant', turn.preamble);
+    messages.push({
+      role: 'assistant',
+      content: JSON.stringify({
+        assistant_message: turn.preamble,
+        ready: true,
+        plan: {
+          title: turn.plan.title,
+          prompt: turn.plan.prompt,
+          model: turn.plan.model,
+          duration: turn.plan.duration,
+          resolution: turn.plan.resolution,
+          ratio: turn.plan.ratio,
+          summary: turn.plan.summary
+        }
+      })
+    });
+    renderPlanCard(turn.plan, { openPrompt: true });
+    track('chat_example_local_ready', { example_id: id });
   }
 
   function hideExamples() {
@@ -1087,8 +1149,36 @@
     return plan;
   }
 
+  function isQuotaDetail(detail, http) {
+    var s = String(detail || '');
+    if (http === 402) return true;
+    return /余额不足|额度不足|积分不足|insufficient|quota|not enough balance/i.test(s);
+  }
+
+  /** Quota failures must not sit on the raw “系统余额不足” line. Open the example or draft. */
+  function popInsteadOfQuota(detail, http) {
+    if (!isQuotaDetail(detail, http)) return false;
+    var exId = extractExampleId(lastUserText());
+    if (exId && EXAMPLE_IDS.indexOf(exId) >= 0) {
+      var turn = localExampleTurn(exId);
+      if (turn.plan) {
+        appendBubble('assistant', turn.preamble);
+        renderPlanCard(turn.plan, { openPrompt: true });
+        track('chat_example_local_ready', { example_id: exId, from: 'quota' });
+        return true;
+      }
+    }
+    var draft = draftPlanFromUser();
+    if (!draft) return false;
+    appendBubble('assistant', t('chat_draft_ready'));
+    renderPlanCard(draft, { openPrompt: true });
+    track('chat_fallback_draft', { from: 'quota' });
+    return true;
+  }
+
   function showError(detail, opts) {
     opts = opts || {};
+    if (popInsteadOfQuota(detail, opts.http)) return;
     var busyCap = isBusyCapacityDetail(detail, opts.http);
     var msg = busyCap
       ? t('chat_flash_busy')

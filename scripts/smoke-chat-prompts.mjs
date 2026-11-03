@@ -129,8 +129,8 @@ for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) {
   }
   assertShot(I.t(code, 'chat_example_locker_prompt'), code, code + '/locker-chat');
   const long = I.t(code, 'example_locker_prompt');
-  assert.match(long, /approximately 16 seconds/);
   assert.match(long, /Who's in the bet/);
+  assert.doesNotMatch(long, /approximately 16|1080/);
   for (const id of ['shopping', 'canyon', 'seal', 'locker']) {
     const blurb = I.t(code, 'chat_example_' + id + '_blurb');
     assert.ok(blurb.length >= 40 && blurb.length < 280, code + ' ' + id + ' blurb length ' + blurb.length);

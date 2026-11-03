@@ -892,6 +892,7 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 
 
 .chat-examples { display: flex; flex-direction: column; gap: 8px; }
+.chat-examples[hidden] { display: none !important; }
 .chat-examples-label { margin: 0; }
 .chat-example-chips {
   display: grid; grid-template-columns: 1fr; gap: 8px;
