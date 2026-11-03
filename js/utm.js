@@ -24,7 +24,8 @@
     billing: 'web.billing',
     signup: 'web.signup',
     site: 'web.footer_site',
-    chat_billing: 'web.chat_billing'
+    chat_billing: 'web.chat_billing',
+    download: 'web.download_jump'
   };
 
   function readJson(key) {

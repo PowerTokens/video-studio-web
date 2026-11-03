@@ -168,7 +168,7 @@ VSI18n.register('zh', {
   desktop_cta_desc: '网页版适合随手试一条。完整功能（Excel 批量、剧本分镜、接上一段）在 Windows 桌面客户端，免装 Python，同一个 API Key。',
   desktop_cta_btn: '下载 Windows 安装包 (.exe)',
   desktop_cta_releases: '全部版本 ↗',
-  desktop_download_url: 'https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe',
+  desktop_download_url: 'https://powertokens.github.io/video-studio-web/download.html',
   desktop_releases_url: 'https://github.com/PowerTokens/video-studio/releases/latest',
   mock_banner: '模拟模式：不会调用真实接口，也不会扣费。',
   signup_url: 'https://powertokens.ai/zh-Hans/api-keys',
