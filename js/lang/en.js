@@ -336,6 +336,7 @@ VSI18n.register('en', {
   chat_draft_summary: "Offline expanded draft — review the shootable prompt before generating.",
   chat_draft_ready: "Helper was busy, so I expanded your request into a full shootable prompt. Keep refining in chat, or copy when you’re happy.",
   chat_flash_error: "Chat helper hiccup: %s. You can retry, expand a full draft prompt, or continue chatting.",
+  chat_flash_free_down: "Free chat didn't connect just now. Retry, or expand a draft prompt and keep editing.",
   chat_flash_stream_cut: "The reply cut off mid-stream. Please try again.",
   chat_flash_unknown: "Unknown error",
   chat_flash_network: "Network error",

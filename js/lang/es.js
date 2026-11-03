@@ -330,6 +330,7 @@ VSI18n.register('es', {
   chat_topup: "Recargar",
   chat_goto_classic: "Generar clásico",
   chat_flash_error: "El asistente falló un momento: %s. Puedes reintentar, usar un borrador o seguir chateando.",
+  chat_flash_free_down: "El chat gratis no se conectó ahora. Reintenta, o despliega un borrador y sigue editando.",
   chat_flash_stream_cut: "La respuesta se cortó a mitad. Inténtalo de nuevo.",
   chat_flash_unknown: "Error desconocido",
   chat_flash_network: "Error de red",

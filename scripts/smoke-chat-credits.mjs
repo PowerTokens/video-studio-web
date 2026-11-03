@@ -263,4 +263,29 @@ const html = readFileSync(join(rootDir, 'index.html'), 'utf8');
 assert.match(html, /id="gen-insufficient"/);
 assert.match(html, /data-i18n="credits_insufficient"/);
 
+const quotaDetail = 'HTTP 402 · insufficient_user_quota: pre-consume quota failed, remaining quota: $ 0.004000 (wallet: $ 0.004000, exclusive: $ 0.000000), required pre-consume quota: $ 0.005000 (request id: 20261103082629802719110DsFvwHxG)';
+assert.equal(pilot.freeChatHidesBilling('glm-4.7-flash', quotaDetail, 402), true);
+assert.equal(pilot.freeChatHidesBilling('deepseek-flash', quotaDetail, 402), false);
+assert.equal(pilot.freeChatHidesBilling('glm-4.7-flash', 'HTTP 500: upstream', 500), false);
+
+pilot.init({
+  t(key) { return [key].concat([].slice.call(arguments, 1)).join('|'); },
+  getLang() { return 'zh'; },
+  getCredits() { return 4; },
+  toast() {},
+  copyText() { return Promise.resolve(); }
+});
+const thread = byId['chat-thread'];
+pilot.showError(quotaDetail, { http: 402, kind: 'HTTP', model: 'glm-4.7-flash' });
+const quiet = textsOf(thread);
+assert.equal(quiet.includes('chat_flash_free_down'), true);
+assert.equal(quiet.includes('insufficient_user_quota'), false);
+assert.equal(quiet.includes('pre-consume'), false);
+assert.equal(quiet.includes('积分不足'), false);
+assert.equal(quiet.includes('HTTP 402'), false);
+
+pilot.showError(quotaDetail, { http: 402, kind: 'HTTP', model: 'deepseek-flash' });
+const paidQuota = textsOf(thread);
+assert.equal(paidQuota.includes('insufficient_user_quota'), true);
+
 console.log('smoke-chat-credits ok');
