@@ -46,7 +46,8 @@ The authorize URL **must** carry last-touch UTM so the backend can attribute sig
 - Defaults: `utm_source=videostudio` · `utm_medium=web` · `utm_campaign=video-studio`
 - Touchpoint: `utm_content=web.oauth_authorize`
 - First/last touch persist in `localStorage` keys `vsw.utm.first` / `vsw.utm.last`
-- Inbound landing `utm_*` / click ids update last-touch (and first if empty); outbound CTAs and OAuth use last-touch
+- Inbound landing `utm_*` / click ids update last-touch (and first if empty); OAuth / signup / site CTAs use last-touch
+- **Billing / chat_billing** force product identity (`utm_source=videostudio` · `utm_medium=web` · `utm_campaign=video-studio`) even when last-touch was an ad; click ids (gclid etc.) still forward; `utm_content` is `web.billing` or `web.chat_billing`
 
 README / GitHub get-key links keep `utm_source=github` + `utm_medium=readme` (not in-app).
 

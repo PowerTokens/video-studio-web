@@ -1,6 +1,7 @@
 /*
  * Shared UTM attribution for Video Studio Web.
- * Backend reports use UTM only. Persist first/last touch; outbound + OAuth use last-touch.
+ * Backend reports use UTM only. Persist first/last touch; OAuth/signup use last-touch.
+ * Billing / chat_billing force product utm_source/medium/campaign (videostudio).
  * Keys: localStorage vsw.utm.first / vsw.utm.last (JSON objects).
  */
 (function (root) {
@@ -103,28 +104,36 @@
   /**
    * Params for outbound / OAuth. Always includes core UTM (defaults fill gaps).
    * content: touchpoint string, e.g. web.oauth_authorize — always set when provided.
+   * opts.forceProduct: for billing/chat_billing — keep click ids from last-touch but
+   *   force utm_source/medium/campaign to product defaults so recharge attributes to VS.
    */
-  function paramsFor(content) {
+  function paramsFor(content, opts) {
+    opts = opts || {};
     var p = lastTouch();
+    if (opts.forceProduct) {
+      p.utm_source = DEFAULTS.utm_source;
+      p.utm_medium = DEFAULTS.utm_medium;
+      p.utm_campaign = DEFAULTS.utm_campaign;
+    }
     if (content) p.utm_content = String(content);
     return p;
   }
 
   function applyToSearchParams(sp, opts) {
     opts = opts || {};
-    var p = paramsFor(opts.content);
+    var p = paramsFor(opts.content, opts);
     Object.keys(p).forEach(function (k) {
       if (p[k] != null && p[k] !== '') sp.set(k, p[k]);
     });
     return sp;
   }
 
-  function buildOutbound(base, content) {
+  function buildOutbound(base, content, opts) {
     var url;
     try { url = new URL(String(base || ''), root.location ? root.location.href : undefined); }
     catch (e) { return base; }
     TRACK_KEYS.forEach(function (k) { url.searchParams.delete(k); });
-    applyToSearchParams(url.searchParams, { content: content });
+    applyToSearchParams(url.searchParams, Object.assign({ content: content }, opts || {}));
     return url.toString();
   }
 
