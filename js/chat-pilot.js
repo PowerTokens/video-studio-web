@@ -2,7 +2,10 @@
  * Chat-to-video pilot (MVP): cheap chat models plan a clip; sunk-cost UX = chat until happy, then Copy.
  * Prefer glm-4.7-flash; on repeated upstream 429/1305 fall back to glm-4.5-air / deepseek-flash.
  * Chat completions stream (SSE) into the assistant bubble, then parse the full text into the plan card.
- * Credits never gate the plan card. Toggle ?pilot=chat / ?pilot=off. Classic Generate stays secondary.
+ * Credits never gate the plan card. A free text model (glm-4.7-flash, price 0) must not
+ * show a video estimateCost “credits insufficient” soft tip; that warning belongs
+ * on Generate, when the user actually renders. Toggle ?pilot=chat / ?pilot=off.
+ * Classic Generate stays secondary.
  */
 (function (root) {
   'use strict';
@@ -10,6 +13,12 @@
   // Prefer flash first; keep short allowlist of cheap chat models that support /v1/chat/completions.
   var FLASH_MODELS = ['glm-4.7-flash', 'glm-4.5-air', 'deepseek-flash'];
   var FLASH_MODEL = FLASH_MODELS[0];
+  // PowerTokens list price, USD per 1M input tokens. 0 = this chat turn is free.
+  // Paid fallbacks (glm-4.5-air, deepseek-flash) are omitted on purpose: only a
+  // known price of 0 suppresses the video-estimate soft credit warning.
+  var TEXT_MODEL_INPUT_USD_PER_MTOK = {
+    'glm-4.7-flash': 0
+  };
   var STORE_FLAG = 'vsw.pilot.chat';
   var EXAMPLE_IDS = ['shopping', 'canyon', 'seal', 'locker'];
   var CHEAP_DEFAULT = {
@@ -22,6 +31,7 @@
   var deps = null;
   var messages = []; // OpenAI-style {role, content} for the Flash call (no system)
   var lastPlan = null;
+  var lastTextModel = FLASH_MODEL;
   var busy = false;
   var sessionStarted = false;
 
@@ -219,6 +229,27 @@
       var c = M.estimateCost(plan.duration, plan.resolution, plan.model);
       return M.estimateCreditsFromUsd(c.total);
     } catch (e) { return null; }
+  }
+
+  /** Known list price for a chat model, or null when this build does not price it. */
+  function textModelInputUsd(modelId) {
+    var id = String(modelId || '');
+    if (!Object.prototype.hasOwnProperty.call(TEXT_MODEL_INPUT_USD_PER_MTOK, id)) return null;
+    return TEXT_MODEL_INPUT_USD_PER_MTOK[id];
+  }
+
+  function textModelIsFree(modelId) {
+    return textModelInputUsd(modelId) === 0;
+  }
+
+  /**
+   * The plan card may mention a later video charge only as a soft note.
+   * Free chat (price 0) must not turn wan/other video estimateCost into
+   * “积分不足 / credits insufficient” — that comparison runs on Generate.
+   * Paid text models are unchanged (no paid-text note is removed).
+   */
+  function planCardShowsVideoCreditSoft(textModelId) {
+    return !textModelIsFree(textModelId);
   }
 
   function parseAssistantPayload(content) {
@@ -652,9 +683,12 @@
     }
     mount.innerHTML = '';
     lastPlan = plan;
+    var textModel = opts.textModel || lastTextModel || FLASH_MODEL;
     var credits = estimateCredits(plan);
     var have = deps.getCredits ? deps.getCredits() : null;
-    var insuff = typeof credits === 'number' && typeof have === 'number' && credits > have;
+    // Video estimate vs balance is not a free-chat warning. glm-4.7-flash is $0.
+    var insuff = planCardShowsVideoCreditSoft(textModel) &&
+      typeof credits === 'number' && typeof have === 'number' && credits > have;
 
     var card = el('div', 'chat-plan-card');
     card.appendChild(el('p', 'chat-plan-kicker', t('chat_plan_kicker')));
@@ -1080,7 +1114,8 @@
       draftBtn.addEventListener('click', function () {
         track('chat_fallback_draft', { busy: !!busyCap });
         appendBubble('assistant', t('chat_draft_ready'));
-        renderPlanCard(draft);
+        // Local draft did not call a paid text model. Do not borrow a video estimate as a credit warning.
+        renderPlanCard(draft, { textModel: FLASH_MODEL });
       });
       actions.appendChild(draftBtn);
       // Soft path: for capacity blips, also keep refining without jumping to Generate.
@@ -1146,7 +1181,8 @@
       }
       if (parsed.ready && parsed.plan) {
         parsed.plan = ensureShootablePlan(parsed.plan, lastUserText());
-        renderPlanCard(parsed.plan);
+        lastTextModel = res.model || FLASH_MODEL;
+        renderPlanCard(parsed.plan, { textModel: lastTextModel });
       }
       track('chat_flash_ok', {
         model: res.model || '',
@@ -1187,6 +1223,7 @@
   function resetConversation() {
     messages = [];
     lastPlan = null;
+    lastTextModel = FLASH_MODEL;
     sessionStarted = false;
     busy = false;
     var thread = $('chat-thread');
@@ -1286,6 +1323,9 @@
     track: track,
     parseAssistantPayload: parseAssistantPayload,
     clampPlan: clampPlan,
+    textModelIsFree: textModelIsFree,
+    planCardShowsVideoCreditSoft: planCardShowsVideoCreditSoft,
+    renderPlanCard: renderPlanCard,
     resetConversation: resetConversation
   };
 })(window);
