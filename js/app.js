@@ -230,7 +230,6 @@
       sel = el('select');
       sel.id = 'lang-select';
       sel.setAttribute('aria-label', 'Language');
-      sel.addEventListener('change', function () { setLang(sel.value, true); });
       box.appendChild(sel);
     }
     var needRebuild = sel.options.length !== codes.length;
@@ -254,6 +253,12 @@
       });
     }
     if (sel.value !== lang) sel.value = lang;
+    // #lang-select ships in index.html, so the old "create the <select>" branch never ran
+    // and its change listener was never attached. The picker could move, but setLang did not.
+    if (!sel._vswLangBound) {
+      sel._vswLangBound = true;
+      sel.addEventListener('change', function () { setLang(sel.value, true); });
+    }
     try { sel.blur(); } catch (eBlur) { /* ignore */ }
     renderFirstFrameCard();
     renderModelDetailsBtn();

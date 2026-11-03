@@ -617,9 +617,18 @@
       s.indexOf('retry later') >= 0 || s.indexOf('temporarily') >= 0;
   }
 
-  function renderPlanCard(plan) {
+  function renderPlanCard(plan, opts) {
+    opts = opts || {};
     var mount = $('chat-plan-mount');
     if (!mount || !plan) return;
+    var keepOpen = false;
+    var keepSoft = false;
+    if (opts.silent) {
+      var prevDetails = mount.querySelector('.chat-plan-prompt');
+      keepOpen = !!(prevDetails && prevDetails.open);
+      var prevSoft = mount.querySelector('[data-soft-credits]');
+      keepSoft = !!(prevSoft && !prevSoft.hidden);
+    }
     mount.innerHTML = '';
     lastPlan = plan;
     var credits = estimateCredits(plan);
@@ -701,13 +710,15 @@
 
     // Soft credits hint only (muted). No blocking Top up CTA on the plan card.
     if (insuff) {
-      track('credits_insufficient_soft', {
-        need: credits,
-        have: have,
-        model: plan.model,
-        duration: plan.duration,
-        resolution: plan.resolution
-      });
+      if (!opts.silent) {
+        track('credits_insufficient_soft', {
+          need: credits,
+          have: have,
+          model: plan.model,
+          duration: plan.duration,
+          resolution: plan.resolution
+        });
+      }
       var soft = el('p', 'chat-plan-soft muted small');
       soft.setAttribute('data-soft-credits', '1');
       soft.hidden = true; // reveal after copy, or leave a one-line tip below
@@ -720,6 +731,14 @@
     }
 
     mount.appendChild(card);
+    if (opts.silent) {
+      if (keepOpen) details.open = true;
+      if (keepSoft) {
+        var softEl = card.querySelector('[data-soft-credits]');
+        if (softEl) softEl.hidden = false;
+      }
+      return;
+    }
     scrollThread();
     track('chat_plan_ready', {
       model: plan.model,
@@ -765,6 +784,8 @@
     var status = $('chat-status');
     if (status) {
       status.textContent = busy ? t('chat_thinking') : '';
+      if (busy) status.setAttribute('data-i18n', 'chat_thinking');
+      else status.removeAttribute('data-i18n');
       status.hidden = !busy;
     }
   }
@@ -952,6 +973,7 @@
 
     var retry = el('button', 'btn btn-accent', t('chat_retry'));
     retry.type = 'button';
+    retry.setAttribute('data-i18n', 'chat_retry');
     retry.addEventListener('click', function () {
       track('chat_flash_retry_click', { busy: !!busyCap });
       if (busy) return;
@@ -963,6 +985,7 @@
     if (draft) {
       var draftBtn = el('button', 'btn', t('chat_use_draft'));
       draftBtn.type = 'button';
+      draftBtn.setAttribute('data-i18n', 'chat_use_draft');
       draftBtn.addEventListener('click', function () {
         track('chat_fallback_draft', { busy: !!busyCap });
         appendBubble('assistant', t('chat_draft_ready'));
@@ -973,6 +996,7 @@
       if (busyCap) {
         var keep = el('button', 'btn', t('chat_keep_refining'));
         keep.type = 'button';
+        keep.setAttribute('data-i18n', 'chat_keep_refining');
         keep.addEventListener('click', function () {
           track('chat_keep_refining', { from: 'flash_busy' });
           focusComposer();
@@ -984,6 +1008,7 @@
     // Classic Generate stays available but secondary — never the forced next step.
     var btn = el('button', 'btn', t('chat_goto_classic'));
     btn.type = 'button';
+    btn.setAttribute('data-i18n', 'chat_goto_classic');
     btn.addEventListener('click', function () {
       track('chat_fallback_classic', { reason: busyCap ? 'flash_busy' : 'flash_error' });
       if (deps.gotoGenerate) deps.gotoGenerate();
@@ -1078,15 +1103,19 @@
     clearPlanMount();
     var ex = $('chat-examples');
     if (ex) ex.hidden = false;
-    appendBubble('assistant', t('chat_greeting'));
+    var greet = appendBubble('assistant', t('chat_greeting'));
+    if (greet && greet.bubble) greet.bubble.setAttribute('data-i18n', 'chat_greeting');
     renderExamples();
     var status = $('chat-status');
-    if (status) { status.hidden = true; status.textContent = ''; }
+    if (status) { status.hidden = true; status.textContent = ''; status.removeAttribute('data-i18n'); }
   }
 
   function refreshUi() {
     applyChrome();
     if (isEnabled()) renderExamples();
+    // Plan-card chrome is built in JS (not [data-i18n]). Rebuild so a language
+    // change updates labels, the model name, and credit copy without a reload.
+    if (lastPlan && deps && deps.t) renderPlanCard(lastPlan, { silent: true });
   }
 
   function applyChrome() {
