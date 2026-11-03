@@ -968,8 +968,11 @@
     document.body.classList.toggle('pilot-chat-on', on);
     var tab = document.querySelector('.tabs [data-tab="chat"]');
     if (tab) tab.hidden = !on;
+    // Chat is a first-class tab when on — hide the redundant Generate-tab entry CTA.
     var entry = $('chat-pilot-entry');
-    if (entry) entry.hidden = !on;
+    if (entry) entry.hidden = true;
+    var entryWrap = $('chat-pilot-entry-wrap');
+    if (entryWrap) entryWrap.hidden = true;
     var panel = $('panel-chat');
     if (panel && !on) panel.hidden = true;
   }

@@ -10,16 +10,16 @@
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261103-HeaderTabs">
-<link rel="preload" href="js/i18n.js?v=20261103-HeaderTabs" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261103-HeaderTabs" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261103-HeaderTabs" as="script">
-<link rel="preload" href="js/models.js?v=20261103-HeaderTabs" as="script">
-<link rel="preload" href="js/api.js?v=20261103-HeaderTabs" as="script">
-<link rel="preload" href="js/utm.js?v=20261103-HeaderTabs" as="script">
-<link rel="preload" href="js/oauth.js?v=20261103-HeaderTabs" as="script">
-<link rel="preload" href="js/chat-pilot.js?v=20261103-HeaderTabs" as="script">
-<link rel="preload" href="js/app.js?v=20261103-HeaderTabs" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261103-MobileTabs">
+<link rel="preload" href="js/i18n.js?v=20261103-MobileTabs" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261103-MobileTabs" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261103-MobileTabs" as="script">
+<link rel="preload" href="js/models.js?v=20261103-MobileTabs" as="script">
+<link rel="preload" href="js/api.js?v=20261103-MobileTabs" as="script">
+<link rel="preload" href="js/utm.js?v=20261103-MobileTabs" as="script">
+<link rel="preload" href="js/oauth.js?v=20261103-MobileTabs" as="script">
+<link rel="preload" href="js/chat-pilot.js?v=20261103-MobileTabs" as="script">
+<link rel="preload" href="js/app.js?v=20261103-MobileTabs" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -52,21 +52,25 @@
 
 <nav class="tabs" aria-label="Tabs">
   <div class="tabs-inner" role="tablist">
-    <button role="tab" type="button" data-tab="chat" data-i18n="tab_chat" hidden>对话出片</button>
-    <button role="tab" type="button" data-tab="generate" data-i18n="tab_generate">生成视频</button>
-    <button role="tab" type="button" data-tab="tasks"><span data-i18n="tab_tasks">任务记录 / 恢复</span><span id="tasks-badge" class="badge-dot" hidden></span></button>
-    <button role="tab" type="button" data-tab="account" data-i18n="tab_account">账号</button>
+    <button role="tab" type="button" data-tab="chat" hidden>
+      <span class="tab-full" data-i18n="tab_chat">对话出片</span>
+      <span class="tab-short" data-i18n="tab_chat_short">对话</span>
+    </button>
+    <button role="tab" type="button" data-tab="generate">
+      <span class="tab-full" data-i18n="tab_generate">生成视频</span>
+      <span class="tab-short" data-i18n="tab_generate_short">生成</span>
+    </button>
+    <button role="tab" type="button" data-tab="tasks">
+      <span class="tab-full" data-i18n="tab_tasks">任务记录 / 恢复</span>
+      <span class="tab-short" data-i18n="tab_tasks_short">任务</span>
+      <span id="tasks-badge" class="badge-dot" hidden></span>
+    </button>
+    <button role="tab" type="button" data-tab="account">
+      <span class="tab-full" data-i18n="tab_account">账号</span>
+      <span class="tab-short" data-i18n="tab_account_short">账号</span>
+    </button>
   </div>
 </nav>
-
-<aside id="nokey-banner" class="nokey-banner" hidden>
-  <div class="nokey-inner">
-    <p data-i18n="nokey_banner">请先点右上角「登录 PowerTokens」，自动填入 API Key 并显示积分；登录后即可点预设生成。</p>
-    <div class="nokey-actions">
-      <button type="button" class="link link-small" id="nokey-goto-keys" data-i18n="nokey_goto_keys">高级：到账号页粘贴 Key</button>
-    </div>
-  </div>
-</aside>
 
 <main class="page">
 
@@ -310,17 +314,17 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 登录 PowerTokens 即可开始</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="js/i18n.js?v=20261103-HeaderTabs"></script>
+<script src="js/i18n.js?v=20261103-MobileTabs"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261103-HeaderTabs"></script>
-<script src="js/lang/en.js?v=20261103-HeaderTabs"></script>
-<script src="js/lang/es.js?v=20261103-HeaderTabs"></script>
-<script src="js/lang/pt.js?v=20261103-HeaderTabs"></script>
-<script src="js/models.js?v=20261103-HeaderTabs"></script>
-<script src="js/api.js?v=20261103-HeaderTabs"></script>
-<script src="js/utm.js?v=20261103-HeaderTabs"></script>
-<script src="js/oauth.js?v=20261103-HeaderTabs"></script>
-<script src="js/chat-pilot.js?v=20261103-HeaderTabs"></script>
-<script src="js/app.js?v=20261103-HeaderTabs"></script>
+<script src="js/lang/zh.js?v=20261103-MobileTabs"></script>
+<script src="js/lang/en.js?v=20261103-MobileTabs"></script>
+<script src="js/lang/es.js?v=20261103-MobileTabs"></script>
+<script src="js/lang/pt.js?v=20261103-MobileTabs"></script>
+<script src="js/models.js?v=20261103-MobileTabs"></script>
+<script src="js/api.js?v=20261103-MobileTabs"></script>
+<script src="js/utm.js?v=20261103-MobileTabs"></script>
+<script src="js/oauth.js?v=20261103-MobileTabs"></script>
+<script src="js/chat-pilot.js?v=20261103-MobileTabs"></script>
+<script src="js/app.js?v=20261103-MobileTabs"></script>
 </body>
 </html>
