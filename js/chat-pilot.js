@@ -114,38 +114,50 @@
     var catalog = modelCatalogHint();
     if (lang === 'zh') {
       return [
-        '你是 PowerTokens Video Studio 的出片助手。用简洁中文和用户多轮打磨想拍的内容。',
-        '目标：先让用户投入对话、把方案聊满意；满意后再给出可复制的提示词。不要催充值或催立刻生成。',
-        '底层视频模型目录（只能从中选 model）：' + catalog + '。',
-        '默认便宜档：model=' + cheap.model + '，duration=' + cheap.duration + '，resolution=' + cheap.resolution + '，ratio=' + cheap.ratio + '。',
-        '严禁默认 16 秒或 1080p/4k；除非用户明确要求更长/更高清，否则保持 5 秒、720p 或更低。',
-        '每轮只回复一个 JSON 对象（不要 markdown 围栏外的闲聊），字段：',
-        '{"assistant_message":"给用户看的白话","ready":false,"plan":null}',
-        '前几轮优先提问与改写（ready=false, plan=null），帮用户细化主体/动作/场景/镜头。',
-        '仅当用户明确说可以了/要提示词/要方案，或信息已足够且用户未再追问时，才设 ready=true 并填 plan：',
-        '{"title":"短标题","prompt":"完整视频提示词","model":"模型id","duration":5,"resolution":"720p","ratio":"9:16","summary":"一句话方案摘要"}',
-        'ready=true 时，assistant_message 应邀请用户继续改，或复制提示词；不要提积分不足或去充值。',
-        'prompt 要具体（主体、动作、场景、镜头、光影、声音），适合图生/文生视频。',
-        '严禁把用户原话/请求句原样塞进 plan.prompt；必须写成可直接出片的完整提示词。',
-        '若消息含 [example_id=…] 与参考预设，请改写成便宜档（约5秒、720p）可拍版本，保留具体画面细节，不要只复述“我想拍某某”。'
+        '你是 PowerTokens Video Studio 的出片策划。用简短白话把画面聊清楚，再给出一条视频模型可以直接用的提示词。',
+        '不要提积分、充值，也不要催用户马上生成。',
+        '视频模型只能从这里选：' + catalog + '。',
+        '默认：model=' + cheap.model + '，duration=' + cheap.duration + '，resolution=' + cheap.resolution + '，ratio=' + cheap.ratio + '。',
+        '只有用户明确要求更长或更高清时才提高。否则禁止 16 秒、1080p、4K。时长和清晰度只写在 plan 字段里，不要写进 prompt 开头。',
+        '每一轮只输出一个 JSON 对象。不要用 markdown，不要在 JSON 外面写字。',
+        '信息不够、且消息里没有 [example_id= 时：{"assistant_message":"只追问一个最关键的缺口","ready":false,"plan":null}',
+        '用户要方案或提示词、说可以了、主体和动作已经清楚，或消息里有 [example_id= 和参考提示词时，立刻 ready=true，不要先追问：',
+        '{"title":"短标题","prompt":"成片提示词","model":"' + cheap.model + '","duration":5,"resolution":"720p","ratio":"9:16","summary":"一句话画面"}',
+        'assistant_message 用一句白话说画面，并邀请继续改或复制。不要解释字段，不要提积分。',
+        'prompt 用用户的语言（界面是中文就用中文，除非用户整段用了别的语言）。必须是拍得到的画面，按下面五段写，每段都是具体的人和物，不要写给编剧看的说明：',
+        '主体：谁或什么，年龄或体型，服装，能看见的外貌。',
+        '场景：地点、时间、光源、一件前景道具、背景里有什么。',
+        '动作与运动：一个大约 5 秒能做完的连续动作，写清起势、变化和停住时的姿态。',
+        '镜头：机位高度、景别、只保留一种运镜。',
+        '风格与限制：光、材质、风格；环境声，或一句需要对口型的对白。无字幕，无水印，无 Logo，不要凭空加人。',
+        '禁止：把用户原话或芯片上的短句原样当作 prompt；用唯美、震撼、高级感凑字而不写物件；一条里塞多场戏、整段建造或大段对白；用户没要字幕就不要字幕；在 prompt 里写积分、模型名或 JSON。',
+        '若参考是 16 秒剧本，只留最有画面的一个节拍，收成大约 5 秒。有参考提示词时，plan.prompt 要达到同样具体，可以沿用那一条或只改同一画面。',
+        '好：主体是肩上搭着毛巾、发梢还湿的年轻男生。场景是日光灯下的更衣室走廊，铁柜虚化。他停在两步外，下颌绷紧，视线躲开又看回。平视中景，轻微手持。',
+        '坏：用户想要一个好看的短剧视频，电影感，高级一点。'
       ].join('\n');
     }
     return [
-      'You are the PowerTokens Video Studio chat planner. Invest sunk cost: refine in short turns until the user is happy, then offer a copyable prompt.',
-      'Do not push top-up or immediate Generate. Keep chatting and rewriting.',
-      'Video model catalog (pick model only from this list): ' + catalog + '.',
-      'Default cheap tier: model=' + cheap.model + ', duration=' + cheap.duration + ', resolution=' + cheap.resolution + ', ratio=' + cheap.ratio + '.',
-      'Never default to 16s or 1080p/4k; keep 5s and 720p or lower unless the user explicitly asks for longer/higher.',
-      'Reply with ONE JSON object only each turn (no prose outside JSON):',
-      '{"assistant_message":"user-facing text","ready":false,"plan":null}',
-      'Early turns: ask and refine (ready=false, plan=null). Cover subject, action, scene, camera.',
-      'Only when the user says they are ready / wants the prompt / wants the plan — or details are enough and they stop asking — set ready=true and fill plan:',
-      '{"title":"short title","prompt":"full video prompt","model":"model id","duration":5,"resolution":"720p","ratio":"9:16","summary":"one-line summary"}',
-      'When ready=true, invite them to keep refining or copy the prompt. Never mention low credits or top-up.',
-      'plan.prompt MUST be a shootable video prompt (subject, action, scene, camera, lighting, audio) — NEVER the user\'s request sentence verbatim.',
-      'If the user message includes [example_id=…] and a reference preset, rewrite it for the cheap tier (~5s, 720p) with concrete visuals; do not only restate “I want an X style clip”.',
-      'If info is missing, ready=false, plan=null, and ask in assistant_message.',
-      'Write assistant_message, plan.title, plan.summary and plan.prompt in ' + replyLanguageName(lang) + '.'
+      'You are the PowerTokens Video Studio planner. Talk briefly, then write a prompt a video model can shoot as-is.',
+      'Do not mention credits, top-up, or tell the user to generate now.',
+      'Pick model only from: ' + catalog + '.',
+      'Default: model=' + cheap.model + ', duration=' + cheap.duration + ', resolution=' + cheap.resolution + ', ratio=' + cheap.ratio + '.',
+      'Raise duration or resolution only when the user explicitly asks. Otherwise never use 16s, 1080p, or 4K. Duration and resolution belong in the plan fields, not in the first line of prompt.',
+      'Each turn is ONE JSON object. No markdown. No text outside the JSON.',
+      'If a concrete subject or action is missing AND the message has no [example_id= : {"assistant_message":"ask the single most important gap","ready":false,"plan":null}',
+      'Set ready=true immediately when the user asks for a plan or prompt, says they are done, already named a subject and an action, or the message includes [example_id= plus a reference prompt. Do not ask a question first in those cases:',
+      '{"title":"short title","prompt":"shot prompt","model":"' + cheap.model + '","duration":5,"resolution":"720p","ratio":"9:16","summary":"one-line picture"}',
+      'assistant_message is one plain sentence about the picture, plus an invite to revise or copy. Do not explain the fields. Do not mention credits.',
+      'Write assistant_message, plan.title, plan.summary, and plan.prompt in ' + replyLanguageName(lang) + '.',
+      'The prompt must be a picture someone can film. Use these five sections, each with concrete people and objects, not notes to a writer:',
+      'Subject: who or what, age or build, clothes, visible features.',
+      'Scene: place, time, light source, one foreground prop, what is behind.',
+      'Action and motion: one continuous action that finishes in about 5 seconds. State the start, the change, and the held end pose.',
+      'Camera: height, shot size, and only one camera move.',
+      'Style and constraints: light, materials, look; ambience, or one lip-synced line. No on-screen text, watermark, or logo. Do not add people who were not asked for.',
+      'Do not return the user line or the chip sentence as the prompt. Do not pad with vague words (beautiful, stunning, premium, cinematic vibe) instead of objects. Do not pack several scenes, a full build, or a long dialogue into one 5-second clip. Do not request on-screen text unless the user asked. Do not put credits, model names, or JSON inside prompt.',
+      'If the reference is a 16-second script, keep the single most visual beat and fit it into about 5 seconds. When a reference prompt is attached, plan.prompt must be that concrete: keep it or revise the same picture only.',
+      'Good: Subject is a young man, towel on one shoulder, hair still damp. Scene is a fluorescent locker corridor, lockers soft behind him. He stops two steps away, jaw tight, eyes flick off and back. Eye-level medium shot, slight handheld.',
+      'Bad: The user wants a nice drama clip, cinematic, make it premium.'
     ].join('\n');
   }
 
@@ -775,8 +787,8 @@
       b.type = 'button';
       b.setAttribute('data-example', id);
       b.appendChild(el('span', 'chat-example-title', t('example_' + id + '_label')));
-      var blurb = t('example_' + id + '_blurb');
-      if (blurb && blurb.indexOf('example_') !== 0) {
+      var blurb = lookupString('chat_example_' + id + '_blurb') || t('example_' + id + '_blurb');
+      if (blurb && blurb.indexOf('example_') !== 0 && blurb.indexOf('chat_example_') !== 0) {
         b.appendChild(el('span', 'chat-example-blurb', blurb));
       }
       b.addEventListener('click', function () { onExample(id); });
@@ -809,10 +821,10 @@
     if (busy) return;
     ensureSession();
     track('chat_example_click', { example_id: id });
-    var label = t('example_' + id + '_label');
-    var prompt = t('example_' + id + '_prompt');
-    var userVisible = t('chat_example_user', label);
-    // Seed Flash with the preset prompt as reference, but show a short chip message in UI.
+    // Chip text is a short shootable description. The hidden reference is the full plan prompt.
+    var userVisible = lookupString('chat_example_' + id + '_blurb') ||
+      t('chat_example_user', t('example_' + id + '_label'));
+    var prompt = planPromptForExample(id) || t('example_' + id + '_prompt');
     var apiUser = userVisible + '\n\n[example_id=' + id + ']\n' + t('chat_example_ref_prefix') + '\n' + prompt;
     appendBubble('user', userVisible);
     hideExamples();
@@ -852,17 +864,68 @@
       .trim();
   }
 
-  /** True when plan.prompt is too short or mostly echoes the user request sentence. */
+  var SHOT_LABELS = [
+    '主体', '场景', '动作与运动', '镜头', '风格与限制',
+    'Subject', 'Scene', 'Action and motion', 'Camera', 'Style and constraints',
+    'Sujeto', 'Escena', 'Acción y movimiento', 'Cámara', 'Estilo y límites',
+    'Sujeito', 'Cena', 'Ação e movimento', 'Câmera', 'Estilo e limites',
+    '場面', '動作', 'カメラ', 'スタイルと制約',
+    '주체', '장면', '동작', '카메라', '스타일과 제한'
+  ];
+
+  function lookupString(key) {
+    var s = t(key);
+    if (!s || s === key) return '';
+    return String(s).trim();
+  }
+
+  /** A real shot prompt names several sections. A one-line request does not. */
+  function hasShotStructure(prompt) {
+    var s = String(prompt || '');
+    var n = 0;
+    for (var i = 0; i < SHOT_LABELS.length; i++) {
+      if (s.indexOf(SHOT_LABELS[i]) >= 0) n++;
+    }
+    return n >= 3;
+  }
+
+  /** Generate-tab locker script is 16s / high-res. Chat plans stay on the cheap tier. */
+  function presetNeedsCheapRewrite(text) {
+    var s = String(text || '');
+    return /\b16\s*(?:s\b|sec|seconds)|1080|4k|10-second|approximately 16/i.test(s) ||
+      /16\s*秒|10秒|1080/.test(s);
+  }
+
+  /**
+   * Plan-card text for a chip. Prefer a chat-specific shot prompt (5s locker beat).
+   * Otherwise use the shared preset when it is already a cheap-tier shot.
+   */
+  function planPromptForExample(exId) {
+    var dedicated = lookupString('chat_example_' + exId + '_prompt');
+    if (dedicated.length >= 80) return dedicated;
+    var preset = lookupString('example_' + exId + '_prompt');
+    if (preset.length >= 80 && !presetNeedsCheapRewrite(preset)) return preset;
+    return '';
+  }
+
+  /** True when plan.prompt is too short, instructional, or mostly the user sentence. */
   function isWeakOrEchoPrompt(prompt, userRaw) {
     var p = String(prompt || '').trim();
     if (p.length < 80) return true;
+    if (/按意图写出|name a concrete subject|Shootable video prompt expanded from the user request|根据用户意图展开的可拍提示词/i.test(p)) {
+      return true;
+    }
     var u = visibleUserRequest(userRaw);
     if (!u || u.length < 8) return false;
     var pn = normalizePromptCompare(p);
     var un = normalizePromptCompare(u);
     if (!pn || !un) return false;
     if (pn === un) return true;
-    if (un.length >= 16 && (pn.indexOf(un) >= 0 || un.indexOf(pn) >= 0)) return true;
+    if (un.length >= 16 && (pn.indexOf(un) >= 0 || un.indexOf(pn) >= 0)) {
+      // A full shot prompt may quote the request. Near-copies may not.
+      if (p.length >= Math.max(180, u.length * 2) && hasShotStructure(p)) return false;
+      return true;
+    }
     // Shared token overlap for short request lines that got lightly rephrased.
     if (un.length <= 120 && pn.length <= 220) {
       var uWords = un.split(' ').filter(function (w) { return w.length > 2; });
@@ -877,111 +940,74 @@
     return false;
   }
 
-  function cheapTierLeadIn() {
-    var lang = (deps && deps.getLang && deps.getLang()) || 'zh';
-    if (lang === 'zh') {
-      return '约 5 秒、720p、9:16 竖屏可拍短片。保留具体画面，压缩到便宜档时长。\n\n';
-    }
-    if (lang === 'es') {
-      return 'Clip vertical filmable de unos 5 s · 720p · 9:16. Conserva lo concreto; ajústalo al tramo económico.\n\n';
-    }
-    if (lang === 'pt') {
-      return 'Clipe vertical filmável de cerca de 5 s · 720p · 9:16. Mantenha o concreto; encaixe na faixa barata.\n\n';
-    }
-    if (lang === 'ja') {
-      return '約5秒・720p・9:16縦の撮影用クリップ。具体的な画面を残し、低価格帯の長さに収める。\n\n';
-    }
-    if (lang === 'ko') {
-      return '약 5초 · 720p · 9:16 세로 촬영용 클립. 구체적인 화면은 유지하고, 저가 구간의 길이에 맞춘다.\n\n';
-    }
-    return 'Shootable ~5s · 720p · 9:16 vertical clip. Keep concrete visuals; fit the cheap tier.\n\n';
-  }
-
   function expandFreeformPrompt(request) {
     var lang = (deps && deps.getLang && deps.getLang()) || 'zh';
     var intent = String(request || '').trim().slice(0, 500);
     if (lang === 'zh') {
       return [
-        '根据用户意图展开的可拍提示词（便宜档约 5 秒 / 720p / 9:16）：',
-        '意图：' + intent,
-        '主体与动作：按意图写出清晰主体，以及 5 秒内可完成的连续动作（起势→发展→收束）。',
-        '场景：具体环境、道具与空间层次，避免空泛形容词。',
-        '镜头：平视或略低机位，稳定跟拍或轻微手持，景别从中景过渡到近景。',
-        '光影与质感：自然光或柔和影视光，真实材质与浅景深。',
-        '声音：匹配场景的环境声；若有对白需口型同步；无字幕、无水印、无 Logo。',
-        '风格：写实电影感短视频，动作符合物理规律。'
+        '主体：' + intent,
+        '场景：沿用这句话里的地点、时间和道具。没写到的部分用真实的日间空间补上，前景清楚，背景轻虚。不要改成别的故事。',
+        '动作与运动：一个大约 5 秒能做完的动作，起势清楚，中段有一次看得见的变化，结尾停在稳定姿态。',
+        '镜头：平视，竖屏，中景缓推到近景，轻微手持，只有这一段运镜。',
+        '风格与限制：自然光，真实材质，浅景深，写实，动作符合重力。只有环境声；若原话里有对白，只留一句并对口型。无字幕，无水印，无 Logo。'
       ].join('\n');
     }
-    var packs = {
-      es: [
-        'Prompt filmable ampliado a partir del pedido (tramo económico ~5 s / 720p / 9:16):',
-        'Intención: ' + intent,
-        'Sujeto y acción: un sujeto concreto y una acción continua que quepa en unos 5 segundos (planteamiento → desarrollo → cierre).',
-        'Escena: entorno, atrezo y profundidad concretos; no basta con adjetivos vagos.',
-        'Cámara: a la altura de los ojos o un poco baja, seguimiento estable o leve mano alzada; de plano medio a primer plano.',
-        'Luz y textura: luz natural o cine suave, materiales reales, poca profundidad de campo.',
-        'Sonido: ambiente acorde; sincronía labial si hay diálogo; sin texto en pantalla, marca de agua ni logos.',
-        'Estilo: corto cinematográfico fotorrealista; movimiento físicamente plausible.'
-      ],
-      pt: [
-        'Prompt filmável expandido a partir do pedido (faixa barata ~5 s / 720p / 9:16):',
-        'Intenção: ' + intent,
-        'Sujeito e ação: um sujeito concreto e uma ação contínua que caiba em cerca de 5 segundos (início → desenvolvimento → fecho).',
-        'Cenário: ambiente, adereços e profundidade concretos; não usar só adjetivos vagos.',
-        'Câmara: à altura dos olhos ou um pouco baixa, seguimento estável ou leve câmara na mão; de plano médio a close.',
-        'Luz e textura: luz natural ou cinematográfica suave, materiais reais, pouca profundidade de campo.',
-        'Som: ambiente correspondente; sincronia labial se houver diálogo; sem texto no ecrã, marca de água ou logótipos.',
-        'Estilo: curto cinematográfico fotorrealista; movimento fisicamente plausível.'
-      ],
-      ja: [
-        '依頼から展開した撮影用プロンプト（低価格帯 約5秒 / 720p / 9:16）：',
-        '意図：' + intent,
-        '主体と動作：具体的な主体と、約5秒で完結する連続動作（入り→展開→締め）。',
-        '場面：具体的な環境・小道具・奥行き。漠然とした形容だけにしない。',
-        'カメラ：目線かややロー、安定したフォローか軽い手持ち。ミディアムからクローズへ。',
-        '光と質感：自然光か柔らかい映画光、実在する素材、浅い被写界深度。',
-        '音：場面に合う環境音。セリフがあれば口パク同期。画面内テキスト・透かし・ロゴなし。',
-        'スタイル：実写の短尺シネマ。物理的に自然な動き。'
-      ],
-      ko: [
-        '요청을 풀어 쓴 촬영용 프롬프트(저가 구간 약 5초 / 720p / 9:16):',
-        '의도: ' + intent,
-        '주체와 동작: 구체적인 주체와 약 5초 안에 끝나는 연속 동작(시작→전개→마무리).',
-        '장면: 구체적인 환경, 소품, 깊이. 막연한 형용사만 쓰지 않는다.',
-        '카메라: 눈높이 또는 약간 낮은 앵글, 안정된 팔로우 또는 가벼운 핸드헬드. 미디엄에서 클로즈업으로.',
-        '빛과 질감: 자연광 또는 부드러운 영화 조명, 실제 재질, 얕은 심도.',
-        '소리: 장면에 맞는 환경음. 대사가 있으면 립싱크. 화면 글자, 워터마크, 로고 없음.',
-        '스타일: 실사 단편 시네마. 물리적으로 자연스러운 움직임.'
-      ]
-    };
-    var pack = packs[lang];
-    if (pack) return pack.join('\n');
+    if (lang === 'es') {
+      return [
+        'Sujeto: ' + intent,
+        'Escena: conserva el lugar, la hora y los objetos de esa frase. Lo que falte es un espacio real de día, frente nítido y fondo suave. No cambies la historia.',
+        'Acción y movimiento: una sola acción de unos 5 segundos, con arranque claro, un cambio visible y una pose final quieta.',
+        'Cámara: a la altura de los ojos, vertical, de plano medio a primer plano, leve cámara en mano, un solo movimiento.',
+        'Estilo y límites: luz natural, textura real, poca profundidad de campo, imagen realista, peso creíble. Solo ambiente; si hay diálogo, una frase con sincronía labial. Sin texto en pantalla, marca de agua ni logo.'
+      ].join('\n');
+    }
+    if (lang === 'pt') {
+      return [
+        'Sujeito: ' + intent,
+        'Cena: mantenha o lugar, a hora e os objetos dessa frase. O que faltar fica num espaço real de dia, frente nítida e fundo suave. Não mude a história.',
+        'Ação e movimento: uma só ação de cerca de 5 segundos, com começo claro, uma mudança visível e uma pose final estável.',
+        'Câmera: na altura dos olhos, vertical, do plano médio ao close, leve câmera na mão, um só movimento.',
+        'Estilo e limites: luz natural, textura real, pouca profundidade de campo, imagem realista, peso crível. Só ambiente; se houver fala, uma frase com sincronia labial. Sem texto na tela, marca d\'água ou logo.'
+      ].join('\n');
+    }
+    if (lang === 'ja') {
+      return [
+        '主体：' + intent,
+        '場面：その文にある場所、時間、小道具を使う。足りない部分は昼の実在する空間で補い、手前ははっきり、奥は少しぼかす。話を別のものに変えない。',
+        '動作：約5秒で終わる一つの動作。入りが明確で、途中に見える変化が一つあり、最後は止まった姿勢。',
+        'カメラ：目の高さ、縦画面、ミディアムからクローズへ、軽い手持ち、動きはこの一つだけ。',
+        'スタイルと制約：自然光、実在する質感、浅い被写界深度、実写、重力に合う動き。環境音のみ。セリフがあるなら一句だけ口パク。画面内の文字、透かし、ロゴなし。'
+      ].join('\n');
+    }
+    if (lang === 'ko') {
+      return [
+        '주체: ' + intent,
+        '장면: 그 문장의 장소, 시간, 소품을 유지한다. 빠진 부분은 낮의 실제 공간으로 채우고, 앞은 선명하게, 뒤는 살짝 흐리게. 이야기를 바꾸지 않는다.',
+        '동작: 약 5초 안에 끝나는 동작 하나. 시작이 분명하고, 중간에 보이는 변화가 한 번 있으며, 끝은 멈춘 자세.',
+        '카메라: 눈높이, 세로 화면, 미디엄에서 클로즈업으로, 가벼운 핸드헬드, 움직임은 이것뿐.',
+        '스타일과 제한: 자연광, 실제 재질, 얕은 심도, 실사, 중력에 맞는 움직임. 환경음만. 대사가 있으면 한 문장만 립싱크. 화면 글자, 워터마크, 로고 없음.'
+      ].join('\n');
+    }
     return [
-      'Shootable video prompt expanded from the user request (cheap tier ~5s / 720p / 9:16):',
-      'Intent: ' + intent,
-      'Subject & action: name a concrete subject and a continuous action that completes within ~5 seconds (setup → beat → resolve).',
-      'Environment: specific setting, props, and depth; avoid vague adjectives alone.',
-      'Camera: eye-level or slightly low, smooth follow or subtle handheld; medium into close-up.',
-      'Lighting & texture: natural or soft cinematic light, real materials, shallow depth of field.',
-      'Audio: matching ambience; lip-sync if dialogue; no on-screen text, watermark, or logos.',
-      'Style: photoreal short-form cinematic; physically plausible motion.'
+      'Subject: ' + intent,
+      'Scene: keep the place, time, and props in that line. Fill anything missing with a real daytime space, sharp foreground, soft background. Do not switch the story.',
+      'Action and motion: one action that finishes in about 5 seconds, with a clear start, one visible change, and a held ending pose.',
+      'Camera: eye level, vertical frame, medium shot easing into a close-up, slight handheld, only that move.',
+      'Style and constraints: natural light, real texture, shallow depth of field, photoreal, believable weight. Ambience only; if the line includes speech, keep one lip-synced line. No on-screen text, watermark, or logo.'
     ].join('\n');
   }
 
   /**
-   * Offline / repair path: always expand to a real shootable prompt.
-   * Preset chips → full example_*_prompt (cheap-tier lead-in). Free text → structured expansion.
-   * Never return the user request sentence alone.
+   * Offline / repair path: a real shot prompt, never the user sentence alone.
+   * Chips use the chat shot prompt (or a cheap-tier preset). Free text is expanded in place.
    */
   function expandDraftPrompt(raw) {
     raw = String(raw || '').trim();
     if (!raw) return '';
     var exId = extractExampleId(raw);
     if (exId && EXAMPLE_IDS.indexOf(exId) >= 0) {
-      var preset = t('example_' + exId + '_prompt');
-      if (preset && preset.indexOf('example_') !== 0 && preset.trim().length >= 40) {
-        return (cheapTierLeadIn() + preset.trim()).slice(0, 2200);
-      }
+      var preset = planPromptForExample(exId);
+      if (preset) return preset.slice(0, 2200);
     }
     var request = visibleUserRequest(raw);
     if (request.length < 8) return '';
