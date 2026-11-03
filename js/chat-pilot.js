@@ -117,7 +117,9 @@
         '仅当用户明确说可以了/要提示词/要方案，或信息已足够且用户未再追问时，才设 ready=true 并填 plan：',
         '{"title":"短标题","prompt":"完整视频提示词","model":"模型id","duration":5,"resolution":"720p","ratio":"9:16","summary":"一句话方案摘要"}',
         'ready=true 时，assistant_message 应邀请用户继续改，或复制提示词；不要提积分不足或去充值。',
-        'prompt 要具体（主体、动作、场景、镜头、光影、声音），适合图生/文生视频。'
+        'prompt 要具体（主体、动作、场景、镜头、光影、声音），适合图生/文生视频。',
+        '严禁把用户原话/请求句原样塞进 plan.prompt；必须写成可直接出片的完整提示词。',
+        '若消息含 [example_id=…] 与参考预设，请改写成便宜档（约5秒、720p）可拍版本，保留具体画面细节，不要只复述“我想拍某某”。'
       ].join('\n');
     }
     return [
@@ -132,6 +134,8 @@
       'Only when the user says they are ready / wants the prompt / wants the plan — or details are enough and they stop asking — set ready=true and fill plan:',
       '{"title":"short title","prompt":"full video prompt","model":"model id","duration":5,"resolution":"720p","ratio":"9:16","summary":"one-line summary"}',
       'When ready=true, invite them to keep refining or copy the prompt. Never mention low credits or top-up.',
+      'plan.prompt MUST be a shootable video prompt (subject, action, scene, camera, lighting, audio) — NEVER the user\'s request sentence verbatim.',
+      'If the user message includes [example_id=…] and a reference preset, rewrite it for the cheap tier (~5s, 720p) with concrete visuals; do not only restate “I want an X style clip”.',
       'If info is missing, ready=false, plan=null, and ask in assistant_message.'
     ].join('\n');
   }
@@ -798,22 +802,141 @@
     return '';
   }
 
+  function extractExampleId(raw) {
+    var m = String(raw || '').match(/\[example_id=([a-z0-9_-]+)\]/i);
+    return m ? m[1].toLowerCase() : '';
+  }
+
+  function visibleUserRequest(raw) {
+    var s = String(raw || '');
+    var cut = s.split('\n\n[example_id=')[0].trim();
+    cut = cut.replace(/^\[[^\]]*\]\s*/m, '').trim();
+    return cut || s.trim();
+  }
+
+  function normalizePromptCompare(s) {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/[\u201c\u201d\u2018\u2019"']/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** True when plan.prompt is too short or mostly echoes the user request sentence. */
+  function isWeakOrEchoPrompt(prompt, userRaw) {
+    var p = String(prompt || '').trim();
+    if (p.length < 80) return true;
+    var u = visibleUserRequest(userRaw);
+    if (!u || u.length < 8) return false;
+    var pn = normalizePromptCompare(p);
+    var un = normalizePromptCompare(u);
+    if (!pn || !un) return false;
+    if (pn === un) return true;
+    if (un.length >= 16 && (pn.indexOf(un) >= 0 || un.indexOf(pn) >= 0)) return true;
+    // Shared token overlap for short request lines that got lightly rephrased.
+    if (un.length <= 120 && pn.length <= 220) {
+      var uWords = un.split(' ').filter(function (w) { return w.length > 2; });
+      if (uWords.length >= 4) {
+        var hits = 0;
+        for (var i = 0; i < uWords.length; i++) {
+          if (pn.indexOf(uWords[i]) >= 0) hits++;
+        }
+        if (hits / uWords.length >= 0.85) return true;
+      }
+    }
+    return false;
+  }
+
+  function cheapTierLeadIn() {
+    var lang = (deps && deps.getLang && deps.getLang()) || 'zh';
+    if (lang === 'zh') {
+      return '约 5 秒、720p、9:16 竖屏可拍短片。保留具体画面，压缩到便宜档时长。\n\n';
+    }
+    return 'Shootable ~5s · 720p · 9:16 vertical clip. Keep concrete visuals; fit the cheap tier.\n\n';
+  }
+
+  function expandFreeformPrompt(request) {
+    var lang = (deps && deps.getLang && deps.getLang()) || 'zh';
+    var intent = String(request || '').trim().slice(0, 500);
+    if (lang === 'zh') {
+      return [
+        '根据用户意图展开的可拍提示词（便宜档约 5 秒 / 720p / 9:16）：',
+        '意图：' + intent,
+        '主体与动作：按意图写出清晰主体，以及 5 秒内可完成的连续动作（起势→发展→收束）。',
+        '场景：具体环境、道具与空间层次，避免空泛形容词。',
+        '镜头：平视或略低机位，稳定跟拍或轻微手持，景别从中景过渡到近景。',
+        '光影与质感：自然光或柔和影视光，真实材质与浅景深。',
+        '声音：匹配场景的环境声；若有对白需口型同步；无字幕、无水印、无 Logo。',
+        '风格：写实电影感短视频，动作符合物理规律。'
+      ].join('\n');
+    }
+    return [
+      'Shootable video prompt expanded from the user request (cheap tier ~5s / 720p / 9:16):',
+      'Intent: ' + intent,
+      'Subject & action: name a concrete subject and a continuous action that completes within ~5 seconds (setup → beat → resolve).',
+      'Environment: specific setting, props, and depth; avoid vague adjectives alone.',
+      'Camera: eye-level or slightly low, smooth follow or subtle handheld; medium into close-up.',
+      'Lighting & texture: natural or soft cinematic light, real materials, shallow depth of field.',
+      'Audio: matching ambience; lip-sync if dialogue; no on-screen text, watermark, or logos.',
+      'Style: photoreal short-form cinematic; physically plausible motion.'
+    ].join('\n');
+  }
+
+  /**
+   * Offline / repair path: always expand to a real shootable prompt.
+   * Preset chips → full example_*_prompt (cheap-tier lead-in). Free text → structured expansion.
+   * Never return the user request sentence alone.
+   */
+  function expandDraftPrompt(raw) {
+    raw = String(raw || '').trim();
+    if (!raw) return '';
+    var exId = extractExampleId(raw);
+    if (exId && EXAMPLE_IDS.indexOf(exId) >= 0) {
+      var preset = t('example_' + exId + '_prompt');
+      if (preset && preset.indexOf('example_') !== 0 && preset.trim().length >= 40) {
+        return (cheapTierLeadIn() + preset.trim()).slice(0, 2200);
+      }
+    }
+    var request = visibleUserRequest(raw);
+    if (request.length < 8) return '';
+    // If the "request" is already a long shootable prompt the user pasted, keep it.
+    if (request.length >= 160 && /(?:\n|subject:|camera:|action:|环境|镜头|主体)/i.test(request)) {
+      return request.slice(0, 2200);
+    }
+    return expandFreeformPrompt(request).slice(0, 2200);
+  }
+
   function draftPlanFromUser() {
     var raw = lastUserText();
     if (!raw) return null;
-    // Strip example metadata seed if present
-    var prompt = raw.split('\n\n[example_id=')[0].trim() || raw;
-    prompt = prompt.replace(/^\[[^\]]*\]\s*/m, '').trim();
-    if (prompt.length < 8) return null;
+    var prompt = expandDraftPrompt(raw);
+    if (!prompt || prompt.length < 40) return null;
+    var exId = extractExampleId(raw);
+    var title = t('chat_draft_title');
+    if (exId) {
+      var label = t('example_' + exId + '_label');
+      if (label && label.indexOf('example_') !== 0) title = label;
+    }
     return clampPlan({
-      title: t('chat_draft_title'),
+      title: title,
       summary: t('chat_draft_summary'),
-      prompt: prompt.slice(0, 1800),
+      prompt: prompt,
       model: CHEAP_DEFAULT.model,
       duration: CHEAP_DEFAULT.duration,
       resolution: CHEAP_DEFAULT.resolution,
       ratio: CHEAP_DEFAULT.ratio
     });
+  }
+
+  /** If the model echoed the user request, replace with an expanded local prompt. */
+  function ensureShootablePlan(plan, userRaw) {
+    if (!plan || !plan.prompt) return plan;
+    if (!isWeakOrEchoPrompt(plan.prompt, userRaw)) return plan;
+    var expanded = expandDraftPrompt(userRaw || lastUserText());
+    if (!expanded || expanded.length < 40) return plan;
+    plan.prompt = expanded;
+    if (!plan.summary) plan.summary = t('chat_draft_summary');
+    return plan;
   }
 
   function showError(detail, opts) {
@@ -905,7 +1028,10 @@
       } else {
         appendBubble('assistant', parsed.assistant_message);
       }
-      if (parsed.ready && parsed.plan) renderPlanCard(parsed.plan);
+      if (parsed.ready && parsed.plan) {
+        parsed.plan = ensureShootablePlan(parsed.plan, lastUserText());
+        renderPlanCard(parsed.plan);
+      }
       track('chat_flash_ok', {
         model: res.model || '',
         streamed: res.streamed !== false,
