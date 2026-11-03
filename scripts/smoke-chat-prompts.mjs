@@ -79,7 +79,7 @@ for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) load('js/lang/' + code 
 const pilotSrc = fs.readFileSync('js/chat-pilot.js', 'utf8');
 const harness = pilotSrc.replace(
   'resetConversation: resetConversation\n  };',
-  'resetConversation: resetConversation,\n    _test: {\n      expandDraftPrompt: expandDraftPrompt,\n      isWeakOrEchoPrompt: isWeakOrEchoPrompt,\n      systemPrompt: systemPrompt,\n      ensureShootablePlan: ensureShootablePlan,\n      planPromptForExample: planPromptForExample\n    }\n  };'
+  'resetConversation: resetConversation,\n    _test: {\n      expandDraftPrompt: expandDraftPrompt,\n      isWeakOrEchoPrompt: isWeakOrEchoPrompt,\n      systemPrompt: systemPrompt,\n      ensureShootablePlan: ensureShootablePlan,\n      planPromptForExample: planPromptForExample,\n      buildExamplePlan: buildExamplePlan\n    }\n  };'
 );
 assert.notEqual(harness, pilotSrc, 'test hook should patch the export');
 vm.runInContext(harness, context, { filename: 'js/chat-pilot.js' });
@@ -238,5 +238,17 @@ const clamped = pilot.clampPlan({
 assert.equal(clamped.duration, 5);
 assert.equal(clamped.resolution, '720p');
 assert.equal(clamped.model, 'wan3.0-video');
+
+lang = 'zh';
+const examplePlan = api.buildExamplePlan('shopping');
+assert.ok(examplePlan);
+assert.equal(examplePlan.prompt, api.planPromptForExample('shopping'));
+assert.match(examplePlan.prompt, /芝士/);
+assert.doesNotMatch(examplePlan.prompt, /沿用这句话/);
+assert.equal(examplePlan.duration, 5);
+assert.equal(examplePlan.resolution, '720p');
+const blurb = I.t('zh', 'chat_example_shopping_blurb');
+assert.notEqual(examplePlan.prompt, blurb);
+assert.ok(examplePlan.prompt.length > blurb.length * 2);
 
 console.log('smoke-chat-prompts ok');
