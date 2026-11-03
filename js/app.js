@@ -311,10 +311,10 @@
 
   // ---------------- key ----------------
   function renderNokeyBanner() {
+    // Green under-tabs Key banner removed: beginners do not think in API keys;
+    // header Sign-in CTA + status bar cover logged-out. Paste-key stays on Account → Advanced.
     var banner = $('nokey-banner');
-    if (!banner) return;
-    // Under-tabs strip when there is no key.
-    show(banner, !A.getKey());
+    if (banner) show(banner, false);
   }
 
   // API Key tab pill: three dots (bad / warn / ok). Green = usable; red = auth/none; amber = quota (need top-up).
@@ -782,11 +782,6 @@
   }
 
   function bindNokeyAdvanced() {
-    var nokeyGoto = $('nokey-goto-keys');
-    if (nokeyGoto) {
-      // Advanced path lives on the Account tab only (no paste on Generate).
-      nokeyGoto.addEventListener('click', function () { openKeyTabAdvanced(); });
-    }
   }
 
   // ---------------- generate form ----------------

@@ -197,16 +197,9 @@ p { margin: 0; }
 .btn-credits:hover, .credits-chip:hover { background: #e2f7f3; text-decoration: none; border-color: rgba(16, 182, 168, .5); }
 
 
-/* ---------- empty-key login strip (under tabs) ---------- */
-.nokey-banner {
-  background: var(--pale); border-bottom: 1px solid #cfe6df;
-}
-.nokey-inner {
-  width: 100%; max-width: 1240px; margin: 0 auto; padding: 10px 12px;
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px;
-}
-.nokey-banner p { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.45; flex: 1 1 220px; }
-.nokey-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; flex: none; }
+/* ---------- empty-key login strip (retired) ---------- */
+/* Under-tabs Key / Sign-in banner removed — header OAuth CTA + status bar only. */
+.nokey-banner { display: none !important; }
 
 /* ---------- notebook tabs (align with .page cards: same max-width + horizontal padding) ---------- */
 .tabs {
@@ -228,6 +221,9 @@ p { margin: 0; }
 .tabs button[hidden] { display: none !important; flex: 0; padding: 0; margin: 0; border: 0; }
 .tabs button:hover { background: var(--hover); color: var(--accent-text); }
 .tabs button.active { background: var(--pale); color: var(--accent-text); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.tabs .tab-short { display: none; }
+.tabs .tab-full, .tabs .tab-short { pointer-events: none; }
+
 .badge-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; margin-left: 5px; vertical-align: 1px; box-shadow: 0 0 0 1px rgba(0,0,0,.06); }
 .badge-dot-ok { background: #22c55e; }
 .badge-dot-bad { background: #ff3b30; }
@@ -664,8 +660,6 @@ select option, select optgroup {
   .header-actions { gap: 8px 12px; }
   .badge-btn, .btn-credits, .credits-chip { font-size: 13.5px; padding: 6px 12px; }
   .tabs-inner { padding: 0 24px; }
-  .nokey-inner { padding: 12px 24px; }
-  .nokey-banner p { font-size: 13.5px; }
   .desktop-cta-inner { padding: 18px 24px; }
   .desktop-cta-title { font-size: 16px; }
   .desktop-cta-desc { font-size: 13.5px; }
@@ -807,13 +801,9 @@ select option, select optgroup {
 body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 .tabs [data-tab="chat"][hidden] { display: none !important; }
 
-.chat-pilot-entry-wrap { margin-top: 10px; }
-.chat-pilot-entry {
-  border: 1px solid #b9ddd4;
-  background: var(--pale);
-  color: var(--accent-text);
-  font-weight: 600;
-}
+/* Entry button retired: Chat tab is on by default (PR #37+). */
+.chat-pilot-entry-wrap { display: none !important; margin: 0; }
+.chat-pilot-entry { display: none !important; }
 
 .panel-chat { padding-bottom: 12px; }
 .chat-shell {
@@ -973,12 +963,12 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 .chat-footnote { margin: 0; }
 
 
-/* Narrow phones: brand on its own row; actions stay one tidy row (no overlapping tabs). */
+/* Narrow phones: brand on its own row; short tab labels; less chrome stacking. */
 @media (max-width: 639px) {
   .header-bar {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 8px;
   }
   .brand-block { flex: 0 1 auto; }
   .header-toolbar {
@@ -996,7 +986,18 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
     min-width: min(100%, 180px);
     justify-content: center;
   }
-  .subtitle { padding-left: 42px; }
+  /* Tagline is redundant under the brand name on a phone. */
+  .subtitle { display: none; }
+  /* Short tab labels so four equal tabs fit without colliding. */
+  .tabs .tab-full { display: none; }
+  .tabs .tab-short { display: inline; }
+  .tabs-inner { padding: 0 8px; }
+  .tabs button {
+    font-size: 12.5px;
+    padding: 10px 4px;
+    letter-spacing: -0.01em;
+    gap: 3px;
+  }
 }
 
 @media (max-width: 640px) {
