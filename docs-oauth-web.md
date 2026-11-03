@@ -51,6 +51,20 @@ The authorize URL **must** carry last-touch UTM so the backend can attribute sig
 
 README / GitHub get-key links keep `utm_source=github` + `utm_medium=readme` (not in-app).
 
-## Follow-up (not in this change)
+## Desktop download jump (GitHub Pages)
 
-Desktop download jump page on powertokens.ai (302 to the GitHub `.exe` with UTM) is deferred — keep linking the release URL for now.
+Studio’s Windows CTA and any ad/官网 link should use:
+
+```
+https://powertokens.github.io/video-studio-web/download.html
+```
+
+Optional inbound `utm_*` / click ids are captured into the same `vsw.utm.first` / `vsw.utm.last` keys as the SPA (`js/utm.js`). Missing product fields default to `utm_source=videostudio` · `utm_medium=web` · `utm_campaign=video-studio`; missing `utm_content` becomes `web.download_jump`. The page then redirects (meta refresh + `location.replace`) to the latest EXE:
+
+```
+https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe
+```
+
+UTM is **not** appended to the GitHub binary URL (GitHub ignores them). GitHub Pages cannot emit a true HTTP 302.
+
+**官网 powertokens.ai:** point download buttons at this jump URL (or host an identical path / 302 later). Until then, attribution for “unknown GitHub” downloads stays incomplete for traffic that still hits Release assets directly.

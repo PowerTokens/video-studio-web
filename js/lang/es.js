@@ -161,7 +161,7 @@ VSI18n.register('es', {
   desktop_cta_desc: "The web version is great for a quick clip. Full features (Excel batch, script-to-storyboard, continue from previous clip) are in the Windows Desktop Client — no Python required, same API Key.",
   desktop_cta_btn: "Descargar instalador Windows (.exe)",
   desktop_cta_releases: "Todas las versiones ↗",
-  desktop_download_url: "https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe",
+  desktop_download_url: "https://powertokens.github.io/video-studio-web/download.html",
   desktop_releases_url: "https://github.com/PowerTokens/video-studio/releases/latest",
   mock_banner: "Modo simulado: sin llamadas reales ni cargos.",
   signup_url: "https://powertokens.ai/api-keys",
