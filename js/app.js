@@ -401,13 +401,14 @@
     var keyBadge = $('key-badge');
     var keyBadgeText = $('key-badge-text');
     if (keyBadge) {
-      keyBadge.hidden = false;
       var noKey = !key || block === 'none';
+      // Soft "Sign in" pill duplicates #header-oauth-login — hide until there is a real key state.
+      keyBadge.hidden = !!noKey;
       keyBadge.classList.toggle('is-ok', ok);
       keyBadge.classList.toggle('is-warn', isQuota);
       keyBadge.classList.toggle('is-soft', !ok && !isQuota && noKey);
       keyBadge.classList.toggle('is-bad', !ok && !isQuota && !noKey);
-      keyBadge.setAttribute('aria-hidden', 'false');
+      keyBadge.setAttribute('aria-hidden', noKey ? 'true' : 'false');
       var title;
       if (noKey) title = t('key_chip_none');
       else if (block === 'auth') title = t('key_chip_auth');

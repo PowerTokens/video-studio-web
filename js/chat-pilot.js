@@ -44,11 +44,16 @@
 
   function isEnabled() {
     syncFlagFromQuery();
-    if (store().get(STORE_FLAG, null) === '1') return true;
+    var flag = store().get(STORE_FLAG, null);
+    if (flag === '0') return false;
+    if (flag === '1') return true;
     try {
       var p = (new URLSearchParams(location.search || '').get('pilot') || '').toLowerCase();
-      return p === 'chat' || p === '1' || p === 'on' || p === 'true';
-    } catch (e) { return false; }
+      if (p === 'off' || p === '0' || p === 'classic' || p === 'false') return false;
+      if (p === 'chat' || p === '1' || p === 'on' || p === 'true') return true;
+    } catch (e) { /* ignore */ }
+    // Default on: chat is a first-class tab; opt out with ?pilot=off.
+    return true;
   }
 
   function setEnabled(on) {
