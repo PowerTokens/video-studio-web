@@ -100,6 +100,14 @@
     return Object.keys(M.MODELS).join(', ');
   }
 
+  function replyLanguageName(lang) {
+    if (lang === 'es') return 'Spanish';
+    if (lang === 'pt') return 'Portuguese';
+    if (lang === 'ja') return 'Japanese';
+    if (lang === 'ko') return 'Korean';
+    return 'English';
+  }
+
   function systemPrompt() {
     var lang = (deps && deps.getLang && deps.getLang()) || 'zh';
     var cheap = CHEAP_DEFAULT;
@@ -136,7 +144,8 @@
       'When ready=true, invite them to keep refining or copy the prompt. Never mention low credits or top-up.',
       'plan.prompt MUST be a shootable video prompt (subject, action, scene, camera, lighting, audio) — NEVER the user\'s request sentence verbatim.',
       'If the user message includes [example_id=…] and a reference preset, rewrite it for the cheap tier (~5s, 720p) with concrete visuals; do not only restate “I want an X style clip”.',
-      'If info is missing, ready=false, plan=null, and ask in assistant_message.'
+      'If info is missing, ready=false, plan=null, and ask in assistant_message.',
+      'Write assistant_message, plan.title, plan.summary and plan.prompt in ' + replyLanguageName(lang) + '.'
     ].join('\n');
   }
 
@@ -873,6 +882,18 @@
     if (lang === 'zh') {
       return '约 5 秒、720p、9:16 竖屏可拍短片。保留具体画面，压缩到便宜档时长。\n\n';
     }
+    if (lang === 'es') {
+      return 'Clip vertical filmable de unos 5 s · 720p · 9:16. Conserva lo concreto; ajústalo al tramo económico.\n\n';
+    }
+    if (lang === 'pt') {
+      return 'Clipe vertical filmável de cerca de 5 s · 720p · 9:16. Mantenha o concreto; encaixe na faixa barata.\n\n';
+    }
+    if (lang === 'ja') {
+      return '約5秒・720p・9:16縦の撮影用クリップ。具体的な画面を残し、低価格帯の長さに収める。\n\n';
+    }
+    if (lang === 'ko') {
+      return '약 5초 · 720p · 9:16 세로 촬영용 클립. 구체적인 화면은 유지하고, 저가 구간의 길이에 맞춘다.\n\n';
+    }
     return 'Shootable ~5s · 720p · 9:16 vertical clip. Keep concrete visuals; fit the cheap tier.\n\n';
   }
 
@@ -891,6 +912,50 @@
         '风格：写实电影感短视频，动作符合物理规律。'
       ].join('\n');
     }
+    var packs = {
+      es: [
+        'Prompt filmable ampliado a partir del pedido (tramo económico ~5 s / 720p / 9:16):',
+        'Intención: ' + intent,
+        'Sujeto y acción: un sujeto concreto y una acción continua que quepa en unos 5 segundos (planteamiento → desarrollo → cierre).',
+        'Escena: entorno, atrezo y profundidad concretos; no basta con adjetivos vagos.',
+        'Cámara: a la altura de los ojos o un poco baja, seguimiento estable o leve mano alzada; de plano medio a primer plano.',
+        'Luz y textura: luz natural o cine suave, materiales reales, poca profundidad de campo.',
+        'Sonido: ambiente acorde; sincronía labial si hay diálogo; sin texto en pantalla, marca de agua ni logos.',
+        'Estilo: corto cinematográfico fotorrealista; movimiento físicamente plausible.'
+      ],
+      pt: [
+        'Prompt filmável expandido a partir do pedido (faixa barata ~5 s / 720p / 9:16):',
+        'Intenção: ' + intent,
+        'Sujeito e ação: um sujeito concreto e uma ação contínua que caiba em cerca de 5 segundos (início → desenvolvimento → fecho).',
+        'Cenário: ambiente, adereços e profundidade concretos; não usar só adjetivos vagos.',
+        'Câmara: à altura dos olhos ou um pouco baixa, seguimento estável ou leve câmara na mão; de plano médio a close.',
+        'Luz e textura: luz natural ou cinematográfica suave, materiais reais, pouca profundidade de campo.',
+        'Som: ambiente correspondente; sincronia labial se houver diálogo; sem texto no ecrã, marca de água ou logótipos.',
+        'Estilo: curto cinematográfico fotorrealista; movimento fisicamente plausível.'
+      ],
+      ja: [
+        '依頼から展開した撮影用プロンプト（低価格帯 約5秒 / 720p / 9:16）：',
+        '意図：' + intent,
+        '主体と動作：具体的な主体と、約5秒で完結する連続動作（入り→展開→締め）。',
+        '場面：具体的な環境・小道具・奥行き。漠然とした形容だけにしない。',
+        'カメラ：目線かややロー、安定したフォローか軽い手持ち。ミディアムからクローズへ。',
+        '光と質感：自然光か柔らかい映画光、実在する素材、浅い被写界深度。',
+        '音：場面に合う環境音。セリフがあれば口パク同期。画面内テキスト・透かし・ロゴなし。',
+        'スタイル：実写の短尺シネマ。物理的に自然な動き。'
+      ],
+      ko: [
+        '요청을 풀어 쓴 촬영용 프롬프트(저가 구간 약 5초 / 720p / 9:16):',
+        '의도: ' + intent,
+        '주체와 동작: 구체적인 주체와 약 5초 안에 끝나는 연속 동작(시작→전개→마무리).',
+        '장면: 구체적인 환경, 소품, 깊이. 막연한 형용사만 쓰지 않는다.',
+        '카메라: 눈높이 또는 약간 낮은 앵글, 안정된 팔로우 또는 가벼운 핸드헬드. 미디엄에서 클로즈업으로.',
+        '빛과 질감: 자연광 또는 부드러운 영화 조명, 실제 재질, 얕은 심도.',
+        '소리: 장면에 맞는 환경음. 대사가 있으면 립싱크. 화면 글자, 워터마크, 로고 없음.',
+        '스타일: 실사 단편 시네마. 물리적으로 자연스러운 움직임.'
+      ]
+    };
+    var pack = packs[lang];
+    if (pack) return pack.join('\n');
     return [
       'Shootable video prompt expanded from the user request (cheap tier ~5s / 720p / 9:16):',
       'Intent: ' + intent,
