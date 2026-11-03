@@ -332,6 +332,7 @@ VSI18n.register('zh', {
   chat_draft_summary: "离线草稿 — 生成前请再改提示词。",
   chat_draft_ready: "助手有点忙，我先按你上一句起草了一版。可以继续聊着改，满意后再复制提示词。",
   chat_flash_error: "对话助手暂时不顺：%s。可重试、用你的文字做草稿，或继续聊。",
+  chat_flash_stream_cut: "回复传到一半断了。请再试一次。",
   chat_flash_unknown: "未知错误",
   chat_flash_network: "网络异常",
   chat_flash_auth: "登录或 Key 无效",
