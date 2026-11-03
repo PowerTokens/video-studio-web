@@ -230,7 +230,6 @@
       sel = el('select');
       sel.id = 'lang-select';
       sel.setAttribute('aria-label', 'Language');
-      sel.addEventListener('change', function () { setLang(sel.value, true); });
       box.appendChild(sel);
     }
     var needRebuild = sel.options.length !== codes.length;
@@ -254,7 +253,29 @@
       });
     }
     if (sel.value !== lang) sel.value = lang;
-    try { sel.blur(); } catch (eBlur) { /* ignore */ }
+    // Bind once. Do not rewrite the page or blur the control inside the change
+    // event: mobile pickers roll the selection back, so the menu moves and the
+    // UI stays on the previous language. Apply on the next turn, and ignore a
+    // same-turn revert to the language already on screen.
+    if (!sel._vswLangBound) {
+      sel._vswLangBound = true;
+      var queued = null;
+      function queueLang() {
+        var code = sel.value;
+        if (!I.has(code)) return;
+        if (queued && queued.code !== code && code === lang) return;
+        if (!queued && code === lang) return;
+        if (queued) clearTimeout(queued.timer);
+        var timer = setTimeout(function () {
+          queued = null;
+          setLang(code, true);
+          if (sel.value !== lang) sel.value = lang;
+        }, 0);
+        queued = { code: code, timer: timer };
+      }
+      sel.addEventListener('change', queueLang);
+      sel.addEventListener('input', queueLang);
+    }
     renderFirstFrameCard();
     renderModelDetailsBtn();
   }
@@ -276,6 +297,32 @@
     renderManualKinds();
     renderStatus();
     renderExamples();
+    refreshPresetPrompt();
+  }
+
+  /** If the Generate box still holds a preset prompt, show that preset in the new language. */
+  function refreshPresetPrompt() {
+    var ta = $('gen-prompt');
+    if (!ta || !I || !I.languages) return;
+    var raw = String(ta.value || '').trim();
+    if (!raw) return;
+    var codes = I.languages();
+    var id = null;
+    for (var i = 0; i < EXAMPLE_IDS.length && !id; i++) {
+      var eid = EXAMPLE_IDS[i];
+      for (var c = 0; c < codes.length; c++) {
+        var known = I.t(codes[c], 'example_' + eid + '_prompt');
+        if (known && String(known).trim() === raw) { id = eid; break; }
+      }
+    }
+    if (!id) return;
+    var next = String(t('example_' + id + '_prompt') || '');
+    if (next && next !== ta.value) {
+      ta.value = next;
+      gen.prompt = next;
+      saveGen();
+    }
+    previewPresetId = id;
   }
 
 

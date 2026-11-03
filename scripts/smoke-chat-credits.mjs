@@ -41,6 +41,7 @@ function makeNode(tag) {
     },
     setAttribute(key, value) { node.attrs[key] = String(value); },
     getAttribute(key) { return Object.prototype.hasOwnProperty.call(node.attrs, key) ? node.attrs[key] : null; },
+    removeAttribute(key) { delete node.attrs[key]; },
     addEventListener(type, fn) {
       (node._listeners[type] = node._listeners[type] || []).push(fn);
     },
