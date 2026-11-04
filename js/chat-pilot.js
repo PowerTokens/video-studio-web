@@ -1206,7 +1206,7 @@
     if (!input) return;
     var text = String(input.value || '').trim();
     if (!text) return;
-    if (deps.getKey && !deps.getKey()) {
+    if (deps.isLoggedIn && !deps.isLoggedIn()) {
       appendBubble('assistant', t('chat_need_login'));
       track('chat_need_login_show', {});
       if (deps.promptLogin) deps.promptLogin();
@@ -1331,3 +1331,4 @@
     resetConversation: resetConversation
   };
 })(window);
+

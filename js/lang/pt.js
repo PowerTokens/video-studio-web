@@ -297,7 +297,7 @@ VSI18n.register('pt', {
   chat_entry_btn: "Experimentar Chat para vídeo (piloto)",
   chat_greeting: "Olá! Sou o assistente do Video Studio. Conte o que quer gravar — refinamos juntos e depois você pode copiar o prompt.",
   chat_thinking: "A pensar…",
-  chat_need_login: "Entre no PowerTokens (ou cole uma chave em Conta → Avançado) para o chat usar Flash gratuito.",
+  chat_need_login: "Entre na sua conta PowerTokens antes de conversar. Seu rascunho ficará aqui para você enviar depois de entrar.",
   chat_example_user: "Quero um clipe no estilo “%s” — monte um plano econômico.",
   chat_example_ref_prefix: "Prompt de plano já filmável. plan.prompt precisa ser tão concreto: sujeito, cena, ação e movimento, câmera, estilo e limites. Pode usar este texto ou revisar só a mesma imagem. Não devolva a frase curta acima como prompt. Não escreva 16s nem 1080p.",
   chat_example_shopping_blurb: "Filhote golden de seis meses, avental azul liso, empurra um carrinho infantil, trava no freezer, encosta o focinho no vidro, baba e estende uma pata à maçaneta. Acompanhamento na altura dos olhos até o close.",
