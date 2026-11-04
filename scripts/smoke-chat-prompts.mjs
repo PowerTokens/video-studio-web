@@ -7,17 +7,23 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 function elMock() {
+  const listeners = {};
   const node = {
     hidden: false,
     textContent: '',
     className: '',
-    innerHTML: '',
     value: '',
     id: '',
     type: '',
     style: {},
     children: [],
     parentNode: null,
+    _html: '',
+    get innerHTML() { return this._html; },
+    set innerHTML(v) {
+      this._html = String(v == null ? '' : v);
+      if (this._html === '') this.children = [];
+    },
     classList: {
       toggle() {},
       add() {},
@@ -26,7 +32,13 @@ function elMock() {
     },
     setAttribute() {},
     removeAttribute() {},
-    addEventListener() {},
+    addEventListener(type, fn) {
+      if (!listeners[type]) listeners[type] = [];
+      listeners[type].push(fn);
+    },
+    click() {
+      for (const fn of listeners.click || []) fn({ type: 'click' });
+    },
     appendChild(child) {
       this.children.push(child);
       if (child && typeof child === 'object') child.parentNode = this;
@@ -35,10 +47,22 @@ function elMock() {
     remove() {},
     focus() {},
     scrollIntoView() {},
-    querySelector() { return null; },
+    querySelector(sel) {
+      const want = String(sel || '').replace(/^\./, '');
+      let hit = null;
+      eachNodeLocal(this, function (n) {
+        if (!hit && n !== node && n.className === want) hit = n;
+      });
+      return hit;
+    },
     get scrollHeight() { return 0; },
     set scrollTop(_v) {}
   };
+  function eachNodeLocal(n, fn) {
+    if (!n) return;
+    fn(n);
+    for (const c of n.children || []) eachNodeLocal(c, fn);
+  }
   return node;
 }
 
@@ -79,7 +103,7 @@ for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) load('js/lang/' + code 
 const pilotSrc = fs.readFileSync('js/chat-pilot.js', 'utf8');
 const harness = pilotSrc.replace(
   'resetConversation: resetConversation\n  };',
-  'resetConversation: resetConversation,\n    _test: {\n      expandDraftPrompt: expandDraftPrompt,\n      isWeakOrEchoPrompt: isWeakOrEchoPrompt,\n      systemPrompt: systemPrompt,\n      ensureShootablePlan: ensureShootablePlan,\n      planPromptForExample: planPromptForExample\n    }\n  };'
+  'resetConversation: resetConversation,\n    _test: {\n      expandDraftPrompt: expandDraftPrompt,\n      isWeakOrEchoPrompt: isWeakOrEchoPrompt,\n      systemPrompt: systemPrompt,\n      ensureShootablePlan: ensureShootablePlan,\n      planPromptForExample: planPromptForExample,\n      isNonsensicalUserText: isNonsensicalUserText,\n      isUserConfirmText: isUserConfirmText,\n      userAllowsReady: userAllowsReady,\n      demoteReadyIfNeeded: demoteReadyIfNeeded,\n      parseAssistantPayload: parseAssistantPayload\n    }\n  };'
 );
 assert.notEqual(harness, pilotSrc, 'test hook should patch the export');
 vm.runInContext(harness, context, { filename: 'js/chat-pilot.js' });
@@ -94,7 +118,8 @@ pilot.init({
   },
   getLang: function () { return lang; },
   getKey: function () { return ''; },
-  getCredits: function () { return null; }
+  getCredits: function () { return null; },
+  isLoggedIn: function () { return true; }
 });
 
 const api = pilot._test;
@@ -151,7 +176,9 @@ assert.match(sys, /主体/);
 assert.match(sys, /场景/);
 assert.match(sys, /镜头/);
 assert.match(sys, /风格与限制/);
-assert.match(sys, /立刻 ready=true/);
+assert.match(sys, /对话节奏/);
+assert.match(sys, /这样对吗/);
+assert.match(sys, /限量自补/);
 assert.match(sys, /\[example_id=/);
 assert.match(sys, /不要提积分/);
 assert.doesNotMatch(sys, /积分不足|sunk cost|催充值/);
@@ -163,10 +190,50 @@ assert.match(sys, /Subject:/);
 assert.match(sys, /Scene:/);
 assert.match(sys, /Camera:/);
 assert.match(sys, /Style and constraints:/);
-assert.match(sys, /Do not ask a question first/);
+assert.match(sys, /Does that sound right/);
+assert.match(sys, /Limit invention/);
 assert.match(sys, /Do not mention credits/);
 assert.match(sys, /Do not return the user line/);
 assert.doesNotMatch(sys, /sunk cost|top-up now|credits insufficient/i);
+
+assert.equal(api.isNonsensicalUserText('ia m'), true);
+assert.equal(api.isNonsensicalUserText('ok'), false);
+assert.equal(api.isNonsensicalUserText('对'), false);
+assert.equal(api.isNonsensicalUserText('fillet'), false);
+assert.equal(api.isNonsensicalUserText('iam a cooker, iwant make some video about fillet'), false);
+assert.equal(api.isUserConfirmText('对的'), true);
+assert.equal(api.isUserConfirmText('yes'), true);
+assert.equal(api.isUserConfirmText('iam a cooker'), false);
+assert.equal(api.userAllowsReady('对的'), true);
+assert.equal(api.userAllowsReady('iam a cooker, iwant make some video about fillet'), false);
+
+const earlyReady = {
+  assistant_message: "I'll generate a short video plan for you.",
+  ready: true,
+  plan: {
+    title: 'Perfect Fillet Technique',
+    summary: 'Chef expertly trimming silver skin from a salmon fillet.',
+    prompt: 'Subject: chef\nScene: kitchen\nAction and motion: trim\nCamera: close-up\nStyle and constraints: clean',
+    model: 'wan3.0-video',
+    duration: 5,
+    resolution: '720p',
+    ratio: '9:16'
+  },
+  parse_ok: true
+};
+const demoted = api.demoteReadyIfNeeded(earlyReady, 'iam a cooker, iwant make some video about fillet');
+assert.equal(demoted.ready, false);
+assert.equal(demoted.plan, null);
+assert.match(demoted.assistant_message, /Does that sound right|Got it:/i);
+assert.equal(demoted.demoted, 'need_confirm');
+
+const nonsenseDemote = api.demoteReadyIfNeeded(earlyReady, 'ia m');
+assert.equal(nonsenseDemote.ready, false);
+assert.match(nonsenseDemote.assistant_message, /couldn'?t tell|who or what/i);
+
+const afterConfirm = api.demoteReadyIfNeeded(earlyReady, 'yes');
+assert.equal(afterConfirm.ready, true);
+assert.ok(afterConfirm.plan);
 
 const nouns = {
   zh: { shopping: '芝士', canyon: '火塘', seal: '鼓掌', locker: 'Who\'s in the bet' },
@@ -277,5 +344,23 @@ eachNode(document.getElementById('chat-example-chips'), function (node) {
     assert.equal(node.title || '', '', 'example chips should not use a hover prompt');
   }
 });
+
+const keepBtns = [];
+eachNode(document.getElementById('chat-plan-mount'), function (node) {
+  if (node.className === 'btn' && String(node.textContent || '') === I.t('en', 'chat_keep_refining')) {
+    keepBtns.push(node);
+  }
+});
+assert.equal(keepBtns.length, 1, 'Keep chatting on the example plan card');
+keepBtns[0].click();
+assert.equal(document.getElementById('chat-plan-mount').children.length, 0, 'Keep chatting hides the plan card');
+assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null);
+
+pilot.presentExample('canyon');
+assert.ok(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), 'another example shows a card again');
+document.getElementById('chat-input').value = 'i m';
+document.getElementById('chat-send').click();
+assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null, 'typed follow-up hides the prior card');
+assert.ok(walkText(document.getElementById('chat-thread')).includes(I.t('en', 'chat_clarify_nonsensical')));
 
 console.log('smoke-chat-prompts ok');

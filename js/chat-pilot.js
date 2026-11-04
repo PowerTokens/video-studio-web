@@ -130,10 +130,16 @@
         '默认：model=' + cheap.model + '，duration=' + cheap.duration + '，resolution=' + cheap.resolution + '，ratio=' + cheap.ratio + '。',
         '只有用户明确要求更长或更高清时才提高。否则禁止 16 秒、1080p、4K。时长和清晰度只写在 plan 字段里，不要写进 prompt 开头。',
         '每一轮只输出一个 JSON 对象。不要用 markdown，不要在 JSON 外面写字。',
-        '信息不够、且消息里没有 [example_id= 时：{"assistant_message":"只追问一个最关键的缺口","ready":false,"plan":null}',
-        '用户要方案或提示词、说可以了、主体和动作已经清楚，或消息里有 [example_id= 和参考提示词时，立刻 ready=true，不要先追问：',
+        '对话节奏（没有 [example_id= 时）：',
+        '1) 乱码、过短、明显打错、看不懂想拍什么：ready=false，plan=null，用一句白话问「你想拍什么画面」。禁止说「我先出方案」「这就生成」。',
+        '2) 有主题但缺主体或动作（例如只说 fillet / 想拍视频）：ready=false，只追问一个最关键的缺口。不要连问服装、厨房风格等可选项。',
+        '3) 主体和动作已经够拍、但用户还没确认也没说「出方案/给提示词/可以了」：ready=false，用一两句复述画面并问「这样对吗？」。不要先弹完整方案。',
+        '4) 仅在这些情况 ready=true：用户刚确认（对/对的/可以了/就这样），或明确要方案/提示词，或消息含 [example_id= 与参考提示词。确认后不要再追问可选项。',
+        'ready=false 时：{"assistant_message":"白话追问或确认","ready":false,"plan":null}',
+        'ready=true 时输出 plan：',
         '{"title":"短标题","prompt":"成片提示词","model":"' + cheap.model + '","duration":5,"resolution":"720p","ratio":"9:16","summary":"一句话画面"}',
-        'assistant_message 用一句白话说画面，并邀请继续改或复制。不要解释字段，不要提积分。',
+        'assistant_message：ready=false 时只追问或确认；ready=true 时用白话说已按确认点写好第一版，并说明场景/光若未提则先简单写、可继续改。禁止空话「我来生成短片方案」。不要解释字段，不要提积分。',
+        '限量自补：用户没提的角色、年龄、服装、具体菜品或道具不要编造。只补中性必要信息（台面、侧光、浅景深）。用户确认过的点不得悄悄改掉。',
         'prompt 用用户的语言（界面是中文就用中文，除非用户整段用了别的语言）。必须是拍得到的画面，按下面五段写，每段都是具体的人和物，不要写给编剧看的说明：',
         '主体：谁或什么，年龄或体型，服装，能看见的外貌。',
         '场景：地点、时间、光源、一件前景道具、背景里有什么。',
@@ -142,8 +148,9 @@
         '风格与限制：光、材质、风格；环境声，或一句需要对口型的对白。无字幕，无水印，无 Logo，不要凭空加人。',
         '禁止：把用户原话或芯片上的短句原样当作 prompt；用唯美、震撼、高级感凑字而不写物件；一条里塞多场戏、整段建造或大段对白；用户没要字幕就不要字幕；在 prompt 里写积分、模型名或 JSON。',
         '若参考是 16 秒剧本，只留最有画面的一个节拍，收成大约 5 秒。有参考提示词时，plan.prompt 要达到同样具体，可以沿用那一条或只改同一画面。',
-        '好：主体是肩上搭着毛巾、发梢还湿的年轻男生。场景是日光灯下的更衣室走廊，铁柜虚化。他停在两步外，下颌绷紧，视线躲开又看回。平视中景，轻微手持。',
-        '坏：用户想要一个好看的短剧视频，电影感，高级一点。'
+        '好（确认）：明白了：五分熟牛排煎好，用叉子切开，肉汁渗出，特写。这样对吗？',
+        '好（出卡）：按你确认的四点写了第一版；场景和光先简单写，想改再说。',
+        '坏：用户发 ia m 或只说想拍 fillet，就直接 ready=true 并编出厨师白围裙剔三文鱼。'
       ].join('\n');
     }
     return [
@@ -153,11 +160,17 @@
       'Default: model=' + cheap.model + ', duration=' + cheap.duration + ', resolution=' + cheap.resolution + ', ratio=' + cheap.ratio + '.',
       'Raise duration or resolution only when the user explicitly asks. Otherwise never use 16s, 1080p, or 4K. Duration and resolution belong in the plan fields, not in the first line of prompt.',
       'Each turn is ONE JSON object. No markdown. No text outside the JSON.',
-      'If a concrete subject or action is missing AND the message has no [example_id= : {"assistant_message":"ask the single most important gap","ready":false,"plan":null}',
-      'Set ready=true immediately when the user asks for a plan or prompt, says they are done, already named a subject and an action, or the message includes [example_id= plus a reference prompt. Do not ask a question first in those cases:',
+      'Dialogue rhythm (when there is no [example_id= ):',
+      '1) Gibberish, too short, clear typos, or you cannot tell what to shoot: ready=false, plan=null, ask in one plain sentence what picture they want. Never say "I\'ll generate a plan" or "generating now".',
+      '2) Theme present but subject or action missing (e.g. only "fillet" / "make a video"): ready=false, ask the single most important gap. Do not ask optional clothing or kitchen-style questions.',
+      '3) Subject and action are shootable, but the user has not confirmed and did not ask for a plan/prompt: ready=false, paraphrase the picture in one or two sentences and ask "Does that sound right?". Do not open a full plan yet.',
+      '4) Set ready=true only when: the user just confirmed (yes / that\'s right / ok / go ahead), or explicitly wants a plan or prompt, or the message includes [example_id= plus a reference prompt. After confirm, do not ask optional extras.',
+      'When ready=false: {"assistant_message":"one clarify or confirm question","ready":false,"plan":null}',
+      'When ready=true, include plan:',
       '{"title":"short title","prompt":"shot prompt","model":"' + cheap.model + '","duration":5,"resolution":"720p","ratio":"9:16","summary":"one-line picture"}',
-      'assistant_message is one plain sentence about the picture, plus an invite to revise or copy. Do not explain the fields. Do not mention credits.',
+      'assistant_message: when ready=false, only clarify or confirm; when ready=true, say you drafted from the confirmed points and that unstated scene/light are kept simple and editable. Never use empty lines like "I\'ll generate a short video plan." Do not explain fields. Do not mention credits.',
       'Write assistant_message, plan.title, plan.summary, and plan.prompt in ' + replyLanguageName(lang) + '.',
+      'Limit invention: do not invent people, ages, outfits, specific dishes, or props the user did not mention. Only add neutral necessities (counter, side light, shallow depth). Never quietly change confirmed details.',
       'The prompt must be a picture someone can film. Use these five sections, each with concrete people and objects, not notes to a writer:',
       'Subject: who or what, age or build, clothes, visible features.',
       'Scene: place, time, light source, one foreground prop, what is behind.',
@@ -166,8 +179,9 @@
       'Style and constraints: light, materials, look; ambience, or one lip-synced line. No on-screen text, watermark, or logo. Do not add people who were not asked for.',
       'Do not return the user line or the chip sentence as the prompt. Do not pad with vague words (beautiful, stunning, premium, cinematic vibe) instead of objects. Do not pack several scenes, a full build, or a long dialogue into one 5-second clip. Do not request on-screen text unless the user asked. Do not put credits, model names, or JSON inside prompt.',
       'If the reference is a 16-second script, keep the single most visual beat and fit it into about 5 seconds. When a reference prompt is attached, plan.prompt must be that concrete: keep it or revise the same picture only.',
-      'Good: Subject is a young man, towel on one shoulder, hair still damp. Scene is a fluorescent locker corridor, lockers soft behind him. He stops two steps away, jaw tight, eyes flick off and back. Eye-level medium shot, slight handheld.',
-      'Bad: The user wants a nice drama clip, cinematic, make it premium.'
+      'Good (confirm): Got it: medium steak fried, you cut with a fork, juices seep, close-up. Does that sound right?',
+      'Good (card): Drafted from the four points you confirmed; scene and light are kept simple for now — say what to change.',
+      'Bad: User sends "ia m" or only "video about fillet", then ready=true with a invented chef in a white apron trimming salmon.'
     ].join('\n');
   }
 
@@ -269,6 +283,99 @@
     if (ready && !plan) ready = false;
     if (!msg) msg = ready ? t('chat_plan_ready_fallback') : t('chat_need_more');
     return { assistant_message: msg, ready: ready, plan: plan, parse_ok: true };
+  }
+
+  /** Letters / CJK / digits only — used to spot gibberish like "ia m". */
+  function meaningfulGlyphs(text) {
+    return String(text || '').replace(
+      /[^0-9A-Za-z\u00C0-\u024F\u4e00-\u9fff\u3400-\u4dbf\u3040-\u30ff\uac00-\ud7af]/g,
+      ''
+    );
+  }
+
+  function isUserConfirmText(text) {
+    var s = String(text || '').trim();
+    if (!s || s.length > 48) return false;
+    return /^(对|对的|对呀|对啊|是的|是|好|好的|可以|可以了|行|行了|就这样|没问题|确认|ok|okay|yes|yep|yeah|sure|correct|go ahead|lgtm|that'?s right|that is right)[.!?。！？]*$/i.test(s);
+  }
+
+  function isNonsensicalUserText(text) {
+    var s = String(text || '').trim();
+    if (!s) return true;
+    if (/\[example_id=/i.test(s)) return false;
+    // Short confirms ("对", "ok", "yes") must still reach the model / ready path.
+    if (isUserConfirmText(s)) return false;
+    if (isExplicitPlanAsk(s)) return false;
+    var g = meaningfulGlyphs(s);
+    if (g.length <= 3) return true;
+    if (/^(.)\1{3,}$/i.test(g)) return true;
+    return false;
+  }
+
+  function isExplicitPlanAsk(text) {
+    var s = String(text || '');
+    return /出方案|给提示词|写提示词|直接出|生成方案|给我方案|出卡|make (me )?a plan|write (me )?(a )?prompt|give me (a )?prompt|draft (a )?plan|show (me )?(the )?prompt/i.test(s);
+  }
+
+  /** User said enough for ready=true this turn (confirm / explicit ask / chip / pasted shot). */
+  function userAllowsReady(raw) {
+    var s = String(raw || '');
+    if (extractExampleId(s)) return true;
+    var visible = visibleUserRequest(s);
+    if (isUserConfirmText(visible)) return true;
+    if (isExplicitPlanAsk(visible)) return true;
+    if (visible.length >= 160 && hasShotStructure(visible)) return true;
+    return false;
+  }
+
+  /**
+   * Models often jump to ready=true on typos or first drafts.
+   * Demote to a clarify/confirm turn unless the user already allowed a card.
+   */
+  function demoteReadyIfNeeded(parsed, userRaw) {
+    if (!parsed || !parsed.ready) return parsed;
+    var visible = visibleUserRequest(userRaw);
+    if (isNonsensicalUserText(visible)) {
+      return {
+        assistant_message: t('chat_clarify_nonsensical'),
+        ready: false,
+        plan: null,
+        parse_ok: !!parsed.parse_ok,
+        demoted: 'nonsense'
+      };
+    }
+    if (userAllowsReady(userRaw)) return parsed;
+    var summary = '';
+    if (parsed.plan) summary = String(parsed.plan.summary || parsed.plan.title || '').trim();
+    var msg = String(parsed.assistant_message || '').trim();
+    var asks = /[?？]|对吗|可以吗|sound right|does that|确认一下|这样吗/i.test(msg);
+    var generic = /i'?ll generate|i will generate|我来生成|先给你.*方案|短片方案|这就生成|video plan for you|generate a short/i.test(msg);
+    if (!asks || generic) {
+      msg = summary
+        ? t('chat_confirm_picture', summary.slice(0, 120))
+        : t('chat_need_more');
+    }
+    return {
+      assistant_message: msg,
+      ready: false,
+      plan: null,
+      parse_ok: !!parsed.parse_ok,
+      demoted: 'need_confirm'
+    };
+  }
+
+  function replyLocalClarify(reason) {
+    var spoken = t('chat_clarify_nonsensical');
+    appendBubble('assistant', spoken);
+    messages.push({
+      role: 'assistant',
+      content: JSON.stringify({
+        assistant_message: spoken,
+        ready: false,
+        plan: null
+      })
+    });
+    track('chat_local_clarify', { reason: reason || 'nonsense' });
   }
 
   function sleep(ms) {
@@ -743,6 +850,8 @@
     refine.type = 'button';
     refine.addEventListener('click', function () {
       track('chat_keep_refining', { model: plan.model });
+      // Hide the card so chat can continue without a stuck plan under the thread.
+      clearPlanMount();
       focusComposer();
       if (deps.toast) deps.toast(t('chat_keep_refining_toast'));
     });
@@ -1186,6 +1295,7 @@
         keep.setAttribute('data-i18n', 'chat_keep_refining');
         keep.addEventListener('click', function () {
           track('chat_keep_refining', { from: 'flash_busy' });
+          clearPlanMount();
           focusComposer();
         });
         actions.appendChild(keep);
@@ -1232,9 +1342,16 @@
         showError(res.detail || res.kind, { http: res.http, kind: res.kind, model: res.model });
         return;
       }
-      var parsed = parseAssistantPayload(res.content);
-      // Keep multi-turn: store assistant JSON/text for context
-      messages.push({ role: 'assistant', content: res.content });
+      var parsed = demoteReadyIfNeeded(parseAssistantPayload(res.content), lastUserText());
+      // Keep multi-turn: store the turn the UI actually showed (may be demoted).
+      var stored = parsed.demoted
+        ? JSON.stringify({
+            assistant_message: parsed.assistant_message,
+            ready: false,
+            plan: null
+          })
+        : res.content;
+      messages.push({ role: 'assistant', content: stored });
       if (streamUi) {
         streamUi.finalize(parsed.assistant_message);
       } else {
@@ -1249,7 +1366,8 @@
         model: res.model || '',
         streamed: res.streamed !== false,
         recovered: !!res.recovered_from_stream,
-        ready: !!parsed.ready
+        ready: !!parsed.ready,
+        demoted: parsed.demoted || ''
       });
     }, function (err) {
       setBusy(false);
@@ -1273,6 +1391,13 @@
     appendBubble('user', text);
     hideExamples();
     messages.push({ role: 'user', content: text });
+    // Continuing the thread: drop any prior plan card (example or earlier draft).
+    clearPlanMount();
+    // Typos / gibberish: clarify locally — do not burn a model round.
+    if (isNonsensicalUserText(text)) {
+      replyLocalClarify('nonsense');
+      return;
+    }
     runFlash();
   }
 

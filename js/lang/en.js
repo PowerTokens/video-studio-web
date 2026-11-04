@@ -315,6 +315,8 @@ VSI18n.register('en', {
   chat_plan_kicker: "Plan card",
   chat_plan_title_fallback: "Untitled clip",
   chat_plan_ready_fallback: "Here’s a draft plan. Keep chatting to refine, or copy the prompt when you’re happy.",
+  chat_clarify_nonsensical: "I couldn't tell what you want to shoot. In one sentence, who or what is in the frame, and what are they doing?",
+  chat_confirm_picture: "Got it: %s. Does that sound right?",
   chat_need_more: "I still need a bit more detail before I can draft a plan.",
   chat_plan_credits: "~%s credits",
   chat_plan_prompt_toggle: "Show prompt",
