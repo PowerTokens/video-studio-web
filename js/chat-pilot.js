@@ -713,6 +713,8 @@
     details.appendChild(sum);
     var pre = el('pre', 'chat-plan-prompt-body', plan.prompt);
     details.appendChild(pre);
+    // Example chips already have a finished prompt; show it immediately.
+    if (opts.openPrompt) details.open = true;
     card.appendChild(details);
 
     // Sunk-cost UX: never gate on credits. Primary = Copy; keep refining; Fill Generate secondary.
@@ -861,12 +863,32 @@
     return false;
   }
 
+  /**
+   * Finished shot prompt for a chip. Null when this id has no local prompt.
+   * Clicking a chip must not wait on the model: it was answering "need more detail".
+   */
+  function examplePlan(id) {
+    var prompt = planPromptForExample(id);
+    if (!prompt || prompt.length < 80) return null;
+    var label = t('example_' + id + '_label');
+    var title = (label && label.indexOf('example_') !== 0) ? label : t('chat_plan_title_fallback');
+    var blurb = lookupString('chat_example_' + id + '_blurb');
+    return clampPlan({
+      title: title,
+      summary: blurb,
+      prompt: prompt,
+      model: CHEAP_DEFAULT.model,
+      duration: CHEAP_DEFAULT.duration,
+      resolution: CHEAP_DEFAULT.resolution,
+      ratio: CHEAP_DEFAULT.ratio
+    });
+  }
+
   function onExample(id) {
     if (busy) return;
-    if (!requireLoginForChat('example')) return;
     ensureSession();
     track('chat_example_click', { example_id: id });
-    // Chip text is a short shootable description. The hidden reference is the full plan prompt.
+    // The chip speaks a short scene. The reply is the finished prompt, not a question.
     var userVisible = lookupString('chat_example_' + id + '_blurb') ||
       t('chat_example_user', t('example_' + id + '_label'));
     var prompt = planPromptForExample(id) || t('example_' + id + '_prompt');
@@ -874,7 +896,33 @@
     appendBubble('user', userVisible);
     hideExamples();
     messages.push({ role: 'user', content: apiUser });
-    runFlash();
+    var plan = examplePlan(id);
+    if (!plan) {
+      if (!requireLoginForChat('example')) return;
+      runFlash();
+      return;
+    }
+    var spoken = t('chat_example_ready');
+    appendBubble('assistant', spoken);
+    messages.push({
+      role: 'assistant',
+      content: JSON.stringify({
+        assistant_message: spoken,
+        ready: true,
+        plan: {
+          title: plan.title,
+          prompt: plan.prompt,
+          model: plan.model,
+          duration: plan.duration,
+          resolution: plan.resolution,
+          ratio: plan.ratio,
+          summary: plan.summary
+        }
+      })
+    });
+    lastTextModel = FLASH_MODEL;
+    renderPlanCard(plan, { textModel: FLASH_MODEL, openPrompt: true });
+    track('chat_example_ready', { example_id: id });
   }
 
   function hideExamples() {
@@ -1332,6 +1380,7 @@
     textModelIsFree: textModelIsFree,
     planCardShowsVideoCreditSoft: planCardShowsVideoCreditSoft,
     renderPlanCard: renderPlanCard,
+    presentExample: onExample,
     resetConversation: resetConversation
   };
 })(window);
