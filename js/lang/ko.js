@@ -311,6 +311,8 @@ VSI18n.register('ko', {
   chat_plan_kicker: "플랜 카드",
   chat_plan_title_fallback: "제목 없는 클립",
   chat_plan_ready_fallback: "초안입니다. 계속 다듬거나, 마음에 들면 프롬프트를 복사하세요.",
+  chat_clarify_nonsensical: "무엇을 찍고 싶은지 잘 모르겠어요. 한 문장으로 누가/무엇이 나오고 무엇을 하는지 말해 주세요.",
+  chat_confirm_picture: "알겠어요: %s. 이렇게 맞나요?",
   chat_need_more: "안을 쓰려면 내용이 조금 더 필요합니다.",
   chat_plan_credits: "약 %s 크레딧",
   chat_plan_prompt_toggle: "프롬프트 보기",

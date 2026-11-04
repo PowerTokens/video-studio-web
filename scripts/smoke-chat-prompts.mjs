@@ -79,7 +79,7 @@ for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) load('js/lang/' + code 
 const pilotSrc = fs.readFileSync('js/chat-pilot.js', 'utf8');
 const harness = pilotSrc.replace(
   'resetConversation: resetConversation\n  };',
-  'resetConversation: resetConversation,\n    _test: {\n      expandDraftPrompt: expandDraftPrompt,\n      isWeakOrEchoPrompt: isWeakOrEchoPrompt,\n      systemPrompt: systemPrompt,\n      ensureShootablePlan: ensureShootablePlan,\n      planPromptForExample: planPromptForExample\n    }\n  };'
+  'resetConversation: resetConversation,\n    _test: {\n      expandDraftPrompt: expandDraftPrompt,\n      isWeakOrEchoPrompt: isWeakOrEchoPrompt,\n      systemPrompt: systemPrompt,\n      ensureShootablePlan: ensureShootablePlan,\n      planPromptForExample: planPromptForExample,\n      isNonsensicalUserText: isNonsensicalUserText,\n      isUserConfirmText: isUserConfirmText,\n      userAllowsReady: userAllowsReady,\n      demoteReadyIfNeeded: demoteReadyIfNeeded,\n      parseAssistantPayload: parseAssistantPayload\n    }\n  };'
 );
 assert.notEqual(harness, pilotSrc, 'test hook should patch the export');
 vm.runInContext(harness, context, { filename: 'js/chat-pilot.js' });
@@ -151,7 +151,9 @@ assert.match(sys, /主体/);
 assert.match(sys, /场景/);
 assert.match(sys, /镜头/);
 assert.match(sys, /风格与限制/);
-assert.match(sys, /立刻 ready=true/);
+assert.match(sys, /对话节奏/);
+assert.match(sys, /这样对吗/);
+assert.match(sys, /限量自补/);
 assert.match(sys, /\[example_id=/);
 assert.match(sys, /不要提积分/);
 assert.doesNotMatch(sys, /积分不足|sunk cost|催充值/);
@@ -163,10 +165,50 @@ assert.match(sys, /Subject:/);
 assert.match(sys, /Scene:/);
 assert.match(sys, /Camera:/);
 assert.match(sys, /Style and constraints:/);
-assert.match(sys, /Do not ask a question first/);
+assert.match(sys, /Does that sound right/);
+assert.match(sys, /Limit invention/);
 assert.match(sys, /Do not mention credits/);
 assert.match(sys, /Do not return the user line/);
 assert.doesNotMatch(sys, /sunk cost|top-up now|credits insufficient/i);
+
+assert.equal(api.isNonsensicalUserText('ia m'), true);
+assert.equal(api.isNonsensicalUserText('ok'), false);
+assert.equal(api.isNonsensicalUserText('对'), false);
+assert.equal(api.isNonsensicalUserText('fillet'), false);
+assert.equal(api.isNonsensicalUserText('iam a cooker, iwant make some video about fillet'), false);
+assert.equal(api.isUserConfirmText('对的'), true);
+assert.equal(api.isUserConfirmText('yes'), true);
+assert.equal(api.isUserConfirmText('iam a cooker'), false);
+assert.equal(api.userAllowsReady('对的'), true);
+assert.equal(api.userAllowsReady('iam a cooker, iwant make some video about fillet'), false);
+
+const earlyReady = {
+  assistant_message: "I'll generate a short video plan for you.",
+  ready: true,
+  plan: {
+    title: 'Perfect Fillet Technique',
+    summary: 'Chef expertly trimming silver skin from a salmon fillet.',
+    prompt: 'Subject: chef\nScene: kitchen\nAction and motion: trim\nCamera: close-up\nStyle and constraints: clean',
+    model: 'wan3.0-video',
+    duration: 5,
+    resolution: '720p',
+    ratio: '9:16'
+  },
+  parse_ok: true
+};
+const demoted = api.demoteReadyIfNeeded(earlyReady, 'iam a cooker, iwant make some video about fillet');
+assert.equal(demoted.ready, false);
+assert.equal(demoted.plan, null);
+assert.match(demoted.assistant_message, /Does that sound right|Got it:/i);
+assert.equal(demoted.demoted, 'need_confirm');
+
+const nonsenseDemote = api.demoteReadyIfNeeded(earlyReady, 'ia m');
+assert.equal(nonsenseDemote.ready, false);
+assert.match(nonsenseDemote.assistant_message, /couldn'?t tell|who or what/i);
+
+const afterConfirm = api.demoteReadyIfNeeded(earlyReady, 'yes');
+assert.equal(afterConfirm.ready, true);
+assert.ok(afterConfirm.plan);
 
 const nouns = {
   zh: { shopping: '芝士', canyon: '火塘', seal: '鼓掌', locker: 'Who\'s in the bet' },

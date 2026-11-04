@@ -320,6 +320,8 @@ VSI18n.register('zh', {
   chat_plan_kicker: "方案卡",
   chat_plan_title_fallback: "待生成短片",
   chat_plan_ready_fallback: "先给一版草稿。可以继续改，满意后再复制提示词。",
+  chat_clarify_nonsensical: "我没看懂你想拍什么。用一句话说说画面里有谁、在做什么？",
+  chat_confirm_picture: "明白了：%s。这样对吗？",
   chat_need_more: "还需要一点信息才能出方案，请继续补充。",
   chat_plan_credits: "约 %s 积分",
   chat_plan_prompt_toggle: "查看提示词",

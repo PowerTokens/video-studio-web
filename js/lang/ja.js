@@ -311,6 +311,8 @@ VSI18n.register('ja', {
   chat_plan_kicker: "プランカード",
   chat_plan_title_fallback: "無題のクリップ",
   chat_plan_ready_fallback: "下書きです。続けて直すか、気に入ったらプロンプトをコピーしてください。",
+  chat_clarify_nonsensical: "撮りたい内容が分かりませんでした。一言で、誰が／何が映り、何をしているか教えてください。",
+  chat_confirm_picture: "了解です：%s。これで合っていますか？",
   chat_need_more: "プランを書くには、もう少し内容が必要です。",
   chat_plan_credits: "約 %s クレジット",
   chat_plan_prompt_toggle: "プロンプトを表示",

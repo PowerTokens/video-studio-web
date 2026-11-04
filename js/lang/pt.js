@@ -309,6 +309,8 @@ VSI18n.register('pt', {
   chat_plan_kicker: "Cartão do plano",
   chat_plan_title_fallback: "Clipe sem título",
   chat_plan_ready_fallback: "Aqui está um rascunho. Continue conversando ou copie o prompt quando gostar.",
+  chat_clarify_nonsensical: "Não entendi o que você quer gravar. Em uma frase: quem ou o que aparece e o que faz?",
+  chat_confirm_picture: "Entendi: %s. Está certo assim?",
   chat_need_more: "Ainda preciso de mais detalhes antes de montar um plano.",
   chat_plan_credits: "~%s créditos",
   chat_plan_prompt_toggle: "Ver prompt",
