@@ -1054,7 +1054,7 @@
   }
 
 
-  /** Prompt shown on hover and filled into Generate. Prefer the per-language shot prompt. */
+  /** Prompt filled into Generate on click. Prefer the per-language shot prompt. */
   function examplePrompt(id) {
     var alt = 'chat_example_' + id + '_prompt';
     var localized = t(alt);
@@ -1081,7 +1081,6 @@
       b.setAttribute('data-example', id);
       b.setAttribute('data-target', 'gen');
       if (family) b.setAttribute('data-family', family);
-      b.title = examplePrompt(id);
       b.setAttribute('aria-pressed', 'false');
       b.addEventListener('click', function () { applyExample(id, 'gen', b); });
       box.appendChild(b);
