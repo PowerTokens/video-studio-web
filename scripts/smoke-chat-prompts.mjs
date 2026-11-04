@@ -128,9 +128,9 @@ for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) {
     assertShot(I.t(code, 'example_' + id + '_prompt'), code, code + '/' + id);
   }
   assertShot(I.t(code, 'chat_example_locker_prompt'), code, code + '/locker-chat');
-  const long = I.t(code, 'example_locker_prompt');
-  assert.match(long, /approximately 16 seconds/);
-  assert.match(long, /Who's in the bet/);
+  const locker = I.t(code, 'example_locker_prompt');
+  assert.match(locker, /Who's in the bet/);
+  assert.doesNotMatch(locker, /approximately 16|1080/);
   for (const id of ['shopping', 'canyon', 'seal', 'locker']) {
     const blurb = I.t(code, 'chat_example_' + id + '_blurb');
     assert.ok(blurb.length >= 40 && blurb.length < 280, code + ' ' + id + ' blurb length ' + blurb.length);
@@ -238,5 +238,34 @@ const clamped = pilot.clampPlan({
 assert.equal(clamped.duration, 5);
 assert.equal(clamped.resolution, '720p');
 assert.equal(clamped.model, 'wan3.0-video');
+
+function walkText(node) {
+  let s = node && node.textContent ? String(node.textContent) : '';
+  for (const child of (node && node.children) || []) s += '\n' + walkText(child);
+  return s;
+}
+function findClass(node, cls) {
+  if (node && node.className === cls) return node;
+  for (const child of (node && node.children) || []) {
+    const hit = findClass(child, cls);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+lang = 'en';
+pilot.presentExample('shopping');
+const threadText = walkText(document.getElementById('chat-thread'));
+const blurb = I.t('en', 'chat_example_shopping_blurb');
+assert.ok(threadText.includes(blurb), 'example click speaks the short scene');
+assert.ok(threadText.includes(I.t('en', 'chat_example_ready')));
+assert.ok(!threadText.includes('I still need a bit more detail'));
+assert.ok(!threadText.includes('insufficient_user_quota'));
+const promptBody = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt-body');
+assert.ok(promptBody && promptBody.textContent.includes('Subject:'));
+assert.ok(promptBody.textContent.includes('cheese blocks'));
+assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt').open, true);
+assert.equal(api.isWeakOrEchoPrompt(promptBody.textContent, blurb), false);
+assert.ok(!blurb.includes('Subject:'));
 
 console.log('smoke-chat-prompts ok');
