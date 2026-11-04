@@ -827,8 +827,6 @@
       if (blurb && blurb.indexOf('example_') !== 0 && blurb.indexOf('chat_example_') !== 0) {
         b.appendChild(el('span', 'chat-example-blurb', blurb));
       }
-      var hover = planPromptForExample(id) || t('example_' + id + '_prompt');
-      if (hover) b.title = hover;
       b.addEventListener('click', function () { onExample(id); });
       box.appendChild(b);
     });

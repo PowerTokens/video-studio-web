@@ -267,5 +267,15 @@ assert.ok(promptBody.textContent.includes('cheese blocks'));
 assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt').open, true);
 assert.equal(api.isWeakOrEchoPrompt(promptBody.textContent, blurb), false);
 assert.ok(!blurb.includes('Subject:'));
+function eachNode(node, fn) {
+  if (!node) return;
+  fn(node);
+  for (const child of node.children || []) eachNode(child, fn);
+}
+eachNode(document.getElementById('chat-example-chips'), function (node) {
+  if (node.className === 'chat-example-chip') {
+    assert.equal(node.title || '', '', 'example chips should not use a hover prompt');
+  }
+});
 
 console.log('smoke-chat-prompts ok');
