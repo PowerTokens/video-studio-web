@@ -447,31 +447,21 @@
   function renderKeyState() {
     var key = A.getKey();
     var block = currentKeyBlock();
-    var ok = !!key && !block;
-    var isQuota = block === 'quota';
+    var loggedIn = !!(O && O.isLoggedIn && O.isLoggedIn());
     var keyBadge = $('key-badge');
     var keyBadgeText = $('key-badge-text');
     if (keyBadge) {
-      var noKey = !key || block === 'none';
-      // Soft "Sign in" pill duplicates #header-oauth-login — hide until there is a real key state.
-      keyBadge.hidden = !!noKey;
-      keyBadge.classList.toggle('is-ok', ok);
-      keyBadge.classList.toggle('is-warn', isQuota);
-      keyBadge.classList.toggle('is-soft', !ok && !isQuota && noKey);
-      keyBadge.classList.toggle('is-bad', !ok && !isQuota && !noKey);
-      keyBadge.setAttribute('aria-hidden', noKey ? 'true' : 'false');
-      var title;
-      if (noKey) title = t('key_chip_none');
-      else if (block === 'auth') title = t('key_chip_auth');
-      else if (block === 'quota') title = t('key_chip_quota');
-      else title = t('key_chip_ok');
+      // Header pill: red/green by PowerTokens login only (not local API-key presence).
+      keyBadge.hidden = false;
+      keyBadge.classList.toggle('is-ok', loggedIn);
+      keyBadge.classList.toggle('is-bad', !loggedIn);
+      keyBadge.classList.remove('is-warn', 'is-soft');
+      keyBadge.setAttribute('aria-hidden', 'false');
+      var title = loggedIn ? t('key_chip_ok') : t('key_chip_none');
       keyBadge.title = title;
       keyBadge.setAttribute('aria-label', title);
       if (keyBadgeText) {
-        if (ok) keyBadgeText.textContent = t('key_status_ok');
-        else if (isQuota) keyBadgeText.textContent = t('key_status_quota');
-        else if (noKey) keyBadgeText.textContent = t('key_status_signin');
-        else keyBadgeText.textContent = t('key_status_check');
+        keyBadgeText.textContent = loggedIn ? t('key_status_ok') : t('key_status_signin');
       }
     }
     renderKeyPoolList();
