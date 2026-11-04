@@ -303,7 +303,7 @@ VSI18n.register('en', {
   chat_entry_btn: "Try Chat to video (pilot)",
   chat_greeting: "Hi! I’m the Video Studio assistant. Tell me what you want to shoot — we can refine together until you like it, then you can copy the prompt.",
   chat_thinking: "Thinking…",
-  chat_need_login: "Sign in to PowerTokens (or paste a key under Account → Advanced) so chat can call free Flash.",
+  chat_need_login: "Sign in to PowerTokens before chatting. Your draft will stay here so you can send it after signing in.",
   chat_example_user: "I want a “%s” style clip — please draft a cheap-tier plan.",
   chat_example_ref_prefix: "Finished shot prompt for reference. plan.prompt must be this concrete: subject, scene, action and motion, camera, style and constraints. Keep this text or revise the same picture only. Do not return the short line above as the prompt. Do not write 16s or 1080p.",
   chat_example_shopping_blurb: "A six-month golden retriever puppy in a plain blue apron pushes a tiny shopping cart, freezes at the freezer, presses its wet nose to the glass, drools, and reaches one paw toward the handle. Eye-level follow into a close-up.",
@@ -343,3 +343,4 @@ VSI18n.register('en', {
   chat_flash_empty: "Model returned empty content",
   chat_flash_bad_json: "I couldn’t parse that plan format. Try another message, or keep refining in chat.",
 });
+

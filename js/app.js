@@ -1852,6 +1852,7 @@
           t: t,
           getLang: function () { return lang; },
           getKey: function () { return A.getKey(); },
+          isLoggedIn: function () { return !!(O && O.isLoggedIn && O.isLoggedIn()); },
           getCredits: oauthCredits,
           fillGenerate: fillGenerateFromPlan,
           gotoGenerate: function () { setTab('generate', true); },
@@ -1906,3 +1907,4 @@
     boot();
   }
 })();
+
