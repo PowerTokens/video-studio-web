@@ -655,6 +655,22 @@
     return 'generate';
   }
 
+  function pulseLoginCta() {
+    var btn = $('header-oauth-login') || $('oauth-login-btn');
+    if (!btn) return;
+    try { btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { /* ignore */ }
+    try { btn.focus(); } catch (e2) { /* ignore */ }
+    btn.classList.add('is-pulse');
+    window.setTimeout(function () { btn.classList.remove('is-pulse'); }, 1400);
+  }
+
+  function onNeedLoginForChat(source) {
+    toast(t('chat_need_login'));
+    pulseLoginCta();
+    // Keep the chat tip on screen briefly, then open the PowerTokens login flow.
+    window.setTimeout(function () { startOauthLogin(); }, 700);
+  }
+
   function startOauthLogin() {
     var errEl = $('oauth-error');
     if (errEl) show(errEl, false);
@@ -1848,6 +1864,7 @@
           gotoGenerate: function () { setTab('generate', true); },
           gotoChat: function () { setTab('chat', true); },
           promptLogin: startOauthLogin,
+          onNeedLogin: onNeedLoginForChat,
           billingUrl: function () { return buildBillingOutbound(t('billing_url'), (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.chat_billing) || 'web.chat_billing'); },
           toast: toast,
           copyText: copyText

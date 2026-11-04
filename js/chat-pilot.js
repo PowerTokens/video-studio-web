@@ -859,7 +859,11 @@
     if (deps.isLoggedIn && deps.isLoggedIn()) return true;
     appendBubble('assistant', t('chat_need_login'));
     track('chat_need_login_show', { source: source || 'send' });
-    if (deps.promptLogin) deps.promptLogin();
+    // Tip first; open login shortly after so the reminder is visible (not an instant full-page jump).
+    if (deps.onNeedLogin) deps.onNeedLogin(source || 'send');
+    else if (deps.promptLogin) {
+      setTimeout(function () { deps.promptLogin(); }, 700);
+    }
     return false;
   }
 
