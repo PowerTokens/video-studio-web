@@ -850,6 +850,8 @@
     refine.type = 'button';
     refine.addEventListener('click', function () {
       track('chat_keep_refining', { model: plan.model });
+      // Hide the card so chat can continue without a stuck plan under the thread.
+      clearPlanMount();
       focusComposer();
       if (deps.toast) deps.toast(t('chat_keep_refining_toast'));
     });
@@ -1293,6 +1295,7 @@
         keep.setAttribute('data-i18n', 'chat_keep_refining');
         keep.addEventListener('click', function () {
           track('chat_keep_refining', { from: 'flash_busy' });
+          clearPlanMount();
           focusComposer();
         });
         actions.appendChild(keep);
@@ -1388,6 +1391,8 @@
     appendBubble('user', text);
     hideExamples();
     messages.push({ role: 'user', content: text });
+    // Continuing the thread: drop any prior plan card (example or earlier draft).
+    clearPlanMount();
     // Typos / gibberish: clarify locally — do not burn a model round.
     if (isNonsensicalUserText(text)) {
       replyLocalClarify('nonsense');

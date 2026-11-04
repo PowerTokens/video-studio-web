@@ -7,17 +7,23 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 function elMock() {
+  const listeners = {};
   const node = {
     hidden: false,
     textContent: '',
     className: '',
-    innerHTML: '',
     value: '',
     id: '',
     type: '',
     style: {},
     children: [],
     parentNode: null,
+    _html: '',
+    get innerHTML() { return this._html; },
+    set innerHTML(v) {
+      this._html = String(v == null ? '' : v);
+      if (this._html === '') this.children = [];
+    },
     classList: {
       toggle() {},
       add() {},
@@ -26,7 +32,13 @@ function elMock() {
     },
     setAttribute() {},
     removeAttribute() {},
-    addEventListener() {},
+    addEventListener(type, fn) {
+      if (!listeners[type]) listeners[type] = [];
+      listeners[type].push(fn);
+    },
+    click() {
+      for (const fn of listeners.click || []) fn({ type: 'click' });
+    },
     appendChild(child) {
       this.children.push(child);
       if (child && typeof child === 'object') child.parentNode = this;
@@ -35,10 +47,22 @@ function elMock() {
     remove() {},
     focus() {},
     scrollIntoView() {},
-    querySelector() { return null; },
+    querySelector(sel) {
+      const want = String(sel || '').replace(/^\./, '');
+      let hit = null;
+      eachNodeLocal(this, function (n) {
+        if (!hit && n !== node && n.className === want) hit = n;
+      });
+      return hit;
+    },
     get scrollHeight() { return 0; },
     set scrollTop(_v) {}
   };
+  function eachNodeLocal(n, fn) {
+    if (!n) return;
+    fn(n);
+    for (const c of n.children || []) eachNodeLocal(c, fn);
+  }
   return node;
 }
 
@@ -94,7 +118,8 @@ pilot.init({
   },
   getLang: function () { return lang; },
   getKey: function () { return ''; },
-  getCredits: function () { return null; }
+  getCredits: function () { return null; },
+  isLoggedIn: function () { return true; }
 });
 
 const api = pilot._test;
@@ -319,5 +344,23 @@ eachNode(document.getElementById('chat-example-chips'), function (node) {
     assert.equal(node.title || '', '', 'example chips should not use a hover prompt');
   }
 });
+
+const keepBtns = [];
+eachNode(document.getElementById('chat-plan-mount'), function (node) {
+  if (node.className === 'btn' && String(node.textContent || '') === I.t('en', 'chat_keep_refining')) {
+    keepBtns.push(node);
+  }
+});
+assert.equal(keepBtns.length, 1, 'Keep chatting on the example plan card');
+keepBtns[0].click();
+assert.equal(document.getElementById('chat-plan-mount').children.length, 0, 'Keep chatting hides the plan card');
+assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null);
+
+pilot.presentExample('canyon');
+assert.ok(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), 'another example shows a card again');
+document.getElementById('chat-input').value = 'i m';
+document.getElementById('chat-send').click();
+assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null, 'typed follow-up hides the prior card');
+assert.ok(walkText(document.getElementById('chat-thread')).includes(I.t('en', 'chat_clarify_nonsensical')));
 
 console.log('smoke-chat-prompts ok');
