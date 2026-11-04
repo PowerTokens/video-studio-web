@@ -853,8 +853,17 @@
     track('chat_session_start', {});
   }
 
+  function requireLoginForChat(source) {
+    if (deps.isLoggedIn && deps.isLoggedIn()) return true;
+    appendBubble('assistant', t('chat_need_login'));
+    track('chat_need_login_show', { source: source || 'send' });
+    if (deps.promptLogin) deps.promptLogin();
+    return false;
+  }
+
   function onExample(id) {
     if (busy) return;
+    if (!requireLoginForChat('example')) return;
     ensureSession();
     track('chat_example_click', { example_id: id });
     // Chip text is a short shootable description. The hidden reference is the full plan prompt.
@@ -1206,12 +1215,7 @@
     if (!input) return;
     var text = String(input.value || '').trim();
     if (!text) return;
-    if (deps.isLoggedIn && !deps.isLoggedIn()) {
-      appendBubble('assistant', t('chat_need_login'));
-      track('chat_need_login_show', {});
-      if (deps.promptLogin) deps.promptLogin();
-      return;
-    }
+    if (!requireLoginForChat('send')) return;
     ensureSession();
     var bucket = text.length < 40 ? 'short' : (text.length < 120 ? 'mid' : 'long');
     track('chat_user_message', { len_bucket: bucket });
