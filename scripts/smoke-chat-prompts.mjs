@@ -111,6 +111,9 @@ assert.notEqual(harness, pilotSrc, 'test hook should patch the export');
 vm.runInContext(harness, context, { filename: 'js/chat-pilot.js' });
 
 let lang = 'zh';
+let loggedIn = true;
+let apiKey = '';
+const loginCalls = [];
 const I = context.VSI18n;
 const pilot = context.VSChatPilot;
 pilot.init({
@@ -119,9 +122,10 @@ pilot.init({
     return I.t.apply(null, [lang].concat(args));
   },
   getLang: function () { return lang; },
-  getKey: function () { return ''; },
+  getKey: function () { return apiKey; },
   getCredits: function () { return null; },
-  isLoggedIn: function () { return true; }
+  isLoggedIn: function () { return loggedIn; },
+  onNeedLogin: function (source) { loginCalls.push(source || ''); }
 });
 
 const api = pilot._test;
@@ -394,5 +398,62 @@ document.getElementById('chat-input').value = 'i m';
 document.getElementById('chat-send').click();
 assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null, 'typed follow-up hides the prior card');
 assert.ok(walkText(document.getElementById('chat-thread')).includes(I.t('en', 'chat_clarify_nonsensical')));
+
+// Logged-out chips must take the same gate as Send, including when a local plan exists.
+let flashCalls = 0;
+context.VSApi = {
+  api() {
+    flashCalls += 1;
+    return Promise.resolve({ code: 500, body: {} });
+  },
+  apiChatStream() {
+    flashCalls += 1;
+    return Promise.resolve({ code: 500, body: {}, content: '' });
+  }
+};
+loggedIn = false;
+apiKey = 'should-not-be-sent';
+loginCalls.length = 0;
+lang = 'en';
+pilot.resetConversation();
+const chips = [];
+eachNode(document.getElementById('chat-example-chips'), function (node) {
+  if (node.className === 'chat-example-chip') chips.push(node);
+});
+assert.equal(chips.length, 4, 'four example chips');
+chips.forEach(function (chip) { chip.click(); });
+const loggedOutThread = walkText(document.getElementById('chat-thread'));
+assert.ok(loggedOutThread.includes(I.t('en', 'chat_need_login')), 'logged-out example shows the login tip');
+assert.ok(!loggedOutThread.includes(I.t('en', 'chat_example_ready')), 'logged-out example does not append the ready reply');
+for (const id of ['shopping', 'canyon', 'seal', 'locker']) {
+  assert.ok(!loggedOutThread.includes(I.t('en', 'chat_example_' + id + '_blurb')), 'logged-out example does not post ' + id);
+}
+assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null, 'logged-out example does not mount a plan card');
+assert.equal(document.getElementById('chat-examples').hidden, false, 'example chips stay available until login');
+assert.deepEqual(loginCalls, ['example', 'example', 'example', 'example']);
+assert.equal(flashCalls, 0, 'logged-out example does not call Flash');
+document.getElementById('chat-input').value = 'a cat on a windowsill';
+document.getElementById('chat-send').click();
+assert.deepEqual(loginCalls.slice(-1), ['send'], 'Send stays behind the same login gate');
+assert.equal(document.getElementById('chat-input').value, 'a cat on a windowsill', 'Send keeps the draft when login is required');
+assert.ok(!walkText(document.getElementById('chat-thread')).includes('a cat on a windowsill'));
+assert.equal(flashCalls, 0, 'logged-out Send does not call Flash');
+
+loggedIn = true;
+apiKey = 'should-not-be-sent';
+loginCalls.length = 0;
+flashCalls = 0;
+pilot.resetConversation();
+pilot.presentExample('shopping');
+assert.ok(walkText(document.getElementById('chat-thread')).includes(I.t('en', 'chat_example_ready')), 'logged-in example still replies immediately');
+assert.ok(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), 'logged-in example still mounts a local plan');
+assert.equal(loginCalls.length, 0, 'logged-in example does not ask for login');
+assert.equal(flashCalls, 0, 'logged-in example plan stays local');
+document.getElementById('chat-input').value = 'i m';
+document.getElementById('chat-send').click();
+assert.equal(loginCalls.length, 0, 'logged-in Send is not blocked');
+assert.equal(document.getElementById('chat-input').value, '', 'logged-in Send clears the composer');
+assert.ok(walkText(document.getElementById('chat-thread')).includes(I.t('en', 'chat_clarify_nonsensical')));
+assert.equal(flashCalls, 0, 'logged-in local clarify does not call Flash');
 
 console.log('smoke-chat-prompts ok');
