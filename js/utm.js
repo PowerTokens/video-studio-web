@@ -1,7 +1,11 @@
 /*
  * Shared UTM attribution for Video Studio Web.
- * Backend reports use UTM only. Persist first/last touch; OAuth/signup use last-touch.
- * Billing / chat_billing force product utm_source/medium/campaign (videostudio).
+ * Backend reports use UTM only. Persist first/last touch.
+ * Signup, OAuth authorize, the footer site, and billing / chat_billing force
+ * product utm_source/medium/campaign (videostudio / web / video-studio) so an
+ * ad last-touch cannot override when the user leaves VS web. Click ids still
+ * forward. The download jump keeps last-touch in storage and does not put
+ * UTM on the GitHub EXE URL.
  * Keys: localStorage vsw.utm.first / vsw.utm.last (JSON objects).
  */
 (function (root) {
@@ -27,6 +31,11 @@
     chat_billing: 'web.chat_billing',
     download: 'web.download_jump'
   };
+  // Product exits. download is omitted on purpose (EXE URL stays raw).
+  var FORCE_PRODUCT_CONTENT = {};
+  ['oauth', 'signup', 'site', 'billing', 'chat_billing'].forEach(function (k) {
+    FORCE_PRODUCT_CONTENT[CONTENT[k]] = 1;
+  });
 
   function readJson(key) {
     try {
@@ -105,13 +114,19 @@
   /**
    * Params for outbound / OAuth. Always includes core UTM (defaults fill gaps).
    * content: touchpoint string, e.g. web.oauth_authorize — always set when provided.
-   * opts.forceProduct: for billing/chat_billing — keep click ids from last-touch but
-   *   force utm_source/medium/campaign to product defaults so recharge attributes to VS.
+   * opts.forceProduct: keep click ids (and utm_term) from last-touch but force
+   *   utm_source/medium/campaign to product defaults.
+   * Signup, OAuth, footer site, and billing contents force even without the flag.
    */
+  function shouldForceProduct(content, opts) {
+    if (opts && opts.forceProduct) return true;
+    return !!(content && FORCE_PRODUCT_CONTENT[String(content)]);
+  }
+
   function paramsFor(content, opts) {
     opts = opts || {};
     var p = lastTouch();
-    if (opts.forceProduct) {
+    if (shouldForceProduct(content, opts)) {
       p.utm_source = DEFAULTS.utm_source;
       p.utm_medium = DEFAULTS.utm_medium;
       p.utm_campaign = DEFAULTS.utm_campaign;
@@ -145,6 +160,7 @@
     TRACK_KEYS: TRACK_KEYS,
     DEFAULTS: DEFAULTS,
     CONTENT: CONTENT,
+    FORCE_PRODUCT_CONTENT: FORCE_PRODUCT_CONTENT,
     captureFromSearch: captureFromSearch,
     firstTouch: firstTouch,
     lastTouch: lastTouch,

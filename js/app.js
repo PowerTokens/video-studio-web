@@ -174,7 +174,9 @@
   }
 
   // ---------------- language ----------------
-  // Outbound PowerTokens CTAs: last-touch UTM from VSUtm (persisted first/last).
+  // PowerTokens pages opened from VS web (signup / key, footer site, billing).
+  // Product UTM is forced so an ad last-touch cannot replace videostudio/web/video-studio.
+  // Click ids still forward. GitHub releases and the EXE jump are not in this map.
   var PT_OUTBOUND_HREF = { signup_url: 1, site_url: 1, billing_url: 1 };
   var PT_OUTBOUND_CONTENT = {
     signup_url: 'web.signup',
@@ -183,7 +185,7 @@
   };
 
   function buildPtOutbound(base, content, opts) {
-    opts = opts || {};
+    opts = Object.assign({ forceProduct: true }, opts || {});
     var U = window.VSUtm;
     if (U && typeof U.buildOutbound === 'function') {
       return U.buildOutbound(base, content, opts);
@@ -213,8 +215,7 @@
       var key = n.getAttribute('data-href');
       var href = t(key);
       if (PT_OUTBOUND_HREF[key]) {
-        var force = (key === 'billing_url');
-        n.href = buildPtOutbound(href, PT_OUTBOUND_CONTENT[key], force ? { forceProduct: true } : null);
+        n.href = buildPtOutbound(href, PT_OUTBOUND_CONTENT[key], { forceProduct: true });
       } else {
         n.href = href;
       }
