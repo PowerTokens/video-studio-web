@@ -998,6 +998,9 @@
 
   function onExample(id) {
     if (busy) return;
+    // A local plan skips Flash, but it is still a chat turn. Gate it like Send
+    // before any user bubble, ready reply, plan card, or model call.
+    if (!requireLoginForChat('example')) return;
     ensureSession();
     track('chat_example_click', { example_id: id });
     // The chip speaks a short scene. The reply is the finished prompt, not a question.
@@ -1014,7 +1017,6 @@
     messages.push({ role: 'user', content: apiUser });
     var plan = examplePlan(id);
     if (!plan) {
-      if (!requireLoginForChat('example')) return;
       runFlash();
       return;
     }
