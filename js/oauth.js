@@ -166,10 +166,14 @@
       q.set('state', state);
       q.set('code_challenge', challenge);
       q.set('code_challenge_method', 'S256');
-      // Required: last-touch UTM on authorize so backend can attribute OAuth.
+      // Force Video Studio product UTM on authorize (same as billing).
+      // Click ids from last-touch still forward; ad source/medium/campaign do not.
       var utm = root.VSUtm;
       if (utm && typeof utm.applyToSearchParams === 'function') {
-        utm.applyToSearchParams(q, { content: (utm.CONTENT && utm.CONTENT.oauth) || 'web.oauth_authorize' });
+        utm.applyToSearchParams(q, {
+          content: (utm.CONTENT && utm.CONTENT.oauth) || 'web.oauth_authorize',
+          forceProduct: true
+        });
       } else {
         // Hard fallback — authorize must never ship without UTM.
         q.set('utm_source', 'videostudio');
