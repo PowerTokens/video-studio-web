@@ -1077,6 +1077,7 @@
       if (blurb && blurb.indexOf('example_') !== 0) {
         b.appendChild(el('span', 'preset-blurb', blurb));
       }
+      // No title / aria-label hover. A tooltip repeats the label or the shot prompt over the other cards.
       // All Generate presets are Wan 3.0 — no family badge/logo on chips.
       b.setAttribute('data-example', id);
       b.setAttribute('data-target', 'gen');
