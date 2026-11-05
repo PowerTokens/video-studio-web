@@ -931,10 +931,21 @@
       var b = el('button', 'chat-example-chip');
       b.type = 'button';
       b.setAttribute('data-example', id);
-      b.appendChild(el('span', 'chat-example-title', t('example_' + id + '_label')));
+      var label = t('example_' + id + '_label');
+      if (!label || label.indexOf('example_') === 0) label = '';
+      b.appendChild(el('span', 'chat-example-title', label));
       var blurb = lookupString('chat_example_' + id + '_blurb') || t('example_' + id + '_blurb');
       if (blurb && blurb.indexOf('example_') !== 0 && blurb.indexOf('chat_example_') !== 0) {
         b.appendChild(el('span', 'chat-example-blurb', blurb));
+      }
+      // Hover shows the same short label as the chip, in the active language.
+      // The shot prompt stays on the plan card — a title tooltip of the full prompt covers the other chips.
+      if (label) {
+        b.title = label;
+        var tip = blurb && blurb.indexOf('example_') !== 0 && blurb.indexOf('chat_example_') !== 0
+          ? (label + '. ' + blurb)
+          : label;
+        b.setAttribute('aria-label', tip);
       }
       b.addEventListener('click', function () { onExample(id); });
       box.appendChild(b);
@@ -1004,7 +1015,11 @@
       t('chat_example_user', t('example_' + id + '_label'));
     var prompt = planPromptForExample(id) || t('example_' + id + '_prompt');
     var apiUser = userVisible + '\n\n[example_id=' + id + ']\n' + t('chat_example_ref_prefix') + '\n' + prompt;
-    appendBubble('user', userVisible);
+    var userBubble = appendBubble('user', userVisible);
+    if (userBubble && userBubble.bubble) {
+      userBubble.bubble.setAttribute('data-i18n', 'chat_example_' + id + '_blurb');
+      userBubble.bubble.setAttribute('data-example-id', id);
+    }
     hideExamples();
     messages.push({ role: 'user', content: apiUser });
     var plan = examplePlan(id);
@@ -1013,8 +1028,10 @@
       runFlash();
       return;
     }
+    plan.exampleId = id;
     var spoken = t('chat_example_ready');
-    appendBubble('assistant', spoken);
+    var readyBubble = appendBubble('assistant', spoken);
+    if (readyBubble && readyBubble.bubble) readyBubble.bubble.setAttribute('data-i18n', 'chat_example_ready');
     messages.push({
       role: 'assistant',
       content: JSON.stringify({
@@ -1419,12 +1436,102 @@
     if (status) { status.hidden = true; status.textContent = ''; status.removeAttribute('data-i18n'); }
   }
 
+  function eachEl(node, fn) {
+    if (!node || node.nodeType === 3) return;
+    fn(node);
+    var kids = node.children || [];
+    for (var i = 0; i < kids.length; i++) eachEl(kids[i], fn);
+  }
+
+  /** Which preset a shot prompt belongs to, in any UI language. Empty when the text was rewritten. */
+  function localeForExamplePrompt(text) {
+    var raw = String(text || '').trim();
+    var I = root.VSI18n;
+    if (!raw || !I || !I.languages || !I.t) return '';
+    var codes = I.languages();
+    for (var i = 0; i < EXAMPLE_IDS.length; i++) {
+      var id = EXAMPLE_IDS[i];
+      for (var c = 0; c < codes.length; c++) {
+        var keys = ['chat_example_' + id + '_prompt', 'example_' + id + '_prompt'];
+        for (var k = 0; k < keys.length; k++) {
+          var s = I.t(codes[c], keys[k]);
+          if (s && s !== keys[k] && String(s).trim() === raw) return id;
+        }
+      }
+    }
+    return '';
+  }
+
+  function exampleBundle(id) {
+    var label = t('example_' + id + '_label');
+    if (!label || label.indexOf('example_') === 0) label = t('chat_plan_title_fallback');
+    var blurb = lookupString('chat_example_' + id + '_blurb') || lookupString('example_' + id + '_blurb');
+    var prompt = planPromptForExample(id) || lookupString('example_' + id + '_prompt');
+    return { label: label, blurb: blurb || '', prompt: prompt || '', ready: t('chat_example_ready') };
+  }
+
+  /** Example click copies title/blurb/prompt at that moment. setLang must swap them to the new language. */
+  function applyLocaleToExamplePlan(plan) {
+    if (!plan || !plan.prompt) return plan;
+    var id = localeForExamplePrompt(plan.prompt);
+    if (!id) return plan;
+    var bundle = exampleBundle(id);
+    if (bundle.label) plan.title = String(bundle.label).slice(0, 80);
+    if (bundle.blurb) plan.summary = String(bundle.blurb).slice(0, 160);
+    if (bundle.prompt) plan.prompt = bundle.prompt;
+    plan.exampleId = id;
+    return plan;
+  }
+
+  function relocalizeMarked(node) {
+    eachEl(node, function (n) {
+      if (!n.getAttribute) return;
+      var key = n.getAttribute('data-i18n');
+      if (!key) return;
+      if (key.indexOf('chat_example_') !== 0 && key.indexOf('example_') !== 0) return;
+      var val = t(key);
+      if (val && val !== key) n.textContent = val;
+    });
+  }
+
+  function relocalizeExampleMessages() {
+    for (var i = 0; i < messages.length; i++) {
+      var m = messages[i];
+      if (!m) continue;
+      if (m.role === 'user') {
+        var ex = extractExampleId(m.content);
+        if (!ex || EXAMPLE_IDS.indexOf(ex) < 0) continue;
+        var bundle = exampleBundle(ex);
+        if (!bundle.prompt) continue;
+        m.content = bundle.blurb + '\n\n[example_id=' + ex + ']\n' + t('chat_example_ref_prefix') + '\n' + bundle.prompt;
+        continue;
+      }
+      if (m.role !== 'assistant') continue;
+      var parsed = null;
+      try { parsed = JSON.parse(m.content); } catch (eMsg) { parsed = null; }
+      if (!parsed || !parsed.plan || !parsed.plan.prompt) continue;
+      var id = localeForExamplePrompt(parsed.plan.prompt);
+      if (!id) continue;
+      var next = exampleBundle(id);
+      parsed.assistant_message = next.ready;
+      parsed.plan.title = next.label;
+      parsed.plan.summary = next.blurb;
+      parsed.plan.prompt = next.prompt;
+      m.content = JSON.stringify(parsed);
+    }
+  }
+
   function refreshUi() {
     applyChrome();
     if (isEnabled()) renderExamples();
-    // Plan-card chrome is built in JS (not [data-i18n]). Rebuild so a language
-    // change updates labels, the model name, and credit copy without a reload.
-    if (lastPlan && deps && deps.t) renderPlanCard(lastPlan, { silent: true });
+    // Chip click freezes title, blurb, and shot prompt. Chrome [data-i18n] updates
+    // on setLang; these copies do not, so a Chinese boot stays Chinese after a switch.
+    relocalizeMarked($('chat-thread'));
+    relocalizeExampleMessages();
+    if (lastPlan && deps && deps.t) {
+      applyLocaleToExamplePlan(lastPlan);
+      renderPlanCard(lastPlan, { silent: true });
+    }
   }
 
   function applyChrome() {

@@ -30,8 +30,10 @@ function elMock() {
       remove() {},
       contains() { return false; }
     },
-    setAttribute() {},
-    removeAttribute() {},
+    _attrs: {},
+    setAttribute(k, v) { this._attrs[k] = String(v); },
+    getAttribute(k) { return Object.prototype.hasOwnProperty.call(this._attrs, k) ? this._attrs[k] : null; },
+    removeAttribute(k) { delete this._attrs[k]; },
     addEventListener(type, fn) {
       if (!listeners[type]) listeners[type] = [];
       listeners[type].push(fn);
@@ -334,6 +336,7 @@ assert.ok(promptBody.textContent.includes('cheese blocks'));
 assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt').open, true);
 assert.equal(api.isWeakOrEchoPrompt(promptBody.textContent, blurb), false);
 assert.ok(!blurb.includes('Subject:'));
+pilot.refreshUi();
 function eachNode(node, fn) {
   if (!node) return;
   fn(node);
@@ -341,7 +344,41 @@ function eachNode(node, fn) {
 }
 eachNode(document.getElementById('chat-example-chips'), function (node) {
   if (node.className === 'chat-example-chip') {
-    assert.equal(node.title || '', '', 'example chips should not use a hover prompt');
+    const id = node.getAttribute('data-example');
+    const label = I.t('en', 'example_' + id + '_label');
+    assert.equal(node.title, label, 'chip hover title matches the visible label');
+    assert.ok(node.title.length < 80, 'chip hover is the short label, not the shot prompt');
+    assert.ok(!/主体|场景|萌宠/.test(node.title), 'english chip hover is not Chinese');
+    assert.equal(node.getAttribute('aria-label').indexOf(label), 0);
+  }
+});
+
+lang = 'zh';
+pilot.resetConversation();
+pilot.presentExample('shopping');
+const zhTitle = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-title');
+const zhPrompt = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt-body');
+assert.equal(zhTitle.textContent, I.t('zh', 'example_shopping_label'));
+assert.ok(zhPrompt.textContent.includes('芝士'));
+lang = 'en';
+pilot.refreshUi();
+const enTitle = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-title');
+const enPrompt = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt-body');
+assert.equal(enTitle.textContent, I.t('en', 'example_shopping_label'));
+assert.ok(enPrompt.textContent.includes('Subject:'));
+assert.ok(!enPrompt.textContent.includes('芝士'));
+const bubbles = [];
+eachNode(document.getElementById('chat-thread'), function (node) {
+  if (node.className && String(node.className).indexOf('chat-bubble') >= 0) bubbles.push(node.textContent);
+});
+assert.ok(bubbles.indexOf(I.t('en', 'chat_example_shopping_blurb')) >= 0, 'example line follows the new language');
+assert.ok(bubbles.indexOf(I.t('en', 'chat_example_ready')) >= 0);
+assert.ok(bubbles.indexOf(I.t('zh', 'chat_example_shopping_blurb')) < 0);
+eachNode(document.getElementById('chat-example-chips'), function (node) {
+  if (node.className === 'chat-example-chip') {
+    const id = node.getAttribute('data-example');
+    assert.equal(node.title, I.t('en', 'example_' + id + '_label'));
+    assert.ok(!/[\u4e00-\u9fff]/.test(node.title));
   }
 });
 
