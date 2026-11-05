@@ -276,15 +276,6 @@
       sel.addEventListener('change', queueLang);
       sel.addEventListener('input', queueLang);
     }
-    // Tab hover follows the visible full label. Short mobile labels otherwise
-    // leave the browser showing whatever title was painted at boot.
-    document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
-      var name = b.getAttribute('data-tab');
-      var full = t('tab_' + name);
-      if (!full || full === 'tab_' + name) return;
-      b.title = full;
-      b.setAttribute('aria-label', full);
-    });
     renderFirstFrameCard();
     renderModelDetailsBtn();
   }
@@ -1086,13 +1077,7 @@
       if (blurb && blurb.indexOf('example_') !== 0) {
         b.appendChild(el('span', 'preset-blurb', blurb));
       }
-      // Hover is the same short label as the card, not the shot prompt.
-      // The prompt is filled into the description box on click.
-      if (label && label.indexOf('example_') !== 0) {
-        b.title = label;
-        var tip = blurb && blurb.indexOf('example_') !== 0 ? (label + '. ' + blurb) : label;
-        b.setAttribute('aria-label', tip);
-      }
+      // No title / aria-label hover. A tooltip repeats the label or the shot prompt over the other cards.
       // All Generate presets are Wan 3.0 — no family badge/logo on chips.
       b.setAttribute('data-example', id);
       b.setAttribute('data-target', 'gen');

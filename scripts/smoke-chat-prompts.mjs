@@ -344,12 +344,8 @@ function eachNode(node, fn) {
 }
 eachNode(document.getElementById('chat-example-chips'), function (node) {
   if (node.className === 'chat-example-chip') {
-    const id = node.getAttribute('data-example');
-    const label = I.t('en', 'example_' + id + '_label');
-    assert.equal(node.title, label, 'chip hover title matches the visible label');
-    assert.ok(node.title.length < 80, 'chip hover is the short label, not the shot prompt');
-    assert.ok(!/主体|场景|萌宠/.test(node.title), 'english chip hover is not Chinese');
-    assert.equal(node.getAttribute('aria-label').indexOf(label), 0);
+    assert.equal(node.title || '', '', 'example chips should not use a hover title');
+    assert.equal(node.getAttribute('aria-label'), null, 'example chips should not dump a label into aria-label');
   }
 });
 
@@ -376,9 +372,8 @@ assert.ok(bubbles.indexOf(I.t('en', 'chat_example_ready')) >= 0);
 assert.ok(bubbles.indexOf(I.t('zh', 'chat_example_shopping_blurb')) < 0);
 eachNode(document.getElementById('chat-example-chips'), function (node) {
   if (node.className === 'chat-example-chip') {
-    const id = node.getAttribute('data-example');
-    assert.equal(node.title, I.t('en', 'example_' + id + '_label'));
-    assert.ok(!/[\u4e00-\u9fff]/.test(node.title));
+    assert.equal(node.title || '', '', 'language switch must not restore a chip hover title');
+    assert.equal(node.getAttribute('aria-label'), null);
   }
 });
 

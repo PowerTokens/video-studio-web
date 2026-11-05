@@ -931,22 +931,12 @@
       var b = el('button', 'chat-example-chip');
       b.type = 'button';
       b.setAttribute('data-example', id);
-      var label = t('example_' + id + '_label');
-      if (!label || label.indexOf('example_') === 0) label = '';
-      b.appendChild(el('span', 'chat-example-title', label));
+      b.appendChild(el('span', 'chat-example-title', t('example_' + id + '_label')));
       var blurb = lookupString('chat_example_' + id + '_blurb') || t('example_' + id + '_blurb');
       if (blurb && blurb.indexOf('example_') !== 0 && blurb.indexOf('chat_example_') !== 0) {
         b.appendChild(el('span', 'chat-example-blurb', blurb));
       }
-      // Hover shows the same short label as the chip, in the active language.
-      // The shot prompt stays on the plan card — a title tooltip of the full prompt covers the other chips.
-      if (label) {
-        b.title = label;
-        var tip = blurb && blurb.indexOf('example_') !== 0 && blurb.indexOf('chat_example_') !== 0
-          ? (label + '. ' + blurb)
-          : label;
-        b.setAttribute('aria-label', tip);
-      }
+      // No title / aria-label hover. The label is already on the chip; the prompt opens on click.
       b.addEventListener('click', function () { onExample(id); });
       box.appendChild(b);
     });
