@@ -185,6 +185,12 @@
     });
   }
 
+  function ptFetch(url, init) {
+    var api = root.VSApi;
+    if (api && typeof api.ptFetch === 'function') return api.ptFetch(url, init);
+    return root.fetch(url, init);
+  }
+
   function formBody(obj) {
     var parts = [];
     Object.keys(obj).forEach(function (k) {
@@ -194,7 +200,7 @@
   }
 
   function exchangeToken(code, verifier, uri) {
-    return root.fetch(OAUTH_API_BASE + '/oauth/token', {
+    return ptFetch(OAUTH_API_BASE + '/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -223,7 +229,7 @@
   }
 
   function fetchUserinfo(accessToken) {
-    return root.fetch(OAUTH_API_BASE + '/oauth/userinfo', {
+    return ptFetch(OAUTH_API_BASE + '/oauth/userinfo', {
       method: 'GET',
       headers: {
         Authorization: 'Bearer ' + accessToken,
@@ -246,7 +252,7 @@
 
   function revoke(accessToken) {
     if (!accessToken) return Promise.resolve({ ok: true });
-    return root.fetch(OAUTH_API_BASE + '/oauth/revoke', {
+    return ptFetch(OAUTH_API_BASE + '/oauth/revoke', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

@@ -96,11 +96,75 @@
   function keyHint(k) { return k ? k.slice(-4) : ''; }
 
   // ---------- HTTP ----------
+  // Identity string backend consumption logs can attribute to Video Studio.
+  // Desktop urllib can set User-Agent (PowerTokensVideoStudio/<version>).
+  // Browsers accept this header in fetch/XHR, then send the browser User-Agent
+  // on the wire (forbidden request header). This web app has no other
+  // client-identity header. Consumption logs record User-Agent, so this
+  // wrapper does not add X-Client or X-User-Agent.
+  var CLIENT_USER_AGENT = 'videostudio';
+
   function apiUrl(path) {
     var url = API_BASE + path;
     // The key may only travel to the PowerTokens API origin.
     if (url.indexOf(API_BASE + '/') !== 0) throw new Error('bad api url');
     return url;
+  }
+
+  function apiHost() {
+    try { return new URL(API_BASE).hostname.toLowerCase(); }
+    catch (e) { return 'api.powertokens.ai'; }
+  }
+
+  /** api.powertokens.ai, plus the OAuth API on powertokens.ai/api. Not pages, docs, or video CDNs. */
+  function isPowerTokensApiUrl(url) {
+    try {
+      var base = root.location && root.location.href;
+      var u = base ? new URL(String(url), base) : new URL(String(url));
+      var host = String(u.hostname || '').toLowerCase();
+      if (host === apiHost()) return true;
+      var path = u.pathname || '/';
+      if (host === 'powertokens.ai' && (path === '/api' || path.indexOf('/api/') === 0)) return true;
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function withClientUserAgent(init) {
+    var next = {};
+    var key;
+    for (key in init) {
+      if (Object.prototype.hasOwnProperty.call(init, key)) next[key] = init[key];
+    }
+    var headers = {};
+    var src = init.headers || {};
+    if (typeof Headers !== 'undefined' && typeof Headers === 'function' && src instanceof Headers) {
+      src.forEach(function (value, name) { headers[name] = value; });
+    } else if (Array.isArray(src)) {
+      src.forEach(function (pair) {
+        if (pair && pair.length >= 2) headers[String(pair[0])] = pair[1];
+      });
+    } else {
+      for (key in src) {
+        if (Object.prototype.hasOwnProperty.call(src, key)) headers[key] = src[key];
+      }
+    }
+    headers['User-Agent'] = CLIENT_USER_AGENT;
+    next.headers = headers;
+    return next;
+  }
+
+  /**
+   * Shared fetch for every PowerTokens API call. Sets User-Agent: videostudio
+   * on API hosts only. Non-API fetches (video CDN downloads, outbound pages)
+   * are passed through unchanged, including UTM links which are navigations
+   * and never go through here.
+   */
+  function ptFetch(url, init) {
+    var opts = init || {};
+    if (isPowerTokensApiUrl(url)) opts = withClientUserAgent(opts);
+    return root.fetch(url, opts);
   }
 
   /** Returns {code, body, networkError, text}. Never throws for HTTP/network errors. */
@@ -120,7 +184,7 @@
       init.body = JSON.stringify(payload);
     }
     if (ctrl) init.signal = ctrl.signal;
-    return root.fetch(url, init).then(function (res) {
+    return ptFetch(url, init).then(function (res) {
       return res.text().then(function (text) {
         var body = {};
         try { var parsed = JSON.parse(text); if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) body = parsed; }
@@ -196,7 +260,7 @@
       return content ? String(content) : '';
     }
 
-    return root.fetch(url, init).then(function (res) {
+    return ptFetch(url, init).then(function (res) {
       var ctype = String(res.headers && res.headers.get && res.headers.get('content-type') || '').toLowerCase();
       // Non-SSE bodies: errors (429 JSON) or rare full JSON replies despite stream:true.
       if (!res.ok || ctype.indexOf('text/event-stream') < 0) {
@@ -565,7 +629,7 @@
     var rec = getTask(localId);
     if (!rec || rec.family === 'kling' || rec.family === 'h3' || rec.family === 'vidu') return Promise.resolve(false);
     var url = apiUrl('/v1/videos/' + rec.task_id + '/content');
-    return root.fetch(url, { headers: { Authorization: 'Bearer ' + key }, credentials: 'omit', referrerPolicy: 'no-referrer' })
+    return ptFetch(url, { headers: { Authorization: 'Bearer ' + key }, credentials: 'omit', referrerPolicy: 'no-referrer' })
       .then(function (res) {
         var type = (res.headers.get('Content-Type') || '').toLowerCase();
         if (!res.ok || type.indexOf('json') >= 0 || type.indexOf('html') >= 0) return false;
@@ -670,7 +734,7 @@
    */
   function download(url, filename) {
     var init = { credentials: 'omit', referrerPolicy: 'no-referrer' };
-    return root.fetch(url, init).then(function (res) {
+    return ptFetch(url, init).then(function (res) {
       if (!res.ok) throw new Error('http ' + res.status);
       return res.blob();
     }).then(function (blob) {
@@ -719,6 +783,9 @@
     verifyKey: verifyKey,
     api: api,
     apiChatStream: apiChatStream,
+    ptFetch: ptFetch,
+    isPowerTokensApiUrl: isPowerTokensApiUrl,
+    CLIENT_USER_AGENT: CLIENT_USER_AGENT,
     serverMessage: serverMessage,
     loadTasks: loadTasks,
     getTask: getTask,
