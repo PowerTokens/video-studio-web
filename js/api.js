@@ -96,13 +96,12 @@
   function keyHint(k) { return k ? k.slice(-4) : ''; }
 
   // ---------- HTTP ----------
-  // Identity string backend consumption logs can attribute to Video Studio.
-  // Desktop urllib can set User-Agent (PowerTokensVideoStudio/<version>).
-  // Browsers accept this header in fetch/XHR, then send the browser User-Agent
-  // on the wire (forbidden request header). This web app has no other
-  // client-identity header. Consumption logs record User-Agent, so this
-  // wrapper does not add X-Client or X-User-Agent.
-  var CLIENT_USER_AGENT = 'videostudio';
+  // NewAPI records request headers. Browsers strip a custom User-Agent on
+  // fetch/XHR, so Video Studio identifies itself with X-Client instead.
+  // X-Client is not CORS-safelisted: browsers preflight, and the API must
+  // list it in Access-Control-Allow-Headers or the call fails.
+  var CLIENT_HEADER = 'X-Client';
+  var CLIENT_NAME = 'videostudio';
 
   function apiUrl(path) {
     var url = API_BASE + path;
@@ -131,7 +130,7 @@
     }
   }
 
-  function withClientUserAgent(init) {
+  function withClientHeader(init) {
     var next = {};
     var key;
     for (key in init) {
@@ -150,20 +149,20 @@
         if (Object.prototype.hasOwnProperty.call(src, key)) headers[key] = src[key];
       }
     }
-    headers['User-Agent'] = CLIENT_USER_AGENT;
+    headers[CLIENT_HEADER] = CLIENT_NAME;
     next.headers = headers;
     return next;
   }
 
   /**
-   * Shared fetch for every PowerTokens API call. Sets User-Agent: videostudio
+   * Shared fetch for every PowerTokens API call. Sets X-Client: videostudio
    * on API hosts only. Non-API fetches (video CDN downloads, outbound pages)
-   * are passed through unchanged, including UTM links which are navigations
-   * and never go through here.
+   * are passed through unchanged. UTM links are navigations and never go
+   * through here.
    */
   function ptFetch(url, init) {
     var opts = init || {};
-    if (isPowerTokensApiUrl(url)) opts = withClientUserAgent(opts);
+    if (isPowerTokensApiUrl(url)) opts = withClientHeader(opts);
     return root.fetch(url, opts);
   }
 
@@ -785,7 +784,8 @@
     apiChatStream: apiChatStream,
     ptFetch: ptFetch,
     isPowerTokensApiUrl: isPowerTokensApiUrl,
-    CLIENT_USER_AGENT: CLIENT_USER_AGENT,
+    CLIENT_HEADER: CLIENT_HEADER,
+    CLIENT_NAME: CLIENT_NAME,
     serverMessage: serverMessage,
     loadTasks: loadTasks,
     getTask: getTask,

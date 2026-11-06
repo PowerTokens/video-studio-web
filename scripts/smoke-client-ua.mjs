@@ -1,8 +1,6 @@
 /**
- * PowerTokens API fetches ask for User-Agent: videostudio.
- * Asserts the header passed into fetch(). Browsers override User-Agent on the
- * wire (forbidden request header) and still send the browser UA; Node and the
- * desktop urllib client can send a custom User-Agent for sure.
+ * PowerTokens API fetches set X-Client: videostudio.
+ * Browsers strip a custom User-Agent, so this client does not set one.
  * Video CDN downloads and non-API powertokens.ai pages are left unchanged.
  * UTM outbound links are navigations and are not touched.
  *
@@ -15,8 +13,9 @@ import { fileURLToPath } from 'url';
 import vm from 'vm';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const apiSrc = fs.readFileSync(path.join(root, 'js/api.js'), 'utf8');
+assert.equal(/['"]User-Agent['"]/.test(apiSrc), false);
 const utmSrc = fs.readFileSync(path.join(root, 'js/utm.js'), 'utf8');
-assert.equal(utmSrc.includes('User-Agent'), false);
 assert.match(utmSrc, /utm_source:\s*'videostudio'/);
 assert.match(utmSrc, /utm_medium:\s*'web'/);
 
@@ -97,15 +96,22 @@ vm.runInContext(fs.readFileSync(path.join(root, 'js/utm.js'), 'utf8'), sandbox, 
 vm.runInContext(fs.readFileSync(path.join(root, 'js/oauth.js'), 'utf8'), sandbox, { filename: 'js/oauth.js' });
 
 const A = sandbox.VSApi;
-assert.equal(A.CLIENT_USER_AGENT, 'videostudio');
+assert.equal(A.CLIENT_HEADER, 'X-Client');
+assert.equal(A.CLIENT_NAME, 'videostudio');
 
-function uaOf(call) {
+function clientOf(call) {
+  const h = call.init.headers || {};
+  return h['X-Client'] || h['x-client'] || '';
+}
+
+function userAgentOf(call) {
   const h = call.init.headers || {};
   return h['User-Agent'] || h['user-agent'] || '';
 }
 
 function assertApiCall(label, call) {
-  assert.equal(uaOf(call), 'videostudio', label + ' User-Agent: ' + JSON.stringify(call));
+  assert.equal(clientOf(call), 'videostudio', label + ' X-Client: ' + JSON.stringify(call));
+  assert.equal(userAgentOf(call), '', label + ' must not set User-Agent');
   const auth = call.init.headers.Authorization || call.init.headers.authorization || '';
   assert.match(auth, /^Bearer /, label + ' must keep Authorization');
 }
@@ -139,21 +145,24 @@ assertApiCall('content', calls[0]);
 
 calls.length = 0;
 await A.ptFetch('https://api.powertokens.ai/v1/models', {
-  headers: { 'User-Agent': 'spoofed', Accept: 'application/json' }
+  headers: { Accept: 'application/json' }
 });
-assert.equal(uaOf(calls[0]), 'videostudio');
+assert.equal(clientOf(calls[0]), 'videostudio');
+assert.equal(userAgentOf(calls[0]), '');
 assert.equal(calls[0].init.headers.Accept, 'application/json');
 
 calls.length = 0;
 await A.download('https://cdn.example/clip.mp4', 'clip.mp4');
 assert.equal(calls.length, 1);
 assert.equal(calls[0].url, 'https://cdn.example/clip.mp4');
-assert.equal(uaOf(calls[0]), '', 'CDN download must not set User-Agent');
+assert.equal(clientOf(calls[0]), '', 'CDN download must not set X-Client');
+assert.equal(userAgentOf(calls[0]), '');
 assert.equal(calls[0].init.headers, undefined);
 
 calls.length = 0;
 await A.ptFetch('https://powertokens.ai/billing?utm_source=videostudio&utm_medium=web');
-assert.equal(uaOf(calls[0]), '');
+assert.equal(clientOf(calls[0]), '');
+assert.equal(userAgentOf(calls[0]), '');
 assert.equal(A.isPowerTokensApiUrl('https://powertokens.ai/zh-Hans/api-keys'), false);
 assert.equal(A.isPowerTokensApiUrl('https://www.powertokens.ai/oauth/authorize'), false);
 assert.equal(A.isPowerTokensApiUrl('https://docs.powertokens.ai/en/zmodelVideo/wan'), false);
@@ -170,13 +179,17 @@ const oauthCalls = calls.filter((c) => c.url.startsWith('https://powertokens.ai/
 assert.equal(oauthCalls.length, 2);
 assert.equal(oauthCalls[0].url, 'https://powertokens.ai/api/oauth/token');
 assert.equal(oauthCalls[1].url, 'https://powertokens.ai/api/oauth/userinfo');
-oauthCalls.forEach((c, i) => assert.equal(uaOf(c), 'videostudio', 'oauth ' + i));
+oauthCalls.forEach((c, i) => {
+  assert.equal(clientOf(c), 'videostudio', 'oauth ' + i);
+  assert.equal(userAgentOf(c), '', 'oauth ' + i + ' User-Agent');
+});
 assert.match(oauthCalls[1].init.headers.Authorization, /^Bearer /);
 
 calls.length = 0;
 await sandbox.VSOauth.logout();
 assert.equal(calls.length, 1);
 assert.equal(calls[0].url, 'https://powertokens.ai/api/oauth/revoke');
-assert.equal(uaOf(calls[0]), 'videostudio');
+assert.equal(clientOf(calls[0]), 'videostudio');
+assert.equal(userAgentOf(calls[0]), '');
 
 console.log('smoke-client-ua: ok');
