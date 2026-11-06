@@ -86,8 +86,9 @@
   }
 
   function homeUrl(hash) {
-    var h = hash ? String(hash).replace(/^#/, '') : 'generate';
-    return appBaseUrl() + (h && h !== 'generate' ? '#' + h : '');
+    var h = hash ? String(hash).replace(/^#/, '') : 'chat';
+    // Chat is the hashless landing tab; Generate and the others keep a hash.
+    return appBaseUrl() + (h && h !== 'chat' ? '#' + h : '');
   }
 
   function ssGet(k) {

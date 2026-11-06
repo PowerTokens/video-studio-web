@@ -340,7 +340,8 @@
   function setTab(name, push) {
     if (name === 'key' || name === 'keys') name = 'account'; // legacy Key tab → Account
     var invalid = TABS.indexOf(name) < 0;
-    if (invalid) name = 'generate';
+    // No hash / unknown hash lands on Chat. Generate stays reachable at #generate.
+    if (invalid) name = 'chat';
     if (name === 'chat' && !(rootChatPilotEnabled())) {
       name = 'generate';
       invalid = true;
@@ -351,9 +352,10 @@
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    // push=true updates URL; also clear dead hashes (#batch / #compare) when falling back.
+    // push=true updates URL. Chat is the hashless default; other tabs keep #name.
+    // Dead hashes (#batch / #compare) fall back here and drop the hash.
     if ((push || invalid) && history.replaceState) {
-      history.replaceState(null, '', location.pathname + location.search + (name === 'generate' ? '' : '#' + name));
+      history.replaceState(null, '', location.pathname + location.search + (name === 'chat' ? '' : '#' + name));
     }
     window.scrollTo(0, 0);
     if (name === 'chat' && window.VSChatPilot && window.VSChatPilot.onShow) {
@@ -653,7 +655,7 @@
       var n = active.getAttribute('data-tab');
       if (TABS.indexOf(n) >= 0) return n;
     }
-    return 'generate';
+    return 'chat';
   }
 
   function pulseLoginCta() {
@@ -680,7 +682,7 @@
       return;
     }
     setOauthBusy(true);
-    // Return to the tab the user left (Generate by default; Account if they started from Account).
+    // Return to the tab the user left (Chat when the URL has no hash).
     O.startLogin({ returnHash: currentTabName() }).catch(function (e) {
       setOauthBusy(false);
       var code = (e && e.message) || 'error';
@@ -1841,7 +1843,7 @@
         b.addEventListener('click', function () { setTab(b.getAttribute('data-tab'), true); });
       });
       window.addEventListener('hashchange', function () {
-        setTab((location.hash || '').replace('#', '') || 'generate', false);
+        setTab((location.hash || '').replace('#', '') || 'chat', false);
       });
       bindKey();
       bindOauth();
@@ -1872,19 +1874,14 @@
         });
       }
       var initialTab = (location.hash || '').replace(/^#/, '');
-      if (!initialTab && rootChatPilotEnabled()) {
-        try {
-          var pq = (new URLSearchParams(location.search || '').get('pilot') || '').toLowerCase();
-          if (pq === 'chat' || pq === '1' || pq === 'on' || pq === 'true') initialTab = 'chat';
-        } catch (ePilot) { /* ignore */ }
-      }
-      if (!initialTab) initialTab = 'generate';
+      // Bare index (no hash) opens Chat. #generate / #tasks / #account still select those tabs.
+      if (!initialTab) initialTab = 'chat';
       setTab(initialTab, false);
       maybeDefaultGenPreset();
       if (!window.__vswHashBound) {
         window.__vswHashBound = true;
         window.addEventListener('hashchange', function () {
-          setTab((location.hash || '').replace(/^#/, '') || 'generate', false);
+          setTab((location.hash || '').replace(/^#/, '') || 'chat', false);
         });
       }
       A.onChange(scheduleRender);

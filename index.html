@@ -21,9 +21,9 @@
 <link rel="preload" href="js/models.js?v=20261104-LoginGate" as="script">
 <link rel="preload" href="js/api.js?v=20261104-LoginGate" as="script">
 <link rel="preload" href="js/utm.js?v=20261104-LoginGate" as="script">
-<link rel="preload" href="js/oauth.js?v=20261104-LoginGate" as="script">
+<link rel="preload" href="js/oauth.js?v=20261106-DefaultChat" as="script">
 <link rel="preload" href="js/chat-pilot.js?v=20261105-ExampleLogin" as="script">
-<link rel="preload" href="js/app.js?v=20261105-NoChipHover" as="script">
+<link rel="preload" href="js/app.js?v=20261106-DefaultChat" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -56,7 +56,7 @@
 
 <nav class="tabs" aria-label="Tabs">
   <div class="tabs-inner" role="tablist">
-    <button role="tab" type="button" data-tab="chat" hidden>
+    <button role="tab" type="button" data-tab="chat" class="active" aria-selected="true">
       <span class="tab-full" data-i18n="tab_chat">对话出片</span>
       <span class="tab-short" data-i18n="tab_chat_short">对话</span>
     </button>
@@ -79,7 +79,7 @@
 <main class="page">
 
   <!-- ============ 对话出片（试点） ============ -->
-  <section id="panel-chat" class="panel panel-chat" role="tabpanel" hidden>
+  <section id="panel-chat" class="panel panel-chat" role="tabpanel">
     <div class="chat-shell">
       <header class="chat-top">
         <div class="chat-top-main">
@@ -108,7 +108,7 @@
   </section>
 
   <!-- ============ 生成视频 ============ -->
-  <section id="panel-generate" class="panel" role="tabpanel">
+  <section id="panel-generate" class="panel" role="tabpanel" hidden>
     <div class="heading">
       <h1 data-i18n="gen_title">生成视频</h1>
       <p data-i18n="gen_desc">点预设直接开拍，或自己写描述；调整参数，生成带原生音效的视频。</p>
@@ -333,8 +333,8 @@
 <script src="js/models.js?v=20261104-LoginGate"></script>
 <script src="js/api.js?v=20261104-LoginGate"></script>
 <script src="js/utm.js?v=20261104-LoginGate"></script>
-<script src="js/oauth.js?v=20261104-LoginGate"></script>
+<script src="js/oauth.js?v=20261106-DefaultChat"></script>
 <script src="js/chat-pilot.js?v=20261105-ExampleLogin"></script>
-<script src="js/app.js?v=20261105-NoChipHover"></script>
+<script src="js/app.js?v=20261106-DefaultChat"></script>
 </body>
 </html>
