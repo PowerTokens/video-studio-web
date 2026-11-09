@@ -1,6 +1,6 @@
 # PowerTokens Video Studio · Web
 
-Web UI for **PowerTokens Video Studio 1.14** — **Wan · Seedance · Kling · and more** (companion to the Windows desktop app).
+Web UI for **PowerTokens Video Studio 1.15** — **Wan · Seedance · Kling · and more** (companion to the Windows desktop app).
 
 Live page: https://powertokens.github.io/video-studio-web/
 
@@ -8,7 +8,7 @@ Desktop app (Windows installer, Chat, batch, model compare, storyboard, continue
 
 Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=readme&utm_campaign=video-studio-web
 
-网页版（Video Studio **1.14** 配套，支持 **Wan · Seedance · Kling 等**）已发布在上面的地址。桌面版（安装包、对话、批量、模型对比、分镜、接上一段）见 [PowerTokens/video-studio](https://github.com/PowerTokens/video-studio)。
+网页版（Video Studio **1.15** 配套，支持 **Wan · Seedance · Kling 等**）已发布在上面的地址。桌面版（安装包、对话、批量、模型对比、分镜、接上一段）见 [PowerTokens/video-studio](https://github.com/PowerTokens/video-studio)。
 
 获取 API Key：https://powertokens.ai/zh-Hans/api-keys?utm_source=github&utm_medium=readme&utm_campaign=video-studio-web
 
@@ -17,7 +17,7 @@ Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=rea
 1. Open the [live page](https://powertokens.github.io/video-studio-web/).
 2. Sign in with PowerTokens (header). Paste an API key only under **Account → Advanced** if you need to.
 3. Tabs: **Chat** (对话出片, on by default), **Generate**, **History**, **Account**. On a phone, the tabs use short labels (Chat / Generate / History / Account).
-4. On **Generate**, click an example chip (Product · Wan / Short drama · Seedance / Café / Cinematic · Kling) to fill the prompt; model-tagged chips also switch Settings. Then **Generate video**.
+4. On **Generate**, tap a preset (Pet daily, Fantasy scene, Fun short, or Drama dialogue) to fill the prompt and match duration, ratio, and resolution. Then **Generate video**.
 5. Batch import, model compare, storyboard, and continue-from-previous stay in the [Windows desktop app](https://github.com/PowerTokens/video-studio/releases/latest). Web no longer ships Batch or Compare tabs.
 
 ## Chat to video
@@ -42,7 +42,7 @@ Credits / top-up still open the PowerTokens billing page in the browser (product
 
 ## Languages
 
-Language is a dropdown in the header. On first visit it follows the browser language (zh / en / es / pt). Unrecognized locales default to English. After you pick a language, that choice is stored and always honored.
+Language is a dropdown in the header. On first visit it follows the browser language (zh / en / es / pt / ja / ko). Unrecognized locales default to English. After you pick a language, that choice is stored and always honored.
 
 ## Desktop download
 
