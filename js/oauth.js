@@ -348,7 +348,6 @@
         try {
           if (root.VSAnalytics && root.VSAnalytics.notifyLoginSuccess) {
             root.VSAnalytics.notifyLoginSuccess({
-              userId: (info && (info.user_id || info.sub)) || (profile && profile.user_id),
               keyApplied: keyApplied
             });
           }

@@ -4,7 +4,11 @@
  * Not the official posthog-js SDK: no autocapture, session replay, heatmaps, or
  * person-profile enrichment. Only allowlisted critical events are sent. Prompts,
  * keys, tokens, emails, assets, raw error text, OAuth codes, and URL query
- * strings are never accepted. Fail open; bounded queue; consent required.
+ * strings are never accepted. Fail open; bounded queue only after opt-in when
+ * a destination exists. No identifiers are stored before consent. This MVP
+ * uses a random install UUID as distinct_id and does not link accounts.
+ * The ingest host may still see the client IP; $geoip_disable and
+ * $process_person_profile=false are set, and we do not claim IP anonymity.
  */
 (function (root) {
   'use strict';
@@ -22,7 +26,7 @@
     platform: true, app_version: true, session_id: true, install_id: true,
     surface: true, model: true, duration_ms: true, error_code: true,
     generation_id: true, requested_duration_s: true, key_applied: true,
-    account_linked: true
+    environment: true, test_run_id: true
   };
 
   var FORBIDDEN = {
@@ -51,6 +55,16 @@
 
   var ERROR_ALIAS = { CANCELED: 'CANCELLED', UNCERTAIN_RELOAD: 'UNCERTAIN' };
   var SAFE_SURFACES = { generate: true, compare: true, batch: true };
+  var MODEL_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+  var ALLOWED_INGEST_HOSTS = {
+    'https://us.i.posthog.com': true,
+    'https://eu.i.posthog.com': true
+  };
+  var FINAL_FAILURE = {
+    AUTH: true, QUOTA: true, NOT_ALLOWED: true, PARAM: true, VALIDATION: true,
+    REJECTED: true, POOL_EXHAUSTED: true, SERVER_FAILED: true, FAILED: true,
+    CANCELLED: true, STORAGE: true, UNCERTAIN: true, UNKNOWN: true
+  };
   var PLATFORM = 'web';
   var QUEUE_MAX = 50;
   var SESSION_IDLE_MS = 30 * 60 * 1000;
@@ -102,43 +116,37 @@
     return 'x' + String(now()) + String(Math.random()).slice(2, 14);
   }
 
-  function sha256Hex(text, done) {
-    try {
-      if (root.crypto && crypto.subtle && typeof TextEncoder === 'function') {
-        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)).then(function (buf) {
-          var bytes = new Uint8Array(buf);
-          var hex = '';
-          for (var i = 0; i < bytes.length; i++) hex += (bytes[i] + 256).toString(16).slice(1);
-          done(hex.slice(0, 16));
-        }, function () { done(''); });
-      }
-    } catch (e) { /* sync fallback */ }
-    // Non-crypto fallback: still not the raw id, but weaker. Prefer subtle when present.
-    var h = 2166136261;
-    for (var i = 0; i < text.length; i++) {
-      h ^= text.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    done(('00000000' + (h >>> 0).toString(16)).slice(-8) +
-         ('00000000' + ((h ^ text.length) >>> 0).toString(16)).slice(-8));
-    return Promise.resolve();
-  }
 
   function opaqueAccountId(userId, cb) {
-    var raw = String(userId || '').trim();
-    if (!raw || raw.indexOf('@') >= 0 || /\s/.test(raw) || raw.length < 2) {
-      cb(null);
-      return;
-    }
-    sha256Hex('vs-analytics:' + raw, function (hex) {
-      cb(hex ? 'ptu_' + hex : null);
-    });
+    // MVP: no account linkage. Do not hash user ids.
+    if (cb) cb(null);
   }
+
 
   function normalizeErrorCode(code) {
     var text = String(code || '').trim().toUpperCase().replace(/[-\s]/g, '_');
     if (SAFE_ERROR[text]) return text;
     return ERROR_ALIAS[text] || 'UNKNOWN';
+  }
+
+
+  var SAFE_ENVIRONMENTS = { synthetic: true, test: true, production: true };
+  var TEST_RUN_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+  var PROJECT_KEY_RE = /^phc_[A-Za-z0-9_-]{4,}$/;
+
+  function sanitizeEnvironment(value) {
+    var text = String(value || '').trim().toLowerCase();
+    return SAFE_ENVIRONMENTS[text] ? text : null;
+  }
+
+  function sanitizeTestRunId(value) {
+    var text = String(value || '').trim();
+    return text && TEST_RUN_ID_RE.test(text) ? text : null;
+  }
+
+  function publicProjectKey(raw) {
+    var key = String(raw || '').trim();
+    return PROJECT_KEY_RE.test(key) ? key : '';
   }
 
   function sanitize(event, props) {
@@ -161,11 +169,17 @@
       } else if (key === 'requested_duration_s') {
         value = parseInt(value, 10);
         if (!isFinite(value) || value < 0 || value > 3600) continue;
-      } else if (key === 'key_applied' || key === 'account_linked') {
+      } else if (key === 'key_applied') {
         value = !!value;
+      } else if (key === 'environment') {
+        value = sanitizeEnvironment(value);
+        if (!value) continue;
+      } else if (key === 'test_run_id') {
+        value = sanitizeTestRunId(value);
+        if (!value) continue;
       } else if (key === 'model') {
         text = String(value || '').trim();
-        if (!text || text.length > 80 || /\s/.test(text) || text.indexOf('@') >= 0) continue;
+        if (!MODEL_ID_RE.test(text) || text.indexOf('@') >= 0) continue;
         value = text;
       } else if (key === 'generation_id' || key === 'session_id' || key === 'install_id' || key === 'app_version' || key === 'platform') {
         text = String(value || '').trim();
@@ -183,6 +197,7 @@
     last_activity: 0, app_open_session: '', queue: [], generation_seen: {},
     account_distinct_id: '', login_success_token: '' };
   var flushTimer = null;
+  var flushing = false;
   var booted = false;
 
   function loadState() {
@@ -196,12 +211,17 @@
       state.app_open_session = saved.app_open_session || '';
       state.queue = Array.isArray(saved.queue) ? saved.queue : [];
       state.generation_seen = saved.generation_seen || {};
-      state.account_distinct_id = saved.account_distinct_id || '';
+      state.account_distinct_id = '';
       state.login_success_token = saved.login_success_token || '';
     }
-    if (!state.install_id) {
-      state.install_id = uuid();
-      persist();
+    if (state.consent !== CONSENT_GRANTED) {
+      state.queue = [];
+      if (state.consent !== CONSENT_DENIED) {
+        state.install_id = '';
+        state.session_id = '';
+        state.app_open_session = '';
+        state.login_success_token = '';
+      }
     }
   }
 
@@ -220,13 +240,22 @@
 
   function config() {
     var cfg = root.VS_ANALYTICS_CONFIG || {};
-    var key = String(root.VS_POSTHOG_PROJECT_KEY || cfg.posthogProjectKey || '').trim();
+    var key = publicProjectKey(root.VS_POSTHOG_PROJECT_KEY || cfg.posthogProjectKey || '');
     var host = String(root.VS_POSTHOG_HOST || cfg.posthogHost || 'https://us.i.posthog.com').trim().replace(/\/$/, '');
-    return { projectKey: key, host: host };
+    if (host && !ALLOWED_INGEST_HOSTS[host]) host = '';
+    if (!host) host = 'https://us.i.posthog.com';
+    return {
+      projectKey: key,
+      host: host,
+      environment: sanitizeEnvironment(root.VS_ANALYTICS_ENVIRONMENT || cfg.environment) || '',
+      testRunId: sanitizeTestRunId(root.VS_ANALYTICS_TEST_RUN_ID || cfg.testRunId) || ''
+    };
   }
 
   function hasDestination() {
-    return !!(deps.transport || config().projectKey);
+    if (deps.transport) return true;
+    var cfg = config();
+    return !!(cfg.projectKey && ALLOWED_INGEST_HOSTS[cfg.host]);
   }
 
   function consentState() {
@@ -239,6 +268,7 @@
   }
 
   function ensureSession() {
+    if (consentState() !== CONSENT_GRANTED) return '';
     var t = now();
     var idle = state.last_activity && (t - state.last_activity > SESSION_IDLE_MS);
     if (!state.session_id || idle) {
@@ -273,7 +303,7 @@
       return true;
     }
     if (event === 'login_success') {
-      token = (state.session_id || '') + ':' + (state.account_distinct_id || 'anon');
+      token = state.session_id || '';
       if (state.login_success_token === token) return false;
       state.login_success_token = token;
       return true;
@@ -304,22 +334,32 @@
     ensureLoaded();
     var clean = sanitize(event, props);
     if (!clean) return false;
-    if (consentState() === CONSENT_DENIED) return false;
+    if (consentState() !== CONSENT_GRANTED) return false;
     var sessionId = ensureSession();
+    if (!state.install_id) {
+      state.install_id = uuid();
+      persist();
+    }
+    if (!sessionId || !state.install_id) return false;
     if (!acceptUnique(event, clean)) return false;
     clean.session_id = sessionId;
     clean.install_id = state.install_id;
     clean.app_version = APP_VERSION;
-    if (state.account_distinct_id) clean.account_linked = true;
+    var cfgNow = config();
+    var envName = sanitizeEnvironment(clean.environment || cfgNow.environment);
+    if (envName) clean.environment = envName;
+    var runId = sanitizeTestRunId(clean.test_run_id || cfgNow.testRunId);
+    if (runId) clean.test_run_id = runId;
     var item = {
       event: event,
-      distinct_id: state.account_distinct_id || state.install_id,
+      distinct_id: state.install_id,
       properties: clean,
       timestamp: new Date(now()).toISOString()
     };
+    if (!hasDestination()) return true;
     enqueue(item);
     persist();
-    if (consentState() === CONSENT_GRANTED) scheduleFlush();
+    scheduleFlush();
     return true;
   }
 
@@ -330,12 +370,12 @@
   function setConsent(granted) {
     ensureLoaded();
     state.consent = granted ? CONSENT_GRANTED : CONSENT_DENIED;
-    if (!granted) {
-      state.queue = [];
-      state.account_distinct_id = '';
-    }
+    state.queue = [];
+    state.account_distinct_id = '';
     persist();
     if (granted) {
+      if (!state.install_id) state.install_id = uuid();
+      persist();
       ensureSession();
       captureAppOpen();
       scheduleFlush();
@@ -343,13 +383,11 @@
   }
 
   function identifyAccount(userId, cb) {
-    ensureLoaded();
-    opaqueAccountId(userId, function (opaque) {
-      state.account_distinct_id = opaque || '';
-      persist();
-      if (cb) cb(opaque || null);
-    });
+    // MVP: no account linkage.
+    if (cb) cb(null);
+    return null;
   }
+
 
   function clearAccount() {
     ensureLoaded();
@@ -359,17 +397,10 @@
 
   function notifyLoginSuccess(opts) {
     opts = opts || {};
-    if (consentState() === CONSENT_DENIED) return false;
-    function fire() {
-      var props = {};
-      if (typeof opts.keyApplied === 'boolean') props.key_applied = opts.keyApplied;
-      return track('login_success', props);
-    }
-    if (opts.userId) {
-      identifyAccount(opts.userId, function () { fire(); });
-      return consentState() !== CONSENT_DENIED;
-    }
-    return fire();
+    if (consentState() !== CONSENT_GRANTED) return false;
+    var props = {};
+    if (typeof opts.keyApplied === 'boolean') props.key_applied = opts.keyApplied;
+    return track('login_success', props);
   }
 
   function notifyGenerationStart(generationId, opts) {
@@ -421,10 +452,12 @@
     for (k in item.properties) {
       if (Object.prototype.hasOwnProperty.call(item.properties, k)) props[k] = item.properties[k];
     }
+    if (!ALLOWED_INGEST_HOSTS[cfg.host]) { cb(false); return; }
+    // Official anonymous capture: https://posthog.com/docs/api/capture
+    // The ingest host still sees the TCP/TLS client IP; $ip is omitted.
     props.$lib = LIB_NAME;
     props.$lib_version = LIB_VERSION;
     props.$geoip_disable = true;
-    props.$ip = null;
     props.$process_person_profile = false;
     var body = JSON.stringify({
       api_key: cfg.projectKey,
@@ -452,11 +485,19 @@
 
   function flush() {
     if (!isEnabled() || !hasDestination()) return;
+    if (flushing) return;
+    flushing = true;
     function next() {
-      if (!state.queue || !state.queue.length) return;
+      if (!state.queue || !state.queue.length) {
+        flushing = false;
+        return;
+      }
       var item = state.queue[0];
       deliver(item, function (ok) {
-        if (!ok) return;
+        if (!ok) {
+          flushing = false;
+          return;
+        }
         if (state.queue[0] === item) state.queue.shift();
         else {
           var idx = state.queue.indexOf(item);
@@ -474,8 +515,10 @@
     if (deps.appVersion) APP_VERSION = String(deps.appVersion);
     if (!booted) loadState();
     booted = true;
-    ensureSession();
-    captureAppOpen();
+    if (consentState() === CONSENT_GRANTED) {
+      ensureSession();
+      captureAppOpen();
+    }
     return api;
   }
 
@@ -499,7 +542,16 @@
     QUEUE_MAX: QUEUE_MAX,
     sanitize: sanitize,
     normalizeErrorCode: normalizeErrorCode,
-    opaqueAccountId: opaqueAccountId,
+    isFinalGenerationFailure: function (code) {
+      return !!FINAL_FAILURE[normalizeErrorCode(code)];
+    },
+    sanitizeEnvironment: sanitizeEnvironment,
+    sanitizeTestRunId: sanitizeTestRunId,
+    publicProjectKey: publicProjectKey,
+    sanitizeModel: function (value) {
+      var text = String(value || '').trim();
+      return MODEL_ID_RE.test(text) ? text : null;
+    },
     boot: boot,
     track: track,
     captureAppOpen: captureAppOpen,
@@ -521,6 +573,8 @@
         last_activity: 0, app_open_session: '', queue: [], generation_seen: {},
         account_distinct_id: '', login_success_token: '' };
       booted = false;
+      flushing = false;
+      flushTimer = null;
       deps = {};
       try { storage().removeItem(LS_STATE); } catch (e) { /* ignore */ }
       if (options) boot(options);

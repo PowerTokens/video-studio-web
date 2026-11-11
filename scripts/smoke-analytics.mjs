@@ -97,14 +97,30 @@ assert.ok(!blob.includes('Ada'));
 assert.strictEqual(A.sanitize('chat_user_message', { len_bucket: 'short' }), null);
 assert.strictEqual(A.sanitize('$pageview', {}), null);
 assert.equal(A.sanitize('generation_failed', { generation_id: 'g', error_code: 'HTTP 401: sk-secret' }).error_code, 'UNKNOWN');
+assert.equal(A.sanitizeModel('wan3.0-video'), 'wan3.0-video');
+assert.equal(A.sanitize('generation_start', { generation_id: 'g', model: 'please generate a cat in a hat', surface: 'generate' }).model, undefined);
+assert.ok(A.isFinalGenerationFailure('FAILED'));
+assert.ok(!A.isFinalGenerationFailure('TIMEOUT'));
+assert.ok(!A.isFinalGenerationFailure('PAUSED'));
+assert.equal(A.sanitizeEnvironment('synthetic'), 'synthetic');
+assert.equal(A.sanitizeEnvironment('please generate a cat'), null);
+assert.equal(A.sanitizeTestRunId('syn-ok-1'), 'syn-ok-1');
+assert.equal(A.sanitizeTestRunId('not a run id'), null);
+assert.equal(A.publicProjectKey('phx_personal'), '');
+assert.ok(A.publicProjectKey('phc_testkey1'));
+assert.equal(A.sanitize('app_open', { environment: 'please generate a cat', test_run_id: 'ok-run_1' }).environment, undefined);
+assert.equal(A.sanitize('app_open', { environment: 'synthetic', test_run_id: 'ok-run_1' }).environment, 'synthetic');
 
-// --- consent unset holds events ---
+
+// --- consent unset does not queue or mint identifiers ---
 A.captureAppOpen();
 assert.equal(sent.length, 0);
-assert.equal(A.pending().length, 1);
+assert.equal(A.pending().length, 0);
 A.setConsent(true);
 A.flush();
 assert.equal(sent.filter((x) => x.event === 'app_open').length, 1);
+assert.ok(sent[0].distinct_id);
+assert.ok(!String(sent[0].distinct_id).startsWith('ptu_'));
 
 // --- app_open once per session; tab resume does not retrigger ---
 const before = sent.length;
@@ -135,12 +151,17 @@ assert.deepEqual(genEvents, ['generation_start', 'generation_success']);
 
 // --- opt-out drops queue and further tracks ---
 const isolated = load();
-isolated.A.captureAppOpen();
-assert.ok(isolated.A.pending().length > 0);
+assert.equal(isolated.A.captureAppOpen(), false);
+assert.deepEqual(isolated.A.pending(), []);
+isolated.A.setConsent(true);
+isolated.A.flush();
+isolated.sent.length = 0;
+isolated.A.notifyGenerationStart('gx', { model: 'kling-v3' });
+isolated.A.flush();
+assert.ok(isolated.sent.length > 0);
 isolated.A.setConsent(false);
 assert.deepEqual(isolated.A.pending(), []);
 assert.equal(isolated.A.notifyLoginSuccess({ userId: 'usr_1' }), false);
-assert.equal(isolated.sent.length, 0);
 
 // --- transport failure fails open (queue kept) ---
 const failing = load();
@@ -178,9 +199,8 @@ empty.A.resetForTests({
 // After resetForTests with no transport, set a sandbox fetch trap via boot options only.
 // Directly call flush with empty config.
 empty.A.setConsent(true);
-const pendingBefore = empty.A.pending().length;
 empty.A.flush();
-assert.ok(empty.A.pending().length >= pendingBefore || empty.A.pending().length >= 1);
+assert.deepEqual(empty.A.pending(), []);
 
 // --- chat events do not enter PostHog queue even via track() ---
 const beforeChat = sent.length;
@@ -191,15 +211,14 @@ assert.equal(sent.length, beforeChat);
 const login = load();
 login.A.setConsent(true);
 login.sent.length = 0;
-login.A.notifyLoginSuccess({ userId: 'usr_99', keyApplied: true });
-// hashing may be async
-await new Promise((r) => setTimeout(r, 20));
+assert.equal(login.A.notifyLoginSuccess({ userId: 'usr_99', keyApplied: true }), true);
 login.A.flush();
 assert.ok(login.sent.some((x) => x.event === 'login_success'));
 const loginBlob = payloadBlob(login.sent);
 assert.ok(!loginBlob.includes('usr_99'));
 assert.ok(!loginBlob.includes('email'));
-assert.ok(login.sent[login.sent.length - 1].distinct_id.startsWith('ptu_'));
+assert.ok(!login.sent[login.sent.length - 1].distinct_id.startsWith('ptu_'));
+assert.ok(!loginBlob.includes('account_linked'));
 
 // --- config names exist and default key is empty ---
 const cfg = load();
@@ -213,5 +232,52 @@ assert.ok(configSrc.includes("posthogProjectKey: existing.posthogProjectKey || '
 A.notifyVideoDownload({ model: 'wan3.0-video', surface: 'generate' });
 A.flush();
 assert.ok(sent.some((x) => x.event === 'video_download'));
+
+
+// --- official capture flags on the HTTP body (no live ingest) ---
+{
+  const store = {};
+  const posts = [];
+  const sandbox = {
+    window: {},
+    globalThis: null,
+    localStorage: {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    },
+    crypto: {
+      getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = (i * 19 + 7) & 255; return a; },
+    },
+    Date, Math, JSON, Uint8Array, Promise, setTimeout, console,
+    fetch: async (url, opts) => {
+      posts.push({ url, body: JSON.parse(opts.body) });
+      return { ok: true, status: 200, json: async () => ({ status: 1 }) };
+    },
+  };
+  sandbox.globalThis = sandbox;
+  sandbox.window = sandbox;
+  sandbox.VS_POSTHOG_PROJECT_KEY = 'phc_testkey1';
+  sandbox.VS_POSTHOG_HOST = 'https://us.i.posthog.com';
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8'), sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics.js'), 'utf8'), sandbox);
+  const B = sandbox.VSAnalytics;
+  B.resetForTests({
+    now: () => 1_700_000_000_000,
+    storage: sandbox.localStorage,
+    setTimeout: (fn) => { fn(); return 0; },
+    appVersion: 'web-1.15',
+  });
+  B.setConsent(true);
+  B.flush();
+  assert.ok(posts.length >= 1);
+  const body = posts[0].body;
+  assert.equal(posts[0].url, 'https://us.i.posthog.com/i/v0/e/');
+  assert.equal(body.event, 'app_open');
+  assert.strictEqual(body.properties.$process_person_profile, false);
+  assert.strictEqual(body.properties.$geoip_disable, true);
+  assert.ok(!Object.prototype.hasOwnProperty.call(body.properties, '$ip'));
+}
 
 console.log('smoke-analytics: ok');

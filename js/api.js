@@ -400,7 +400,11 @@
     try {
       if (!root.VSAnalytics || !rec) return;
       var ok = rec.state === 'done';
-      var fail = { rejected: 1, failed: 1, timeout: 1, query_down: 1, ready_no_url: 1, uncertain: 1, stopped: 1 };
+      // Only irreversible outcomes close the funnel. timeout / stopped /
+      // query_down / ready_no_url can be resumed and must not consume the
+      // terminal slot. 'uncertain' after a reload is also resumable-ish; a
+      // brand-new submit that was rejected is state 'rejected'.
+      var fail = { rejected: 1, failed: 1 };
       if (!ok && !fail[rec.state]) return;
       var started = genStartedAt[rec.local_id] || rec.created || Date.now();
       root.VSAnalytics.notifyGenerationFinish(rec.local_id, ok, {
