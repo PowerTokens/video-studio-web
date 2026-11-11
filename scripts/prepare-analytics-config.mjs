@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
- * Write untracked js/analytics-config.local.js from env or a dotenv file.
+ * Write PostHog project settings from env or a dotenv file.
  * Only a public project capture key (phc_...) is accepted. Never prints secrets.
+ *
+ * Default --out is js/analytics-config.local.js (local overlay).
+ * --format committed writes the shipped js/analytics-config.js shape; used at
+ * GitHub Pages deploy time to inject secrets without committing them.
  */
 import fs from 'fs';
 import path from 'path';
@@ -34,11 +38,17 @@ function readDotenv(file) {
 const args = process.argv.slice(2);
 let envFile = '';
 let allowEmpty = false;
+let format = 'local';
 let out = path.join(root, 'js', 'analytics-config.local.js');
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--from-env-file') envFile = args[++i];
   else if (args[i] === '--allow-empty') allowEmpty = true;
   else if (args[i] === '--out') out = args[++i];
+  else if (args[i] === '--format') format = args[++i];
+}
+if (format !== 'local' && format !== 'committed') {
+  console.error('prepare-analytics-config: --format must be local or committed');
+  process.exit(2);
 }
 const fileVals = readDotenv(envFile);
 const rawCandidates = [
@@ -62,7 +72,29 @@ if (!key) {
   console.error('prepare-analytics-config: no public project key provided');
   process.exit(1);
 }
-const body = `/**
+let body;
+if (format === 'committed') {
+  body = `/**
+ * PostHog project settings for Video Studio web.
+ *
+ * posthogProjectKey is the public project capture token (phc_...), which is
+ * safe to ship in the static client. It is not a personal or admin key.
+ * An empty or rejected key means no events are sent.
+ *
+ * Written at deploy time from repository secrets; do not commit a real key.
+ */
+(function (root) {
+  'use strict';
+  var existing = root.VS_ANALYTICS_CONFIG || {};
+  root.VS_ANALYTICS_CONFIG = {
+    posthogProjectKey: existing.posthogProjectKey || ${JSON.stringify(key)},
+    posthogHost: existing.posthogHost || ${JSON.stringify(host)},
+    environment: existing.environment || 'production'
+  };
+})(typeof globalThis !== 'undefined' ? globalThis : window);
+`;
+} else {
+  body = `/**
  * Generated local PostHog project (public capture) settings. Do not commit.
  * Load this file after js/analytics-config.js in a private/local page only.
  * Personal or admin API keys must never be placed here.
@@ -77,5 +109,6 @@ const body = `/**
   root.VS_POSTHOG_HOST = root.VS_ANALYTICS_CONFIG.posthogHost;
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 `;
+}
 fs.writeFileSync(out, body, { mode: 0o600 });
 console.log(`prepare-analytics-config: wrote ${path.basename(out)} (key=phc_… len=${key.length}, host=${host})`);
