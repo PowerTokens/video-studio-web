@@ -1,6 +1,8 @@
 /**
  * Desktop download jump: persist inbound UTM (same TRACK_KEYS as utm.js),
- * fill product defaults, then navigate to the latest EXE (no UTM on GitHub URL).
+ * fill product defaults, then (Windows only) navigate to the latest EXE.
+ * Mac and other systems stay on this page so the Beta / Gatekeeper notes remain visible.
+ * Do not put UTM on the GitHub binary URL.
  */
 (function () {
   'use strict';
@@ -8,6 +10,24 @@
   var EXE =
     'https://github.com/PowerTokens/video-studio/releases/latest/download/PowerTokensVideoStudio.exe';
   var CONTENT = (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.download) || 'web.download_jump';
+
+  function navInfo() {
+    var nav = window.navigator || {};
+    return { ua: nav.userAgent || '', platform: nav.platform || '' };
+  }
+
+  function isIos(info) {
+    return /iPhone|iPad|iPod/.test(info.ua);
+  }
+
+  function isMac(info) {
+    if (isIos(info)) return false;
+    return /Mac/.test(info.platform) || /Macintosh/.test(info.ua);
+  }
+
+  function isWindows(info) {
+    return /Win/.test(info.platform) || /Windows/.test(info.ua);
+  }
 
   function applyDefaults() {
     var U = window.VSUtm;
@@ -33,6 +53,15 @@
   }
 
   try { applyDefaults(); } catch (e) { /* ignore */ }
+
+  var info = navInfo();
+  var body = document && document.body;
+  if (body) {
+    if (isMac(info)) body.className += (body.className ? ' ' : '') + 'is-mac';
+    else if (isWindows(info)) body.className += (body.className ? ' ' : '') + 'is-windows';
+  }
+
+  if (!isWindows(info)) return;
 
   function trackDownloadThenJump() {
     try {
