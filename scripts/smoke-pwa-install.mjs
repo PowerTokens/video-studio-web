@@ -79,8 +79,9 @@ check('index wires manifest, apple-touch-icon, markup, script', () => {
 check('copy does not promise offline / forever', () => {
   const blobs = [zh, en, html, manifest.description].join('\n');
   assert.ok(!/离线可用|完全离线|use offline|works offline|use forever|永久可用/i.test(blobs));
-  assert.ok(zh.includes('仍需联网') || zh.includes('需联网'));
-  assert.ok(en.includes('internet connection'));
+  assert.ok(!html.includes('pwa-install-sheet-foot'));
+  assert.ok(!/pwa_(ios_foot|ios_other_foot|android_menu_foot):/.test(zh));
+  assert.ok(!/pwa_(ios_foot|ios_other_foot|android_menu_foot):/.test(en));
   assert.ok(zh.includes('网页无法直接弹出系统安装框'));
   assert.ok(en.includes('cannot open the system install prompt'));
 });
