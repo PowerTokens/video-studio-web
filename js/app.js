@@ -282,8 +282,16 @@
   }
 
   function setLang(code, persist) {
+    var prev = lang;
     lang = I.has(code) ? code : 'en';
     if (persist) A.store.set('lang', lang);
+    if (persist && lang && lang !== prev) {
+      try {
+        if (window.VSAnalytics && window.VSAnalytics.notifyLanguageSet) {
+          window.VSAnalytics.notifyLanguageSet(lang);
+        }
+      } catch (eLang) { /* ignore */ }
+    }
     applyStatic();
     if (window.VSChatPilot && window.VSChatPilot.refreshUi) {
       try { window.VSChatPilot.refreshUi(); } catch (eRefresh) { /* ignore */ }
@@ -358,7 +366,12 @@
       history.replaceState(null, '', location.pathname + location.search + (name === 'chat' ? '' : '#' + name));
     }
     window.scrollTo(0, 0);
-    if (name === 'chat' && window.VSChatPilot && window.VSChatPilot.onShow) {
+
+    try {
+      if (window.VSAnalytics && window.VSAnalytics.notifySurfaceOpen) {
+        window.VSAnalytics.notifySurfaceOpen(name);
+      }
+    } catch (eSurf) { /* ignore */ }    if (name === 'chat' && window.VSChatPilot && window.VSChatPilot.onShow) {
       try { window.VSChatPilot.onShow(); } catch (eChat) { /* ignore */ }
     }
   }
@@ -550,12 +563,22 @@
     try {
       k = A.parseKey(raw);
     } catch (e) {
+      try {
+        if (window.VSAnalytics && window.VSAnalytics.notifyKeyVerifyFailed) {
+          window.VSAnalytics.notifyKeyVerifyFailed({ errorCode: 'VALIDATION' });
+        }
+      } catch (eK0) { /* ignore */ }
       return Promise.resolve(fail(t('key_invalid_chars')));
     }
     if (errEl) show(errEl, false);
     setBusy(true);
     return A.verifyKey(k).then(function (result) {
       if (!result || !result.ok) {
+        try {
+          if (window.VSAnalytics && window.VSAnalytics.notifyKeyVerifyFailed) {
+            window.VSAnalytics.notifyKeyVerifyFailed({ errorCode: (result && result.kind) || 'UNKNOWN' });
+          }
+        } catch (eK1) { /* ignore */ }
         // Do not persist a rejected key; leave the pool / active key alone.
         if (result && result.kind === 'AUTH') {
           // If this exact key was already active, mark the badge red.
@@ -569,6 +592,11 @@
       A.saveKey(k);
       A.store.remove('key_block');
       A.store.set('key_saved_at', Date.now());
+      try {
+        if (window.VSAnalytics && window.VSAnalytics.notifyKeyVerified) {
+          window.VSAnalytics.notifyKeyVerified();
+        }
+      } catch (eK2) { /* ignore */ }
       if (inputEl) inputEl.value = '';
       if (errEl) show(errEl, false);
       setBusy(false);
@@ -579,6 +607,11 @@
       if (opts.onSuccess) opts.onSuccess(k);
       return true;
     }, function () {
+      try {
+        if (window.VSAnalytics && window.VSAnalytics.notifyKeyVerifyFailed) {
+          window.VSAnalytics.notifyKeyVerifyFailed({ errorCode: 'NETWORK' });
+        }
+      } catch (eK3) { /* ignore */ }
       return fail(t('err_network'));
     });
   }
@@ -695,6 +728,9 @@
   function doOauthLogout() {
     if (!O || !O.logout) return;
     setOauthBusy(true);
+    try {
+      if (window.VSAnalytics && window.VSAnalytics.notifyLogout) window.VSAnalytics.notifyLogout();
+    } catch (eLo) { /* ignore */ }
     O.logout().then(function () {
       setOauthBusy(false);
       // Keep API keys in the pool; only clear OAuth session / display credits from profile.
@@ -719,6 +755,24 @@
     setTab('account', true);
   }
 
+  function bindBillingAndDownload() {
+    var chip = $('billing-chip');
+    if (chip && !chip._vswBillingBound) {
+      chip._vswBillingBound = true;
+      chip.addEventListener('click', function () { notifyBillingClick('credits_chip'); });
+    }
+    var cta = $('desktop-download-btn');
+    if (cta && !cta._vswDlBound) {
+      cta._vswDlBound = true;
+      cta.addEventListener('click', function () { notifyDesktopDownloadClick('cta'); });
+    }
+    var releases = $('desktop-releases-link');
+    if (releases && !releases._vswDlBound) {
+      releases._vswDlBound = true;
+      releases.addEventListener('click', function () { notifyDesktopDownloadClick('releases'); });
+    }
+  }
+
   function bindOauth() {
     if (!O) return;
     var headerLogin = $('header-oauth-login');
@@ -735,7 +789,7 @@
   function maybeHandleOauthQuery() {
     if (!O || !O.handleCallback) return Promise.resolve(false);
     var params = new URLSearchParams(location.search || '');
-    if (!params.get('code') || !params.get('state')) return Promise.resolve(false);
+    if (!params.get('code') && !params.get('error')) return Promise.resolve(false);
     setOauthBusy(true);
     return O.handleCallback(location.search).then(function (result) {
       setOauthBusy(false);
@@ -1037,6 +1091,22 @@
     }
   }
 
+  function notifyBillingClick(source) {
+    try {
+      if (window.VSAnalytics && window.VSAnalytics.notifyBillingClick) {
+        window.VSAnalytics.notifyBillingClick(source);
+      }
+    } catch (eBill) { /* ignore */ }
+  }
+
+  function notifyDesktopDownloadClick(source) {
+    try {
+      if (window.VSAnalytics && window.VSAnalytics.notifyDesktopDownloadClick) {
+        window.VSAnalytics.notifyDesktopDownloadClick(source);
+      }
+    } catch (eDl) { /* ignore */ }
+  }
+
   function focusBillingChip() {
     var chip = $('billing-chip');
     if (!chip) return;
@@ -1303,11 +1373,11 @@
     if (insuff) {
       insuff.addEventListener('click', function (e) {
         e.preventDefault();
+        notifyBillingClick('quota');
         focusBillingChip();
         var chip = $('billing-chip');
         if (chip && chip.href) {
-          // Keep existing billing fallback tab; user already asked not to build in-app checkout yet.
-          try { chip.click(); } catch (err) { /* ignore */ }
+          try { window.open(chip.href, '_blank', 'noopener'); } catch (err) { /* ignore */ }
         }
       });
     }
@@ -1559,6 +1629,7 @@
       top.href = buildBillingOutbound(t('billing_url'), (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.billing) || 'web.billing');
       top.target = '_blank';
       top.rel = 'noopener';
+      top.addEventListener('click', function () { notifyBillingClick('quota'); });
       card.appendChild(top);
     }
     if (rec.state === 'stopped') card.appendChild(el('p', 'muted small', t('stopped_note')));
@@ -1880,6 +1951,7 @@
       bindAnalyticsUi();
       bindKey();
       bindOauth();
+      bindBillingAndDownload();
       bindNokeyAdvanced();
       bindGen();
       bindTasks();
@@ -1930,9 +2002,6 @@
         window.VSAnalytics.boot({ appVersion: 'web-1.17' });
         refreshAnalyticsUi();
       }
-      document.addEventListener('visibilitychange', function () {
-        try { if (window.VSAnalytics && window.VSAnalytics.touchActivity) window.VSAnalytics.touchActivity(); } catch (e) { /* ignore */ }
-      });
       setInterval(tick, 1000);
     } catch (err) {
       try { if (window.console && console.error) console.error('Video Studio boot failed', err); } catch (e) { /* ignore */ }

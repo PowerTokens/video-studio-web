@@ -34,10 +34,24 @@
 
   try { applyDefaults(); } catch (e) { /* ignore */ }
 
-  // Prefer replace so Back does not bounce through the interstitial.
-  try {
-    window.location.replace(EXE);
-  } catch (e2) {
-    window.location.href = EXE;
+  function trackDownloadThenJump() {
+    try {
+      var A = window.VSAnalytics;
+      if (A && typeof A.boot === 'function') {
+        A.boot({ appVersion: 'web-1.17', page: 'download' });
+        if (A.consentState && A.consentState() === A.CONSENT_GRANTED) {
+          if (A.notifyDesktopDownloadClick) A.notifyDesktopDownloadClick('redirect');
+          if (A.flush) A.flush({ unload: true });
+        }
+      }
+    } catch (eTrack) { /* never block the download */ }
+    try {
+      window.location.replace(EXE);
+    } catch (e2) {
+      window.location.href = EXE;
+    }
   }
+
+  // Prefer replace so Back does not bounce through the interstitial.
+  trackDownloadThenJump();
 })();

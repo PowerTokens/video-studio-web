@@ -243,13 +243,14 @@ assert.ok(!loginBlob.includes('email'));
 assert.ok(!login.sent[login.sent.length - 1].distinct_id.startsWith('ptu_'));
 assert.ok(!loginBlob.includes('account_linked'));
 
-// --- config names exist and shipped key is a public phc_ token ---
+// --- config names exist and the committed project key stays empty ---
 const cfg = load();
 assert.equal(cfg.A.consentState() === 'unset' || true, true);
 const configSrc = fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8');
 assert.ok(configSrc.includes('posthogProjectKey'));
 assert.ok(configSrc.includes('posthogHost'));
-assert.ok(/posthogProjectKey:\s*existing\.posthogProjectKey \|\| "phc_[A-Za-z0-9_-]{4,}"/.test(configSrc));
+assert.ok(/posthogProjectKey:\s*existing\.posthogProjectKey \|\| ""/.test(configSrc));
+assert.ok(!/posthogProjectKey:[^\n]*phc_[A-Za-z0-9_-]{4,}/.test(configSrc));
 assert.ok(!configSrc.includes('phx_'));
 
 // --- video_download allowlisted ---
@@ -331,7 +332,6 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
   assert.ok(!JSON.stringify(sent).includes('please generate'));
   assert.equal(A.sanitize('chat_user_message', { len_bucket: 'short', prompt: 'hi' }), null);
   assert.equal(A.sanitize('share_published', { platform: 'twitter' }), null);
-  assert.equal(A.sanitize('pwa_install_accepted', {}), null);
   const dirty = A.sanitize('chat_submit', { chat_id: 'c3', prompt: 'secret prompt text', message: 'hello', surface: 'chat' });
   assert.ok(dirty);
   assert.ok(!('prompt' in dirty));
@@ -382,6 +382,305 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
   const before = sent.filter((x) => x.event === 'pwa_standalone_launch').length;
   S.captureAppOpen();
   assert.equal(sent.filter((x) => x.event === 'pwa_standalone_launch').length, before);
+}
+
+// --- A2HS offer / click / accepted allowlist and dedupe ---
+{
+  const { A, sent } = load();
+  A.setConsent(true);
+  A.flush();
+  sent.length = 0;
+
+  const accepted = A.sanitize('pwa_install_accepted', {});
+  assert.ok(accepted);
+  assert.equal(accepted.platform, 'web');
+
+  const click = A.sanitize('pwa_install_click', { cta_kind: 'native-prompt', prompt: 'secret', message: 'hi' });
+  assert.equal(click.cta_kind, 'native-prompt');
+  assert.ok(!('prompt' in click));
+  assert.ok(!('message' in click));
+  assert.equal(A.sanitize('pwa_install_click', { cta_kind: 'ios-safari-sheet' }).cta_kind, 'ios-safari-sheet');
+  assert.equal(A.sanitize('pwa_install_click', { cta_kind: 'ios-other-sheet' }).cta_kind, 'ios-other-sheet');
+  assert.equal(A.sanitize('pwa_install_click', { cta_kind: 'android-menu-sheet' }).cta_kind, 'android-menu-sheet');
+  assert.equal(A.sanitize('pwa_install_click', { cta_kind: 'none' }).cta_kind, 'none');
+  assert.ok(!('cta_kind' in A.sanitize('pwa_install_click', { cta_kind: 'please-install-now' })));
+  assert.equal(A.sanitize('pwa_install_completed', {}), null);
+
+  assert.equal(A.track('pwa_offer_shown', {}), true);
+  assert.equal(A.track('pwa_offer_shown', {}), false);
+  assert.equal(A.track('pwa_offer_dismissed', {}), true);
+  assert.equal(A.track('pwa_install_prompt_dismissed', {}), true);
+  assert.equal(A.track('pwa_install_accepted', {}), true);
+  assert.equal(A.track('pwa_install_accepted', {}), false);
+  A.flush();
+  const names = sent.map((x) => x.event);
+  assert.equal(names.filter((n) => n === 'pwa_offer_shown').length, 1);
+  assert.equal(names.filter((n) => n === 'pwa_install_accepted').length, 1);
+  assert.ok(names.includes('pwa_offer_dismissed'));
+  assert.ok(names.includes('pwa_install_prompt_dismissed'));
+}
+
+
+// --- session_end duration vs active, dedupe, idle vs hide ---
+{
+  const store = {};
+  const sent = [];
+  let clock = 1_700_000_000_000;
+  let visible = true;
+  const sandbox = {
+    window: {},
+    globalThis: null,
+    localStorage: {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    },
+    crypto: { getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = (i * 19 + 7) & 255; return a; } },
+    Date, Math, JSON, Uint8Array, Promise, setTimeout, console,
+    document: { visibilityState: 'visible', hidden: false, addEventListener() {} },
+    addEventListener() {},
+    navigator: {},
+  };
+  sandbox.globalThis = sandbox;
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8'), sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics.js'), 'utf8'), sandbox);
+  const S = sandbox.VSAnalytics;
+  S.resetForTests({
+    now: () => clock,
+    storage: sandbox.localStorage,
+    transport: (item) => sent.push(item),
+    setTimeout: (fn) => { fn(); return 0; },
+    appVersion: 'web-1.17',
+    isVisible: () => visible,
+  });
+  S.setConsent(true);
+  S.flush();
+  sent.length = 0;
+  clock += 5000;
+  visible = false;
+  sandbox.document.visibilityState = 'hidden';
+  sandbox.document.hidden = true;
+  S.handleHidden();
+  clock += 2000;
+  visible = true;
+  sandbox.document.visibilityState = 'visible';
+  sandbox.document.hidden = false;
+  S.handleVisible();
+  clock += 3000;
+  S.handlePageLeaving(false);
+  S.flush();
+  const ended = sent.filter((x) => x.event === 'session_end');
+  assert.equal(ended.length, 1);
+  assert.equal(ended[0].properties.duration_ms, 10000);
+  assert.equal(ended[0].properties.active_ms, 8000);
+  const before = sent.filter((x) => x.event === 'session_end').length;
+  S.handlePageLeaving(false);
+  S.flush();
+  assert.equal(sent.filter((x) => x.event === 'session_end').length, before);
+  // cap
+  assert.equal(S.sanitize('session_end', { duration_ms: 50_000_000, active_ms: -3 }).duration_ms, S.SESSION_MAX_MS);
+  assert.ok(!('active_ms' in S.sanitize('session_end', { duration_ms: 10, active_ms: -3 })));
+}
+
+// hide and return within idle: no session_end, no second app_open
+{
+  const store = {};
+  const sent = [];
+  let clock = 1_700_000_000_000;
+  let visible = true;
+  const sandbox = {
+    window: {}, globalThis: null,
+    localStorage: {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    },
+    crypto: { getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = (i * 19 + 7) & 255; return a; } },
+    Date, Math, JSON, Uint8Array, Promise, setTimeout, console,
+    document: { visibilityState: 'visible', hidden: false, addEventListener() {} },
+    addEventListener() {},
+    navigator: {},
+  };
+  sandbox.globalThis = sandbox;
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8'), sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics.js'), 'utf8'), sandbox);
+  const S = sandbox.VSAnalytics;
+  S.resetForTests({
+    now: () => clock,
+    storage: sandbox.localStorage,
+    transport: (item) => sent.push(item),
+    setTimeout: (fn) => { fn(); return 0; },
+    appVersion: 'web-1.17',
+    isVisible: () => visible,
+  });
+  S.setConsent(true);
+  S.flush();
+  const opens = () => sent.filter((x) => x.event === 'app_open').length;
+  const ends = () => sent.filter((x) => x.event === 'session_end').length;
+  assert.equal(opens(), 1);
+  visible = false;
+  S.handleHidden();
+  clock += 60 * 1000;
+  visible = true;
+  S.handleVisible();
+  S.flush();
+  assert.equal(ends(), 0);
+  assert.equal(opens(), 1);
+  // idle then return: end previous, then a new open
+  visible = false;
+  S.handleHidden();
+  clock += 31 * 60 * 1000;
+  visible = true;
+  S.handleVisible();
+  S.flush();
+  assert.equal(ends(), 1);
+  assert.equal(opens(), 2);
+}
+
+// crash recovery: unterminated session ends on next boot before app_open
+{
+  const store = {};
+  const sent = [];
+  let clock = 1_700_000_000_000;
+  const storage = {
+    getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; },
+  };
+  function bootClient(sentArr, { reset } = {}) {
+    const sandbox = {
+      window: {}, globalThis: null, localStorage: storage,
+      crypto: { getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = (i * 11 + 3) & 255; return a; } },
+      Date, Math, JSON, Uint8Array, Promise, setTimeout, console,
+      document: { visibilityState: 'visible', hidden: false, addEventListener() {} },
+      addEventListener() {},
+      navigator: {},
+    };
+    sandbox.globalThis = sandbox;
+    sandbox.window = sandbox;
+    vm.createContext(sandbox);
+    vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8'), sandbox);
+    vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics.js'), 'utf8'), sandbox);
+    const S = sandbox.VSAnalytics;
+    if (reset) {
+      S.resetForTests({
+        now: () => clock, storage, transport: (item) => sentArr.push(item),
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.17', isVisible: () => true,
+      });
+    } else {
+      S.boot({
+        now: () => clock, storage, transport: (item) => sentArr.push(item),
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.17', isVisible: () => true,
+      });
+    }
+    return S;
+  }
+  const firstSent = [];
+  const first = bootClient(firstSent, { reset: true });
+  first.setConsent(true);
+  first.flush();
+  clock += 4000;
+  first.track('chat_submit', { chat_id: 'c-crash', surface: 'chat' });
+  first.flush();
+  const secondSent = [];
+  bootClient(secondSent, { reset: false });
+  const names = secondSent.map((x) => x.event);
+  assert.ok(names.includes('session_end'), 'crash recovery should end the previous session');
+  assert.ok(names.includes('app_open'));
+  assert.ok(names.indexOf('session_end') < names.indexOf('app_open'));
+  const end = secondSent.find((x) => x.event === 'session_end');
+  assert.equal(end.properties.duration_ms, 4000);
+}
+
+// --- login start vs success, billing is not payment, download click ---
+{
+  const { A, sent } = load();
+  A.setConsent(true);
+  A.flush();
+  sent.length = 0;
+  assert.equal(A.notifyLoginStart(), true);
+  assert.equal(A.notifyLoginSuccess({ keyApplied: true }), true);
+  assert.equal(A.notifyLoginFailed({ errorCode: 'access_denied: user cancelled with token abc' }), true);
+  assert.equal(A.notifyLogout(), true);
+  A.flush();
+  const names = sent.map((x) => x.event);
+  assert.ok(names.includes('login_start'));
+  assert.ok(names.includes('login_success'));
+  const failed = sent.find((x) => x.event === 'login_failed');
+  assert.equal(failed.properties.error_code, 'UNKNOWN');
+  assert.ok(!JSON.stringify(sent).includes('token abc'));
+  assert.ok(names.includes('logout'));
+
+  sent.length = 0;
+  assert.equal(A.notifyBillingClick('credits_chip'), true);
+  assert.equal(A.notifyBillingClick('quota'), true);
+  assert.equal(A.sanitize('payment_completed', { amount: 12 }), null);
+  A.flush();
+  assert.ok(sent.every((x) => x.event === 'billing_click'));
+  assert.equal(sent[0].properties.source, 'credits_chip');
+  assert.ok(!JSON.stringify(sent).includes('payment'));
+
+  sent.length = 0;
+  assert.equal(A.notifyDesktopDownloadClick('cta'), true);
+  assert.equal(A.notifyDesktopDownloadClick('releases'), true);
+  assert.equal(A.notifyDesktopDownloadClick('redirect'), true);
+  assert.ok(!('source' in A.sanitize('desktop_download_click', { source: 'installed' })));
+  A.flush();
+  assert.equal(sent.filter((x) => x.event === 'desktop_download_click').length, 3);
+}
+
+// --- surface_open once per session, key verify leaks nothing, language, input_mode ---
+{
+  const { A, sent } = load();
+  A.setConsent(true);
+  A.flush();
+  sent.length = 0;
+  assert.equal(A.notifySurfaceOpen('chat'), true);
+  assert.equal(A.notifySurfaceOpen('chat'), false);
+  assert.equal(A.notifySurfaceOpen('generate'), true);
+  assert.equal(A.notifySurfaceOpen('tasks'), true);
+  assert.equal(A.notifySurfaceOpen('account'), true);
+  assert.equal(A.notifySurfaceOpen('settings'), false);
+  A.flush();
+  assert.equal(sent.filter((x) => x.event === 'surface_open').length, 4);
+
+  sent.length = 0;
+  assert.equal(A.notifyKeyVerified(), true);
+  assert.equal(A.notifyKeyVerifyFailed({ errorCode: 'AUTH' }), true);
+  const leak = A.sanitize('key_verify_failed', { error_code: 'AUTH', key: 'sk-live-secret', error: 'invalid key sk-live-secret' });
+  assert.equal(leak.error_code, 'AUTH');
+  assert.ok(!('key' in leak));
+  assert.ok(!('error' in leak));
+  A.flush();
+  assert.ok(!JSON.stringify(sent).includes('sk-live'));
+
+  sent.length = 0;
+  assert.equal(A.notifyLanguageSet('zh'), true);
+  assert.equal(A.notifyLanguageSet('en'), true);
+  assert.ok(!('language' in A.sanitize('language_set', { language: 'fr' })));
+  assert.equal(A.sanitize('language_set', { language: 'JA' }).language, 'ja');
+  A.flush();
+
+  sent.length = 0;
+  assert.equal(A.notifyGenerationStart('g-i2v', { surface: 'generate', inputMode: 'i2v', model: 'wan3.0-video' }), true);
+  assert.equal(A.notifyGenerationFinish('g-i2v', true, { surface: 'generate', inputMode: 'i2v', durationMs: 1200 }), true);
+  assert.equal(A.notifyGenerationStart('g-t2v', { surface: 'generate', inputMode: 't2v' }), true);
+  const dirtyMode = A.sanitize('generation_start', { generation_id: 'g3', surface: 'generate', input_mode: 'prompt-image', prompt: 'secret' });
+  assert.ok(!('input_mode' in dirtyMode));
+  assert.ok(!('prompt' in dirtyMode));
+  A.flush();
+  const i2v = sent.find((x) => x.event === 'generation_start' && x.properties.generation_id === 'g-i2v');
+  const t2v = sent.find((x) => x.event === 'generation_start' && x.properties.generation_id === 'g-t2v');
+  assert.equal(i2v.properties.input_mode, 'i2v');
+  assert.equal(t2v.properties.input_mode, 't2v');
+
+  assert.equal(A.sanitize('share_published', {}), null);
+  assert.equal(A.sanitize('consent_denied', {}), null);
+  assert.equal(A.sanitize('session_heartbeat', {}), null);
 }
 
 console.log('smoke-analytics: ok');

@@ -55,21 +55,39 @@ account. `login_success` is a funnel step only.
 ## Event schema
 
 Shared properties: `platform=web`, `app_version` (`web-1.17`), `session_id`,
-`install_id`. Hash tab changes and `visibilitychange` do not fire `app_open`.
-A new session starts after 30 minutes idle.
+`install_id`. Hash tab changes do not fire `app_open`. Switching away from the
+tab pauses `active_ms` but does not end the session. A new session starts after
+30 minutes idle, or after a real unload; `session_end` is emitted first. A
+fresh load also ends an unterminated previous session (crash recovery) before
+`app_open`.
 
 | Event | When it fires | Extra properties |
 | --- | --- | --- |
 | `app_open` | Once per session after opt-in | — |
+| `session_end` | Once per `session_id` when the page unloads, or when a new session starts after the ~30-minute idle window, or on the next consented start if a previous session was not ended (crash). Tab hide/show within the idle window does not end or double-end the session | `duration_ms` (wall time), `active_ms` (time the page was visible). Integers, each capped at 12 hours |
+| `login_start` | User started the OAuth redirect (login button or in-app login start). Not a completed sign-in | — |
 | `login_success` | Once per session, inside OAuth `handleCallback` after a successful sign-in | `key_applied` |
-| `generation_start` | New `VSApi.submit` only. Polling resume after a reload is not a new start | `generation_id` (`local_id`), `model` (catalog-like token only), `surface`, optional `requested_duration_s` |
-| `generation_success` | Task reaches `done` (including a later resume of the same `local_id`) | `duration_ms` |
-| `generation_failed` | Only irreversible states: `rejected` or `failed`. `stopped`, `timeout`, `query_down`, and `ready_no_url` can be resumed and do not close the funnel | safe `error_code` |
+| `login_failed` | OAuth/login finished unsuccessfully | safe `error_code` only |
+| `logout` | User confirmed Sign out | — |
+| `billing_click` | User clicked through to the official credits/billing page. Not a completed payment | `source`: `header`, `account`, `quota`, `credits_chip`, or `chat` |
+| `desktop_download_click` | User clicked the in-app Windows download CTA or All releases link, or landed on `download.html` (auto-redirect). Not proof that the desktop app was installed | `source`: `cta`, `releases`, or `redirect` |
+| `surface_open` | Once per surface per session when the user actually opens that tab | `surface`: `chat`, `generate`, `tasks`, `account` |
+| `key_verified` | Advanced Key-pool **校验并保存** succeeded | — |
+| `key_verify_failed` | That same verify-and-save failed | safe `error_code` only |
+| `language_set` | User manually changed the UI language (not first-run detection) | `language`: `zh`, `en`, `es`, `pt`, `ja`, `ko` |
+| `generation_start` | New `VSApi.submit` only. Polling resume after a reload is not a new start | `generation_id` (`local_id`), `model` (catalog-like token only), `surface`, optional `requested_duration_s`, `input_mode` (`t2v` or `i2v` when a first-frame image/url was or was not attached; omitted if unknown). The image and prompt are never sent |
+| `generation_success` | Task reaches `done` (including a later resume of the same `local_id`) | `duration_ms`, optional `input_mode` |
+| `generation_failed` | Only irreversible states: `rejected` or `failed`. `stopped`, `timeout`, `query_down`, and `ready_no_url` can be resumed and do not close the funnel | safe `error_code`, optional `input_mode` |
 | `video_download` | User clicks **Download video** on a task card (including a “opened in a new tab” fallback). Not fired for in-player playback | `model`, `surface` |
 | `chat_submit` | User confirmed **Send** (or Retry) with a non-empty message after the login gate. Not a completed reply | `chat_id`, `surface=chat`, optional `model` |
 | `chat_success` | The chat API/model reply for that `chat_id` completed | `chat_id`, `surface=chat`, optional `model` |
 | `chat_failed` | The chat API/model reply for that `chat_id` failed | `chat_id`, safe `error_code` only |
-| `pwa_standalone_launch` | Page is already running as a standalone display (`display-mode: standalone` or iOS `navigator.standalone`). Once per session, alongside `app_open`. Not an install-accepted event | — |
+| `pwa_offer_shown` | The Add to Home Screen banner actually becomes visible. Once per session. Keyboard hide/show flicker is not a new offer | — |
+| `pwa_offer_dismissed` | User persistently dismissed the banner (close control, 30-day cooldown). The in-sheet **Got it** control only hides the offer for this visit and is not this event | — |
+| `pwa_install_click` | User tapped the Add CTA. This is a click, not a confirmed install | `cta_kind`: `native-prompt`, `ios-safari-sheet`, `ios-other-sheet`, `android-menu-sheet`, or `none` |
+| `pwa_install_accepted` | Chromium `beforeinstallprompt` `userChoice` was `accepted`, or the `appinstalled` event fired. The two signals for the same install are deduped to one success. Never fired for iOS guide sheets | — |
+| `pwa_install_prompt_dismissed` | The native Chromium install dialog was dismissed (`userChoice` = `dismissed`). Not the same as the banner's 30-day dismiss | — |
+| `pwa_standalone_launch` | Page is already running as a standalone display (`display-mode: standalone` or iOS `navigator.standalone`). Once per session, alongside `app_open`. Not an install-accepted event. This is the only later signal for an iOS Add to Home Screen, which cannot be confirmed at add time | — |
 
 
 Existing chat-pilot `track()` stubs still log to the console / `gtag`. Legacy
@@ -112,6 +130,9 @@ project capture token only (`phc_...`). Personal or admin keys are refused by
 file on the production `index.html` (a missing file would 404 on GitHub Pages).
 `index.html` and `oauth/callback.html` already allow `connect-src https:`, which
 includes `https://us.i.posthog.com` and `https://eu.i.posthog.com`.
+`download.html` allows only those two official ingest hosts (plus `'self'`),
+so a consented `desktop_download_click` can be flushed with `sendBeacon`
+before the exe redirect; the download is not delayed on failure.
 
 ## Synthetic / test markers
 
@@ -123,10 +144,10 @@ events so they can be excluded from production insights. Shipped pages set `envi
 
 These steps are related by the same anonymous `install_id` / `session_id`. The product is not a mandatory funnel.
 
-1. **Daily opens** — `app_open` (`platform=web`).
+1. **Daily opens and session length** — `app_open` (`platform=web`) and later `session_end` with `duration_ms` / `active_ms`.
 2. **Actual chat occurred** — `chat_submit` (user confirmed Send) vs `chat_success` (server reply completed). A local typo-clarify emits submit only.
-3. **Video generated** — `generation_start` → `generation_success`.
-4. **Added to the phone home screen** — **no in-app install capability today.** There is no manifest, service worker, or install CTA, so prompt-shown / CTA / accepted / dismissed / `appinstalled` are not captured. iOS manual "Add to Home Screen" is not confirmable. `pwa_standalone_launch` fires only when a later visit already runs in standalone display mode.
-5. **Social sharing** — **no existing share feature** (`navigator.share`, social buttons, or a confirmed publish callback). Do not label a post as published. Clipboard copies are not share events.
+3. **Video generated** — `generation_start` → `generation_success`, with `input_mode` `t2v` or `i2v` when known.
+4. **Added to the phone home screen** — the web app now has an Add to Home Screen offer (manifest + dismissible banner and instruction sheets). Measure it as: `pwa_offer_shown` (banner visible) → `pwa_install_click` (Add tapped) → `pwa_install_accepted` (Chromium `userChoice=accepted` or `appinstalled`, deduped). A 30-day banner close is `pwa_offer_dismissed`; a native dialog cancel is `pwa_install_prompt_dismissed`. iOS (and Android without `beforeinstallprompt`) only opens a guide sheet: the click is real, but the add itself cannot be confirmed at that moment. The only later iOS signal is `pwa_standalone_launch` when a subsequent visit already runs in standalone display mode. Do not treat standalone launch as "install accepted".
+5. **Social sharing** — **no existing share feature** (`navigator.share`, social buttons, or a confirmed publish callback). Still unmeasurable. Do not label a post as published. Clipboard copies are not share events.
 
 Filter production dashboards with `environment = production`.
