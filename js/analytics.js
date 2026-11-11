@@ -19,14 +19,18 @@
     generation_start: true,
     generation_success: true,
     generation_failed: true,
-    video_download: true
+    video_download: true,
+    chat_submit: true,
+    chat_success: true,
+    chat_failed: true,
+    pwa_standalone_launch: true
   };
 
   var ALLOWED_PROPS = {
     platform: true, app_version: true, session_id: true, install_id: true,
     surface: true, model: true, duration_ms: true, error_code: true,
     generation_id: true, requested_duration_s: true, key_applied: true,
-    environment: true, test_run_id: true
+    environment: true, test_run_id: true, chat_id: true
   };
 
   var FORBIDDEN = {
@@ -54,7 +58,7 @@
   };
 
   var ERROR_ALIAS = { CANCELED: 'CANCELLED', UNCERTAIN_RELOAD: 'UNCERTAIN' };
-  var SAFE_SURFACES = { generate: true, compare: true, batch: true };
+  var SAFE_SURFACES = { generate: true, compare: true, batch: true, chat: true };
   var MODEL_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
   var ALLOWED_INGEST_HOSTS = {
     'https://us.i.posthog.com': true,
@@ -70,7 +74,7 @@
   var SESSION_IDLE_MS = 30 * 60 * 1000;
   var LIB_NAME = 'video-studio-web-analytics';
   var LIB_VERSION = '1.0.0';
-  var APP_VERSION = 'web-1.15';
+  var APP_VERSION = 'web-1.17';
   var LS_STATE = 'vsw.analytics.state';
   var CONSENT_UNSET = 'unset';
   var CONSENT_GRANTED = 'granted';
@@ -181,7 +185,7 @@
         text = String(value || '').trim();
         if (!MODEL_ID_RE.test(text) || text.indexOf('@') >= 0) continue;
         value = text;
-      } else if (key === 'generation_id' || key === 'session_id' || key === 'install_id' || key === 'app_version' || key === 'platform') {
+      } else if (key === 'generation_id' || key === 'chat_id' || key === 'session_id' || key === 'install_id' || key === 'app_version' || key === 'platform') {
         text = String(value || '').trim();
         if (!text || text.length > 80) continue;
         value = text;
@@ -195,7 +199,7 @@
   var deps = {};
   var state = { consent: CONSENT_UNSET, install_id: '', session_id: '', session_started_at: 0,
     last_activity: 0, app_open_session: '', queue: [], generation_seen: {},
-    account_distinct_id: '', login_success_token: '' };
+    account_distinct_id: '', login_success_token: '', chat_seen: {}, pwa_standalone_session: '' };
   var flushTimer = null;
   var flushing = false;
   var booted = false;
@@ -213,6 +217,8 @@
       state.generation_seen = saved.generation_seen || {};
       state.account_distinct_id = '';
       state.login_success_token = saved.login_success_token || '';
+      state.chat_seen = saved.chat_seen || {};
+      state.pwa_standalone_session = saved.pwa_standalone_session || '';
     }
     if (state.consent !== CONSENT_GRANTED) {
       state.queue = [];
@@ -235,6 +241,12 @@
       seenKeys.slice(-200).forEach(function (k) { keep[k] = state.generation_seen[k]; });
       state.generation_seen = keep;
     }
+    var chatKeys = Object.keys(state.chat_seen || {});
+    if (chatKeys.length > 200) {
+      var keepChat = {};
+      chatKeys.slice(-200).forEach(function (k) { keepChat[k] = state.chat_seen[k]; });
+      state.chat_seen = keepChat;
+    }
     safeSet(LS_STATE, state);
   }
 
@@ -247,7 +259,7 @@
     return {
       projectKey: key,
       host: host,
-      environment: sanitizeEnvironment(root.VS_ANALYTICS_ENVIRONMENT || cfg.environment) || '',
+      environment: sanitizeEnvironment(root.VS_ANALYTICS_ENVIRONMENT || cfg.environment) || 'production',
       testRunId: sanitizeTestRunId(root.VS_ANALYTICS_TEST_RUN_ID || cfg.testRunId) || ''
     };
   }
@@ -286,6 +298,25 @@
     if (event === 'app_open') {
       if (state.app_open_session && state.app_open_session === state.session_id) return false;
       state.app_open_session = state.session_id;
+      return true;
+    }
+    if (event === 'pwa_standalone_launch') {
+      if (state.pwa_standalone_session && state.pwa_standalone_session === state.session_id) return false;
+      state.pwa_standalone_session = state.session_id;
+      return true;
+    }
+    if (event === 'chat_submit' || event === 'chat_success' || event === 'chat_failed') {
+      gen = String(clean.chat_id || '').trim();
+      if (!gen) return false;
+      already = (state.chat_seen[gen] || []).slice();
+      if (event === 'chat_submit') {
+        if (already.indexOf('submit') >= 0) return false;
+        already.push('submit');
+      } else {
+        if (already.indexOf('terminal') >= 0) return false;
+        already.push('terminal');
+      }
+      state.chat_seen[gen] = already;
       return true;
     }
     if (event === 'generation_start' || event === 'generation_success' || event === 'generation_failed') {
@@ -364,7 +395,42 @@
   }
 
   function captureAppOpen() {
-    return track('app_open', {});
+    var ok = track('app_open', {});
+    maybeStandaloneLaunch();
+    return ok;
+  }
+
+  function isStandaloneDisplay() {
+    try {
+      if (root.matchMedia && root.matchMedia('(display-mode: standalone)').matches) return true;
+    } catch (e) { /* ignore */ }
+    try {
+      if (root.navigator && root.navigator.standalone === true) return true;
+    } catch (e2) { /* ignore */ }
+    return false;
+  }
+
+  function maybeStandaloneLaunch() {
+    // Observable only: the page is already running as a standalone display.
+    // There is no in-app install CTA or manifest, so this is not proof of an
+    // in-product install flow, and it must not be used to fake an iOS add.
+    if (!isStandaloneDisplay()) return false;
+    return track('pwa_standalone_launch', {});
+  }
+
+  function notifyChatSubmit(chatId, opts) {
+    opts = opts || {};
+    var props = { chat_id: chatId, surface: 'chat' };
+    if (opts.model) props.model = opts.model;
+    return track('chat_submit', props);
+  }
+
+  function notifyChatFinish(chatId, ok, opts) {
+    opts = opts || {};
+    var props = { chat_id: chatId, surface: 'chat' };
+    if (opts.model) props.model = opts.model;
+    if (!ok) props.error_code = normalizeErrorCode(opts.errorCode);
+    return track(ok ? 'chat_success' : 'chat_failed', props);
   }
 
   function setConsent(granted) {
@@ -564,6 +630,9 @@
     notifyGenerationStart: notifyGenerationStart,
     notifyGenerationFinish: notifyGenerationFinish,
     notifyVideoDownload: notifyVideoDownload,
+    notifyChatSubmit: notifyChatSubmit,
+    notifyChatFinish: notifyChatFinish,
+    isStandaloneDisplay: isStandaloneDisplay,
     pending: pending,
     flush: flush,
     ensureSession: ensureSession,
@@ -571,7 +640,7 @@
     resetForTests: function (options) {
       state = { consent: CONSENT_UNSET, install_id: '', session_id: '', session_started_at: 0,
         last_activity: 0, app_open_session: '', queue: [], generation_seen: {},
-        account_distinct_id: '', login_success_token: '' };
+        account_distinct_id: '', login_success_token: '', chat_seen: {}, pwa_standalone_session: '' };
       booted = false;
       flushing = false;
       flushTimer = null;

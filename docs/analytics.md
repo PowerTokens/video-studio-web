@@ -54,7 +54,7 @@ account. `login_success` is a funnel step only.
 
 ## Event schema
 
-Shared properties: `platform=web`, `app_version` (`web-1.15`), `session_id`,
+Shared properties: `platform=web`, `app_version` (`web-1.17`), `session_id`,
 `install_id`. Hash tab changes and `visibilitychange` do not fire `app_open`.
 A new session starts after 30 minutes idle.
 
@@ -66,9 +66,16 @@ A new session starts after 30 minutes idle.
 | `generation_success` | Task reaches `done` (including a later resume of the same `local_id`) | `duration_ms` |
 | `generation_failed` | Only irreversible states: `rejected` or `failed`. `stopped`, `timeout`, `query_down`, and `ready_no_url` can be resumed and do not close the funnel | safe `error_code` |
 | `video_download` | User clicks **Download video** on a task card (including a “opened in a new tab” fallback). Not fired for in-player playback | `model`, `surface` |
+| `chat_submit` | User confirmed **Send** (or Retry) with a non-empty message after the login gate. Not a completed reply | `chat_id`, `surface=chat`, optional `model` |
+| `chat_success` | The chat API/model reply for that `chat_id` completed | `chat_id`, `surface=chat`, optional `model` |
+| `chat_failed` | The chat API/model reply for that `chat_id` failed | `chat_id`, safe `error_code` only |
+| `pwa_standalone_launch` | Page is already running as a standalone display (`display-mode: standalone` or iOS `navigator.standalone`). Once per session, alongside `app_open`. Not an install-accepted event | — |
 
-Existing chat-pilot `track()` stubs still log to the console / `gtag`. Those
-`chat_*` names are dropped by the PostHog allowlist.
+
+Existing chat-pilot `track()` stubs still log to the console / `gtag`. Legacy
+`chat_*` names (`chat_user_message`, `chat_flash_ok`, and similar) stay dropped
+by the PostHog allowlist. Only `chat_submit` / `chat_success` / `chat_failed`
+are sent, with no message text.
 
 Never sent: prompts, API keys, tokens, OAuth codes, URL query strings, email,
 name, avatar, media, credits, raw error text, or account ids.
@@ -110,5 +117,16 @@ includes `https://us.i.posthog.com` and `https://eu.i.posthog.com`.
 
 Set `window.VS_ANALYTICS_ENVIRONMENT` / `VS_ANALYTICS_CONFIG.environment` to
 `synthetic` or `test`, and `VS_ANALYTICS_TEST_RUN_ID` / `testRunId`, to tag
-events so they can be excluded from production insights. Production pages omit
-the markers unless configured.
+events so they can be excluded from production insights. Shipped pages set `environment=production` by default. Filter production dashboards with `environment = production` (or `environment != synthetic`).
+
+## Step chain (nonlinear)
+
+These steps are related by the same anonymous `install_id` / `session_id`. The product is not a mandatory funnel.
+
+1. **Daily opens** — `app_open` (`platform=web`).
+2. **Actual chat occurred** — `chat_submit` (user confirmed Send) vs `chat_success` (server reply completed). A local typo-clarify emits submit only.
+3. **Video generated** — `generation_start` → `generation_success`.
+4. **Added to the phone home screen** — **no in-app install capability today.** There is no manifest, service worker, or install CTA, so prompt-shown / CTA / accepted / dismissed / `appinstalled` are not captured. iOS manual "Add to Home Screen" is not confirmable. `pwa_standalone_launch` fires only when a later visit already runs in standalone display mode.
+5. **Social sharing** — **no existing share feature** (`navigator.share`, social buttons, or a confirmed publish callback). Do not label a post as published. Clipboard copies are not share events.
+
+Filter production dashboards with `environment = production`.

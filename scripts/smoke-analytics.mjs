@@ -186,21 +186,44 @@ thrower.A.setConsent(true);
 assert.ok(thrower.A.pending().length >= 1);
 
 // --- empty project key: no fetch ---
-const hits = [];
-const empty = load();
-empty.A.resetForTests({
-  now: () => 1_700_000_000_000,
-  storage: empty.store ? undefined : {
-    getItem: () => null, setItem: () => {}, removeItem: () => {},
-  },
-  transport: null,
-  setTimeout: (fn) => { fn(); return 0; },
-});
-// After resetForTests with no transport, set a sandbox fetch trap via boot options only.
-// Directly call flush with empty config.
-empty.A.setConsent(true);
-empty.A.flush();
-assert.deepEqual(empty.A.pending(), []);
+{
+  const store = {};
+  const hits = [];
+  const sandbox = {
+    window: {},
+    globalThis: null,
+    localStorage: {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    },
+    crypto: { getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = (i * 19 + 7) & 255; return a; } },
+    Date, Math, JSON, Uint8Array, Promise, setTimeout, console,
+    fetch: async () => { hits.push(1); return { ok: true, status: 200, json: async () => ({}) }; },
+  };
+  sandbox.globalThis = sandbox;
+  sandbox.window = sandbox;
+  sandbox.VS_POSTHOG_PROJECT_KEY = '';
+  sandbox.VS_ANALYTICS_CONFIG = { posthogProjectKey: '', posthogHost: 'https://us.i.posthog.com' };
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8'), sandbox);
+  // Force empty after the shipped config file (which may include a public token).
+  sandbox.VS_POSTHOG_PROJECT_KEY = '';
+  sandbox.VS_ANALYTICS_CONFIG.posthogProjectKey = '';
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics.js'), 'utf8'), sandbox);
+  const E = sandbox.VSAnalytics;
+  E.resetForTests({
+    now: () => 1_700_000_000_000,
+    storage: sandbox.localStorage,
+    transport: null,
+    setTimeout: (fn) => { fn(); return 0; },
+    appVersion: 'web-1.17',
+  });
+  E.setConsent(true);
+  E.flush();
+  assert.deepEqual(E.pending(), []);
+  assert.deepEqual(hits, []);
+}
 
 // --- chat events do not enter PostHog queue even via track() ---
 const beforeChat = sent.length;
@@ -220,13 +243,14 @@ assert.ok(!loginBlob.includes('email'));
 assert.ok(!login.sent[login.sent.length - 1].distinct_id.startsWith('ptu_'));
 assert.ok(!loginBlob.includes('account_linked'));
 
-// --- config names exist and default key is empty ---
+// --- config names exist and shipped key is a public phc_ token ---
 const cfg = load();
 assert.equal(cfg.A.consentState() === 'unset' || true, true);
 const configSrc = fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8');
 assert.ok(configSrc.includes('posthogProjectKey'));
 assert.ok(configSrc.includes('posthogHost'));
-assert.ok(configSrc.includes("posthogProjectKey: existing.posthogProjectKey || ''"));
+assert.ok(/posthogProjectKey:\s*existing\.posthogProjectKey \|\| "phc_[A-Za-z0-9_-]{4,}"/.test(configSrc));
+assert.ok(!configSrc.includes('phx_'));
 
 // --- video_download allowlisted ---
 A.notifyVideoDownload({ model: 'wan3.0-video', surface: 'generate' });
@@ -278,6 +302,86 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
   assert.strictEqual(body.properties.$process_person_profile, false);
   assert.strictEqual(body.properties.$geoip_disable, true);
   assert.ok(!Object.prototype.hasOwnProperty.call(body.properties, '$ip'));
+}
+
+
+// --- chat submit vs server reply, no text ---
+{
+  const { A, sent } = load();
+  A.setConsent(true);
+  A.flush();
+  sent.length = 0;
+  assert.equal(A.notifyChatSubmit('c1', { model: 'glm-4.7-flash' }), true);
+  A.flush();
+  assert.equal(sent[0].event, 'chat_submit');
+  assert.equal(sent[0].properties.chat_id, 'c1');
+  assert.equal(sent[0].properties.surface, 'chat');
+  sent.length = 0;
+  assert.equal(A.notifyChatFinish('c1', true, { model: 'glm-4.7-flash' }), true);
+  A.flush();
+  assert.equal(sent[0].event, 'chat_success');
+  sent.length = 0;
+  assert.equal(A.notifyChatSubmit('c2'), true);
+  assert.equal(A.notifyChatFinish('c2', false, { errorCode: 'HTTP 401: sk-live please generate a cat' }), true);
+  A.flush();
+  const failed = sent.find((x) => x.event === 'chat_failed');
+  assert.ok(failed);
+  assert.equal(failed.properties.error_code, 'UNKNOWN');
+  assert.ok(!JSON.stringify(sent).includes('sk-live'));
+  assert.ok(!JSON.stringify(sent).includes('please generate'));
+  assert.equal(A.sanitize('chat_user_message', { len_bucket: 'short', prompt: 'hi' }), null);
+  assert.equal(A.sanitize('share_published', { platform: 'twitter' }), null);
+  assert.equal(A.sanitize('pwa_install_accepted', {}), null);
+  const dirty = A.sanitize('chat_submit', { chat_id: 'c3', prompt: 'secret prompt text', message: 'hello', surface: 'chat' });
+  assert.ok(dirty);
+  assert.ok(!('prompt' in dirty));
+  assert.ok(!('message' in dirty));
+  assert.equal(A.notifyChatSubmit('c1'), false);
+  assert.equal(A.notifyChatFinish('c1', true), false);
+}
+
+// --- standalone launch is a separate event, only when display-mode is standalone ---
+{
+  const store = {};
+  const sent = [];
+  const sandbox = {
+    window: {},
+    globalThis: null,
+    localStorage: {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+    },
+    crypto: { getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = (i * 19 + 7) & 255; return a; } },
+    Date, Math, JSON, Uint8Array, Promise, setTimeout, console,
+    matchMedia: (q) => ({ matches: q === '(display-mode: standalone)', media: q, addListener() {}, removeListener() {} }),
+    navigator: { standalone: false },
+  };
+  sandbox.globalThis = sandbox;
+  sandbox.window = sandbox;
+  sandbox.VS_POSTHOG_PROJECT_KEY = 'phc_testkey1';
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8'), sandbox);
+  sandbox.VS_POSTHOG_PROJECT_KEY = 'phc_testkey1';
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics.js'), 'utf8'), sandbox);
+  const S = sandbox.VSAnalytics;
+  S.resetForTests({
+    now: () => 1_700_000_000_000,
+    storage: sandbox.localStorage,
+    transport: (item) => sent.push(item),
+    setTimeout: (fn) => { fn(); return 0; },
+    appVersion: 'web-1.17',
+  });
+  S.setConsent(true);
+  S.flush();
+  const names = sent.map((x) => x.event);
+  assert.ok(names.includes('app_open'));
+  assert.ok(names.includes('pwa_standalone_launch'));
+  assert.ok(S.isStandaloneDisplay());
+  // once per session
+  const before = sent.filter((x) => x.event === 'pwa_standalone_launch').length;
+  S.captureAppOpen();
+  assert.equal(sent.filter((x) => x.event === 'pwa_standalone_launch').length, before);
 }
 
 console.log('smoke-analytics: ok');

@@ -32,7 +32,8 @@
   var messages = []; // OpenAI-style {role, content} for the Flash call (no system)
   var lastPlan = null;
   var lastTextModel = FLASH_MODEL;
-  var busy = false;
+  var busy = false;  var currentChatId = '';
+
   var sessionStarted = false;
 
   function store() {
@@ -1287,6 +1288,7 @@
     retry.addEventListener('click', function () {
       track('chat_flash_retry_click', { busy: !!busyCap });
       if (busy) return;
+      notifyChatAnalyticsSubmit(FLASH_MODEL);
       runFlash();
     });
     actions.appendChild(retry);
@@ -1354,6 +1356,7 @@
           model: res.model || '',
           streamed: !!res.streamed
         });
+        notifyChatAnalyticsFinish(false, res.kind || 'UNKNOWN', res.model || FLASH_MODEL);
         showError(res.detail || res.kind, { http: res.http, kind: res.kind, model: res.model });
         return;
       }
@@ -1384,12 +1387,48 @@
         ready: !!parsed.ready,
         demoted: parsed.demoted || ''
       });
+      notifyChatAnalyticsFinish(true, '', res.model || FLASH_MODEL);
     }, function (err) {
       setBusy(false);
       if (streamUi) streamUi.discard();
       track('chat_flash_fail', { kind: 'throw' });
+      notifyChatAnalyticsFinish(false, 'UNKNOWN', FLASH_MODEL);
       showError(String(err && err.message || err));
     });
+  }
+
+
+  function mintChatId() {
+    try {
+      if (root.crypto && crypto.getRandomValues) {
+        var buf = new Uint8Array(16);
+        crypto.getRandomValues(buf);
+        var i, out = '';
+        for (i = 0; i < buf.length; i++) out += (buf[i] + 256).toString(16).slice(1);
+        return out;
+      }
+    } catch (e) { /* fall through */ }
+    return 'c' + Date.now().toString(16) + Math.random().toString(16).slice(2, 10);
+  }
+
+  function notifyChatAnalyticsSubmit(model) {
+    currentChatId = mintChatId();
+    try {
+      if (root.VSAnalytics && typeof root.VSAnalytics.notifyChatSubmit === 'function') {
+        root.VSAnalytics.notifyChatSubmit(currentChatId, { model: model || '' });
+      }
+    } catch (e) { /* never break chat */ }
+    return currentChatId;
+  }
+
+  function notifyChatAnalyticsFinish(ok, errorCode, model) {
+    var id = currentChatId;
+    if (!id) return;
+    try {
+      if (root.VSAnalytics && typeof root.VSAnalytics.notifyChatFinish === 'function') {
+        root.VSAnalytics.notifyChatFinish(id, ok, { model: model || '', errorCode: errorCode });
+      }
+    } catch (e) { /* never break chat */ }
   }
 
   function onSend() {
@@ -1408,7 +1447,9 @@
     messages.push({ role: 'user', content: text });
     // Continuing the thread: drop any prior plan card (example or earlier draft).
     clearPlanMount();
-    // Typos / gibberish: clarify locally — do not burn a model round.
+    // User clicked Send with a non-empty message after the login gate.
+    // Local clarify is still a submit, but it is not a server-reply success.
+    notifyChatAnalyticsSubmit(FLASH_MODEL);
     if (isNonsensicalUserText(text)) {
       replyLocalClarify('nonsense');
       return;

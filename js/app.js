@@ -1927,7 +1927,7 @@
       renderOauthAccount();
       maybeHandleOauthQuery();
       if (window.VSAnalytics && window.VSAnalytics.boot) {
-        window.VSAnalytics.boot({ appVersion: 'web-1.15' });
+        window.VSAnalytics.boot({ appVersion: 'web-1.17' });
         refreshAnalyticsUi();
       }
       document.addEventListener('visibilitychange', function () {
