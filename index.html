@@ -272,6 +272,10 @@
           <p class="badge" data-i18n="browser_badge">仅保存在这个浏览器</p>
           <p class="muted" data-i18n="key_privacy">Key 保存在这个浏览器的本地存储（localStorage）里，只会发送到 api.powertokens.ai，不经过任何其他服务器。在公用设备上用完请点对应 Key 的「忘记」。</p>
           <p class="muted" data-i18n="no_repeat_key_note">任务已提交、网络超时或提交结果不明确时，不会自动重复生成。</p>
+          <hr>
+          <h3 class="card-title" data-i18n="analytics_title">使用统计</h3>
+          <label class="check"><input type="checkbox" id="analytics-toggle"> <span data-i18n="analytics_toggle">分享匿名使用统计（打开次数、登录、生成结果）</span></label>
+          <p class="muted small" data-i18n="analytics_privacy">只上报必要事件：打开、登录成功、开始/成功/失败生成，以及点击「下载视频」。不会上传 API Key、提示词、图片或视频、邮箱、令牌或完整报错原文。可随时关闭，关闭后立即停止发送。</p>
         </section>
       </div>
       <div class="col-right">
@@ -323,6 +327,13 @@
   <span><a href="LICENSE" target="_blank" rel="noopener" data-i18n="footer_license">MIT 许可证</a></span>
 </footer>
 
+<div id="analytics-banner" class="analytics-banner" hidden>
+  <p data-i18n="analytics_notice">是否分享匿名使用统计？用于了解每天有多少人打开、登录和生成。不会上传 Key、提示词或素材。可稍后在「账号」页随时开关。</p>
+  <div class="analytics-banner-actions">
+    <button type="button" class="btn btn-accent" id="analytics-accept" data-i18n="analytics_accept">分享匿名统计</button>
+    <button type="button" class="link" id="analytics-decline" data-i18n="analytics_decline">不分享</button>
+  </div>
+</div>
 <div id="statusbar" class="statusbar" role="status">就绪 · 登录 PowerTokens 即可开始</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
@@ -402,12 +413,14 @@
 <script src="js/lang/pt.js?v=20261104-LoginGate"></script>
 <script src="js/lang/ja.js?v=20261104-LoginGate"></script>
 <script src="js/lang/ko.js?v=20261104-LoginGate"></script>
+<script src="js/analytics-config.js?v=20261111-Analytics"></script>
+<script src="js/analytics.js?v=20261111-Analytics"></script>
 <script src="js/models.js?v=20261104-LoginGate"></script>
-<script src="js/api.js?v=20261104-LoginGate"></script>
+<script src="js/api.js?v=20261111-Analytics"></script>
 <script src="js/utm.js?v=20261104-LoginGate"></script>
-<script src="js/oauth.js?v=20261106-DefaultChat"></script>
-<script src="js/chat-pilot.js?v=20261105-ExampleLogin"></script>
-<script src="js/app.js?v=20261106-DefaultChat"></script>
+<script src="js/oauth.js?v=20261111-Analytics"></script>
+<script src="js/chat-pilot.js?v=20261111-Analytics"></script>
+<script src="js/app.js?v=20261111-Analytics"></script>
 <script src="js/pwa-install.js?v=20261111-PwaHome"></script>
 </body>
 </html>

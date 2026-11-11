@@ -379,7 +379,37 @@
     if (!rec) return null;
     for (var k in changes) rec[k] = changes[k];
     rec.updated = Date.now();
-    return putTask(rec);
+    rec = putTask(rec);
+    analyticsTerminal(rec);
+    return rec;
+  }
+
+  var genStartedAt = {};
+  function analyticsStart(rec) {
+    try {
+      if (!root.VSAnalytics || !rec) return;
+      genStartedAt[rec.local_id] = Date.now();
+      root.VSAnalytics.notifyGenerationStart(rec.local_id, {
+        model: rec.model,
+        surface: rec.compare_id ? 'compare' : 'generate',
+        requestedDurationS: rec.duration
+      });
+    } catch (e) { /* ignore */ }
+  }
+  function analyticsTerminal(rec) {
+    try {
+      if (!root.VSAnalytics || !rec) return;
+      var ok = rec.state === 'done';
+      var fail = { rejected: 1, failed: 1, timeout: 1, query_down: 1, ready_no_url: 1, uncertain: 1, stopped: 1 };
+      if (!ok && !fail[rec.state]) return;
+      var started = genStartedAt[rec.local_id] || rec.created || Date.now();
+      root.VSAnalytics.notifyGenerationFinish(rec.local_id, ok, {
+        model: rec.model,
+        surface: rec.compare_id ? 'compare' : 'generate',
+        durationMs: Math.max(0, Date.now() - started),
+        errorCode: rec.error || rec.state
+      });
+    } catch (e) { /* ignore */ }
   }
   function removeTask(localId) {
     stopPolling(localId, true);
@@ -433,6 +463,7 @@
     rec.key_hint = keyHint(key);
     // Persist BEFORE the request: if the page dies mid-request we know a submission may exist.
     putTask(rec);
+    analyticsStart(rec);
     inflight[rec.local_id] = true;
     var tries = 0;
     function attempt() {

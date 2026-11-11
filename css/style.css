@@ -1242,3 +1242,15 @@ body.pwa-banner-on .toast {
   color: var(--accent-text);
 }
 .pwa-ico svg { width: 18px; height: 18px; display: block; }
+
+/* Anonymous usage-stats notice — compact, non-blocking */
+.analytics-banner {
+  max-width: 960px;
+  margin: 0 auto 12px;
+  padding: 12px 16px;
+  background: var(--page, #f6f7f8);
+  border: 1px solid var(--line, #e3e5e8);
+  border-radius: 10px;
+}
+.analytics-banner p { margin: 0 0 8px; font-size: 13px; color: var(--muted, #5c6570); }
+.analytics-banner-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }

@@ -100,6 +100,12 @@
       if (typeof root.gtag === 'function') root.gtag('event', eventName, payload);
     } catch (e1) { /* ignore */ }
     try {
+      // Critical PostHog events are allowlisted in VSAnalytics; chat_* names are dropped.
+      if (root.VSAnalytics && typeof root.VSAnalytics.track === 'function') {
+        root.VSAnalytics.track(eventName, payload);
+      }
+    } catch (e3) { /* ignore */ }
+    try {
       if (root.console && console.info) console.info('[vs-analytics]', eventName, payload);
     } catch (e2) { /* ignore */ }
   }

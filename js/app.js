@@ -702,6 +702,7 @@
       renderOauthAccount();
       renderCredits();
       renderKeyState();
+      try { if (window.VSAnalytics && window.VSAnalytics.clearAccount) window.VSAnalytics.clearAccount(); } catch (e) { /* ignore */ }
       toast(t('oauth_logged_out'));
     });
   }
@@ -1617,6 +1618,14 @@
         A.download(target, fileName(rec)).then(function (r) {
           dl.disabled = false;
           dl.textContent = t('download_btn');
+          try {
+            if (window.VSAnalytics && window.VSAnalytics.notifyVideoDownload) {
+              window.VSAnalytics.notifyVideoDownload({
+                model: rec.model,
+                surface: rec.compare_id ? 'compare' : 'generate'
+              });
+            }
+          } catch (ignoreDl) { /* ignore */ }
           if (r === 'blocked') {
             toast(t('download_opened'));
             window.open(videoSrc(rec), '_blank', 'noopener');
@@ -1833,6 +1842,29 @@
     balanceTimer = setTimeout(refreshBalance, 1500);
   }
 
+  function refreshAnalyticsUi() {
+    var A10n = window.VSAnalytics;
+    if (!A10n) return;
+    var consent = A10n.consentState ? A10n.consentState() : 'unset';
+    var banner = $('analytics-banner');
+    var toggle = $('analytics-toggle');
+    if (banner) banner.hidden = consent !== 'unset';
+    if (toggle) toggle.checked = consent === 'granted';
+  }
+
+  function bindAnalyticsUi() {
+    var accept = $('analytics-accept');
+    var decline = $('analytics-decline');
+    var toggle = $('analytics-toggle');
+    function grant(on) {
+      try { if (window.VSAnalytics) window.VSAnalytics.setConsent(!!on); } catch (e) { /* ignore */ }
+      refreshAnalyticsUi();
+    }
+    if (accept) accept.addEventListener('click', function () { grant(true); });
+    if (decline) decline.addEventListener('click', function () { grant(false); });
+    if (toggle) toggle.addEventListener('change', function () { grant(toggle.checked); });
+  }
+
   function boot() {
     try {
       if (!M || !A || !I) throw new Error('core modules missing');
@@ -1845,6 +1877,7 @@
       window.addEventListener('hashchange', function () {
         setTab((location.hash || '').replace('#', '') || 'chat', false);
       });
+      bindAnalyticsUi();
       bindKey();
       bindOauth();
       bindNokeyAdvanced();
@@ -1893,6 +1926,13 @@
       renderKeyState();
       renderOauthAccount();
       maybeHandleOauthQuery();
+      if (window.VSAnalytics && window.VSAnalytics.boot) {
+        window.VSAnalytics.boot({ appVersion: 'web-1.15' });
+        refreshAnalyticsUi();
+      }
+      document.addEventListener('visibilitychange', function () {
+        try { if (window.VSAnalytics && window.VSAnalytics.touchActivity) window.VSAnalytics.touchActivity(); } catch (e) { /* ignore */ }
+      });
       setInterval(tick, 1000);
     } catch (err) {
       try { if (window.console && console.error) console.error('Video Studio boot failed', err); } catch (e) { /* ignore */ }
