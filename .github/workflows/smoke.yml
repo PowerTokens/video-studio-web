@@ -1,0 +1,42 @@
+# Isolated smoke tests for Video Studio Web. No Pages deploy.
+name: smoke
+on:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+      - 'fix/**'
+  pull_request:
+    branches: [main]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run smoke scripts
+        run: |
+          set -euo pipefail
+          for f in scripts/smoke-*.mjs; do
+            echo "::group::${f}"
+            node "$f"
+            echo "::endgroup::"
+          done
+      - name: PWA icons and manifest present
+        run: |
+          set -euo pipefail
+          test -f manifest.webmanifest
+          python3 - <<'PY'
+          import json, os
+          m=json.load(open("manifest.webmanifest"))
+          assert m["scope"]=="/video-studio-web/"
+          assert m["start_url"]=="/video-studio-web/"
+          assert m["display"]=="standalone"
+          for ic in m["icons"]:
+              rel=ic["src"].replace("/video-studio-web/","")
+              assert os.path.isfile(rel), rel
+          assert os.path.isfile("assets/icons/apple-touch-icon.png")
+          print("manifest ok")
+          PY

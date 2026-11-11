@@ -1053,3 +1053,194 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
   }
 }
 
+
+/* ---------- Add to Home Screen (PWA offer) ---------- */
+/* Does not change existing header/chat layout unless the banner is visible. */
+#pwa-install-root { pointer-events: none; }
+#pwa-install-root > * { pointer-events: auto; }
+
+.pwa-install-banner {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 10px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(27, 41, 60, .12);
+}
+.pwa-install-banner[hidden],
+.pwa-install-overlay[hidden],
+[data-pwa-sheet][hidden] { display: none !important; }
+
+.pwa-install-banner-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  object-fit: cover;
+}
+.pwa-install-banner-copy { flex: 1 1 auto; min-width: 0; }
+.pwa-install-banner-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.pwa-install-banner-sub {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.pwa-install-banner .pwa-install-cta {
+  flex: none;
+  min-height: 32px;
+  padding: 5px 14px;
+}
+.pwa-install-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.pwa-install-close:hover { background: var(--hover); color: var(--ink-2); }
+.pwa-install-close:focus-visible,
+.pwa-install-cta:focus-visible,
+.pwa-install-sheet .btn:focus-visible {
+  outline: 2px solid rgba(83, 178, 165, .55);
+  outline-offset: 2px;
+}
+
+body.pwa-banner-on {
+  --pwa-banner-clearance: 84px;
+}
+body.pwa-banner-on .chat-dock {
+  bottom: calc(var(--chat-statusbar-clearance) + var(--pwa-banner-clearance, 0px));
+}
+body.pwa-banner-on .gen-sticky-bar {
+  bottom: calc(34px + var(--pwa-banner-clearance, 0px));
+}
+body.pwa-banner-on .statusbar {
+  /* Keep the gesture/home inset on the banner instead of stacking two bars. */
+  visibility: hidden;
+  pointer-events: none;
+}
+body.pwa-banner-on .toast {
+  bottom: calc(var(--pwa-banner-clearance, 84px) + 12px + env(safe-area-inset-bottom, 0px));
+}
+
+.pwa-install-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(27, 41, 60, .40);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.pwa-install-sheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: min(86vh, 640px);
+  overflow: auto;
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  padding: 10px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 28px rgba(27, 41, 60, .16);
+  outline: none;
+}
+.pwa-install-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: 99px;
+  background: #aab0b6;
+  margin: 2px auto 16px;
+}
+.pwa-install-sheet-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  font-weight: 700;
+}
+.pwa-install-sheet-intro,
+.pwa-install-sheet-foot,
+.pwa-install-step-body {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.pwa-install-sheet-foot { margin-top: 4px; }
+.pwa-install-steps { list-style: none; margin: 8px 0 12px; padding: 0; }
+.pwa-install-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+}
+.pwa-install-step-num {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  background: var(--pale);
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pwa-install-step-text { min-width: 0; flex: 1; }
+.pwa-install-step-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pwa-install-step-body { margin: 0; }
+.pwa-install-sheet .btn { width: 100%; margin-top: 4px; }
+.pwa-install-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 14px;
+}
+.pwa-install-product img {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+.pwa-install-product-name { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.pwa-install-product-kicker { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+
+.pwa-ico {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--accent-text);
+}
+.pwa-ico svg { width: 18px; height: 18px; display: block; }

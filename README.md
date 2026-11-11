@@ -51,3 +51,7 @@ Public Windows downloads should go through the jump page so inbound UTM is captu
 https://powertokens.github.io/video-studio-web/download.html
 
 That page redirects to the latest `PowerTokensVideoStudio.exe` on GitHub Releases.
+
+## Add to Home Screen
+
+On a phone, after you have used the page for a short time, a dismissible banner can help you add Video Studio to the home screen. iPhone: follow the in-page guide and use Safari’s Share → Add to Home Screen (the website cannot open that system menu). Android: the Add button uses the browser’s install confirmation when the browser provides it; otherwise the guide points to the browser menu. The page still needs an internet connection after it is added. This is not an offline app. The offer is hidden on desktop, when the page is already running in standalone mode, and for a while after you dismiss it.

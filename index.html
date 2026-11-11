@@ -6,11 +6,15 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Video Studio">
 <meta name="description" content="Generate AI videos in your browser with Wan 3.0, Wan 3.0 Prime, Seedance 2.0, Seedance 2.0 Fast, Seedance 2.0 Mini, Seedance 2.5 and kling v3 via one PowerTokens API key. Works on phones and desktop.">
 <title>PowerTokens Video Studio · Web</title>
 <link rel="icon" type="image/png" href="assets/logo-88.png">
-<link rel="apple-touch-icon" href="assets/logo-88.png">
-<link rel="stylesheet" href="css/style.css?v=20261104-LoginGate">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" sizes="180x180">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/style.css?v=20261111-PwaHome">
 <link rel="preload" href="js/i18n.js?v=20261104-LoginGate" as="script">
 <link rel="preload" href="js/lang/zh.js?v=20261104-LoginGate" as="script">
 <link rel="preload" href="js/lang/en.js?v=20261104-LoginGate" as="script">
@@ -322,6 +326,77 @@
 <div id="statusbar" class="statusbar" role="status">就绪 · 登录 PowerTokens 即可开始</div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
+<div id="pwa-install-root">
+  <div id="pwa-install-banner" class="pwa-install-banner" hidden role="region" aria-labelledby="pwa-install-banner-title">
+    <img class="pwa-install-banner-icon" src="assets/icons/icon-192.png" width="40" height="40" alt="">
+    <div class="pwa-install-banner-copy">
+      <p id="pwa-install-banner-title" class="pwa-install-banner-title" data-i18n="pwa_banner_title">添加到手机桌面</p>
+      <p class="pwa-install-banner-sub" data-i18n="pwa_banner_sub">下次点开图标，直接开始创作</p>
+    </div>
+    <button type="button" id="pwa-install-cta" class="btn btn-accent btn-small pwa-install-cta" data-i18n="pwa_banner_cta">添加</button>
+    <button type="button" id="pwa-install-close" class="pwa-install-close">
+      <span class="sr-only" data-i18n="pwa_banner_close">关闭</span>
+      <span aria-hidden="true">×</span>
+    </button>
+  </div>
+
+  <div id="pwa-install-overlay" class="pwa-install-overlay" hidden>
+    <div id="pwa-install-sheet" class="pwa-install-sheet" role="dialog" aria-modal="true" aria-labelledby="pwa-install-sheet-title" tabindex="-1">
+      <div class="pwa-install-handle" aria-hidden="true"></div>
+
+      <div data-pwa-sheet="ios-safari">
+        <h2 id="pwa-install-sheet-title" class="pwa-install-sheet-title" data-i18n="pwa_ios_title">把 Video Studio 放到桌面</h2>
+        <p class="pwa-install-sheet-intro" data-i18n="pwa_ios_intro">请在 Safari 里完成下面两步。这是使用说明，网页无法直接弹出系统安装框。</p>
+        <ol class="pwa-install-steps">
+          <li class="pwa-install-step">
+            <span class="pwa-install-step-num">1</span>
+            <div class="pwa-install-step-text">
+              <p class="pwa-install-step-title">
+                <span class="pwa-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M8 8l4-4 4 4"/><path d="M6 13v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5"/></svg></span>
+                <span data-i18n="pwa_ios_step1_title">点底栏的「分享」按钮</span>
+              </p>
+              <p class="pwa-install-step-body" data-i18n="pwa_ios_step1_body">就是 Safari 工具栏里那个方框上箭头的图标。</p>
+            </div>
+          </li>
+          <li class="pwa-install-step">
+            <span class="pwa-install-step-num">2</span>
+            <div class="pwa-install-step-text">
+              <p class="pwa-install-step-title">
+                <span class="pwa-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg></span>
+                <span data-i18n="pwa_ios_step2_title">在菜单里选择「添加到主屏幕」</span>
+              </p>
+              <p class="pwa-install-step-body" data-i18n="pwa_ios_step2_body">再点添加即可。系统菜单需你在 Safari 中亲自完成。</p>
+            </div>
+          </li>
+        </ol>
+        <p class="pwa-install-sheet-foot" data-i18n="pwa_ios_foot">添加后，点桌面图标即可打开；使用时仍需联网。</p>
+        <button type="button" class="btn btn-accent" data-pwa-gotit data-i18n="pwa_ios_gotit">知道了</button>
+      </div>
+
+      <div data-pwa-sheet="ios-other" hidden>
+        <h2 id="pwa-install-sheet-title-other" class="pwa-install-sheet-title" data-i18n="pwa_ios_other_title">请用 Safari 打开</h2>
+        <p class="pwa-install-sheet-intro" data-i18n="pwa_ios_other_body">iPhone 只能在 Safari 里添加到主屏幕。请用 Safari 打开本页，再点分享 → 添加到主屏幕。当前浏览器无法代为完成。</p>
+        <p class="pwa-install-sheet-foot" data-i18n="pwa_ios_other_foot">添加后仍需联网使用。</p>
+        <button type="button" class="btn btn-accent" data-pwa-gotit data-i18n="pwa_ios_other_gotit">知道了</button>
+      </div>
+
+      <div data-pwa-sheet="android-menu" hidden>
+        <h2 id="pwa-install-sheet-title-android" class="pwa-install-sheet-title" data-i18n="pwa_android_menu_title">添加到手机桌面</h2>
+        <div class="pwa-install-product">
+          <img src="assets/icons/icon-192.png" width="52" height="52" alt="">
+          <div>
+            <p class="pwa-install-product-name">PowerTokens Video Studio</p>
+            <p class="pwa-install-product-kicker" data-i18n="pwa_product_kicker">网页应用</p>
+          </div>
+        </div>
+        <p class="pwa-install-sheet-intro" data-i18n="pwa_android_menu_body">请打开浏览器菜单，选择「添加到主屏幕」或「安装应用」。本页无法直接调出系统确认。</p>
+        <p class="pwa-install-sheet-foot" data-i18n="pwa_android_menu_foot">添加后，点桌面图标即可打开；使用时仍需联网。</p>
+        <button type="button" class="btn btn-accent" data-pwa-gotit data-i18n="pwa_android_menu_gotit">知道了</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="js/i18n.js?v=20261104-LoginGate"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
 <script src="js/lang/zh.js?v=20261104-LoginGate"></script>
@@ -336,5 +411,6 @@
 <script src="js/oauth.js?v=20261106-DefaultChat"></script>
 <script src="js/chat-pilot.js?v=20261105-ExampleLogin"></script>
 <script src="js/app.js?v=20261106-DefaultChat"></script>
+<script src="js/pwa-install.js?v=20261111-PwaHome"></script>
 </body>
 </html>
