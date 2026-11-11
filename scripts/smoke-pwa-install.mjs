@@ -33,9 +33,20 @@ function loadApi() {
 
 const P = loadApi();
 let failed = 0;
+const pending = [];
 function check(name, fn) {
-  try { fn(); }
-  catch (err) {
+  try {
+    const result = fn();
+    if (result && typeof result.then === 'function') {
+      pending.push(Promise.resolve(result).then(
+        () => {},
+        (err) => {
+          failed += 1;
+          console.error('FAIL', name, err && err.message ? err.message : err);
+        }
+      ));
+    }
+  } catch (err) {
     failed += 1;
     console.error('FAIL', name, err && err.message ? err.message : err);
   }
@@ -274,7 +285,8 @@ function makeController(overrides) {
     cooldownMs: overrides.cooldownMs || P.COOLDOWN_MS,
     capturedPrompt: overrides.capturedPrompt || null,
     interacted: !!overrides.interacted,
-    installed: !!overrides.installed
+    installed: !!overrides.installed,
+    analytics: overrides.analytics
   });
   // createController stamps startedAt = now(); rewind the clock for "already waited".
   if (elapsed) t += elapsed;
@@ -467,8 +479,119 @@ check('oauth / utm scripts were not edited by this feature', () => {
   assert.ok(models.includes('wan') || models.includes('Wan') || models.length > 100);
 });
 
+function collect(analyticsEvents) {
+  return {
+    track(event, props) {
+      analyticsEvents.push({ event, props: props || {} });
+      return true;
+    }
+  };
+}
+
+function named(events, name) {
+  return events.filter((x) => x.event === name);
+}
+
+check('offer shown once even if keyboard hides and shows the banner', () => {
+  const events = [];
+  const { ctrl, doc } = makeController({
+    nav: safariIOS, interacted: true, elapsed: 25000, analytics: collect(events)
+  });
+  ctrl.schedule();
+  assert.equal(doc.getElementById('pwa-install-banner').hidden, false);
+  assert.equal(named(events, 'pwa_offer_shown').length, 1);
+  ctrl.setInputFocused(true);
+  assert.equal(doc.getElementById('pwa-install-banner').hidden, true);
+  ctrl.setInputFocused(false);
+  assert.equal(doc.getElementById('pwa-install-banner').hidden, false);
+  ctrl.schedule();
+  assert.equal(named(events, 'pwa_offer_shown').length, 1);
+});
+
+check('persistent dismiss fires offer_dismissed; Got it does not', () => {
+  const gotit = [];
+  const a = makeController({
+    nav: safariIOS, interacted: true, elapsed: 25000, analytics: collect(gotit)
+  });
+  a.ctrl.schedule();
+  a.ctrl.hideBannerSession();
+  assert.equal(named(gotit, 'pwa_offer_dismissed').length, 0);
+  assert.equal(named(gotit, 'pwa_offer_shown').length, 1);
+
+  const closed = [];
+  const b = makeController({
+    nav: safariIOS, interacted: true, elapsed: 25000, analytics: collect(closed)
+  });
+  b.ctrl.schedule();
+  b.ctrl.dismissPersistent();
+  assert.equal(named(closed, 'pwa_offer_dismissed').length, 1);
+  assert.equal(named(closed, 'pwa_install_prompt_dismissed').length, 0);
+  assert.equal(named(closed, 'pwa_install_accepted').length, 0);
+});
+
+check('CTA click records cta_kind and iOS sheet does not fire accepted', async () => {
+  const events = [];
+  const { ctrl } = makeController({
+    nav: safariIOS, interacted: true, elapsed: 25000, analytics: collect(events)
+  });
+  ctrl.schedule();
+  const out = await ctrl.onCta();
+  assert.equal(out.sheet, 'ios-safari');
+  const clicks = named(events, 'pwa_install_click');
+  assert.equal(clicks.length, 1);
+  assert.equal(clicks[0].props.cta_kind, 'ios-safari-sheet');
+  assert.equal(named(events, 'pwa_install_accepted').length, 0);
+});
+
+check('native accepted and appinstalled dedupe to one success', async () => {
+  const events = [];
+  const capturedPrompt = {
+    prompt() {},
+    userChoice: Promise.resolve({ outcome: 'accepted' })
+  };
+  const { ctrl } = makeController({
+    nav: androidChrome, interacted: true, capturedPrompt, elapsed: 25000,
+    analytics: collect(events)
+  });
+  await ctrl.onCta();
+  ctrl.onAppInstalled();
+  assert.equal(named(events, 'pwa_install_accepted').length, 1);
+  assert.equal(named(events, 'pwa_install_click').length, 1);
+  assert.equal(named(events, 'pwa_install_click')[0].props.cta_kind, 'native-prompt');
+  assert.equal(named(events, 'pwa_offer_dismissed').length, 0);
+});
+
+check('appinstalled alone counts as accepted; a second event does not', () => {
+  const events = [];
+  const { ctrl } = makeController({
+    nav: androidChrome, interacted: true, elapsed: 25000, analytics: collect(events)
+  });
+  ctrl.onAppInstalled();
+  ctrl.onAppInstalled();
+  assert.equal(named(events, 'pwa_install_accepted').length, 1);
+});
+
+check('native prompt dismiss is not a 30-day offer dismiss', async () => {
+  const events = [];
+  const capturedPrompt = {
+    prompt() {},
+    userChoice: Promise.resolve({ outcome: 'dismissed' })
+  };
+  const { ctrl, store } = makeController({
+    nav: androidChrome, interacted: true, capturedPrompt, elapsed: 25000,
+    analytics: collect(events)
+  });
+  const out = await ctrl.onCta();
+  assert.equal(out.outcome, 'dismissed');
+  assert.ok(!store[P.STORAGE_DISMISS]);
+  assert.equal(named(events, 'pwa_install_prompt_dismissed').length, 1);
+  assert.equal(named(events, 'pwa_offer_dismissed').length, 0);
+  assert.equal(named(events, 'pwa_install_accepted').length, 0);
+});
+
+await Promise.all(pending);
 if (failed) {
   console.error(failed + ' check(s) failed');
   process.exit(1);
 }
-console.log('ok pwa-install ' + (12 + 20) + '+ checks');
+console.log('ok pwa-install checks');

@@ -379,7 +379,47 @@
     if (!rec) return null;
     for (var k in changes) rec[k] = changes[k];
     rec.updated = Date.now();
-    return putTask(rec);
+    rec = putTask(rec);
+    analyticsTerminal(rec);
+    return rec;
+  }
+
+  var genStartedAt = {};
+  function analyticsStart(rec) {
+    try {
+      if (!root.VSAnalytics || !rec) return;
+      genStartedAt[rec.local_id] = Date.now();
+      var startOpts = {
+        model: rec.model,
+        surface: rec.compare_id ? 'compare' : 'generate',
+        requestedDurationS: rec.duration
+      };
+      if (rec.has_image === true) startOpts.inputMode = 'i2v';
+      else if (rec.has_image === false) startOpts.inputMode = 't2v';
+      root.VSAnalytics.notifyGenerationStart(rec.local_id, startOpts);
+    } catch (e) { /* ignore */ }
+  }
+  function analyticsTerminal(rec) {
+    try {
+      if (!root.VSAnalytics || !rec) return;
+      var ok = rec.state === 'done';
+      // Only irreversible outcomes close the funnel. timeout / stopped /
+      // query_down / ready_no_url can be resumed and must not consume the
+      // terminal slot. 'uncertain' after a reload is also resumable-ish; a
+      // brand-new submit that was rejected is state 'rejected'.
+      var fail = { rejected: 1, failed: 1 };
+      if (!ok && !fail[rec.state]) return;
+      var started = genStartedAt[rec.local_id] || rec.created || Date.now();
+      var finOpts = {
+        model: rec.model,
+        surface: rec.compare_id ? 'compare' : 'generate',
+        durationMs: Math.max(0, Date.now() - started),
+        errorCode: rec.error || rec.state
+      };
+      if (rec.has_image === true) finOpts.inputMode = 'i2v';
+      else if (rec.has_image === false) finOpts.inputMode = 't2v';
+      root.VSAnalytics.notifyGenerationFinish(rec.local_id, ok, finOpts);
+    } catch (e) { /* ignore */ }
   }
   function removeTask(localId) {
     stopPolling(localId, true);
@@ -433,6 +473,7 @@
     rec.key_hint = keyHint(key);
     // Persist BEFORE the request: if the page dies mid-request we know a submission may exist.
     putTask(rec);
+    analyticsStart(rec);
     inflight[rec.local_id] = true;
     var tries = 0;
     function attempt() {

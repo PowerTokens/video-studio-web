@@ -1,0 +1,76 @@
+# Deploy GitHub Pages with the public PostHog capture token injected at
+# publish time from repository secrets. The committed js/analytics-config.js
+# stays empty so the key is not stored in git.
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Inject public PostHog project key
+        # Production Pages must ship a configured client. Prints only key length.
+        env:
+          VS_POSTHOG_PROJECT_KEY: ${{ secrets.VS_POSTHOG_PROJECT_KEY }}
+          VS_POSTHOG_HOST: ${{ secrets.VS_POSTHOG_HOST }}
+        run: |
+          set -euo pipefail
+          node scripts/prepare-analytics-config.mjs --format committed --out js/analytics-config.js
+      - name: Stage site
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          rsync -a --delete \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '_site/' \
+            --exclude 'js/analytics-config.local.js' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            ./ _site/
+      - name: Confirm staged analytics destination
+        # Prints only the key length. Refuses personal/admin keys. Never echoes the value.
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("fs");
+            const s = fs.readFileSync("_site/js/analytics-config.js", "utf8");
+            const m = s.match(/posthogProjectKey:\s*existing\.posthogProjectKey\s*\|\|\s*"([^"]*)"/);
+            const key = m ? m[1] : "";
+            if (!/^phc_[A-Za-z0-9_-]{4,}$/.test(key)) {
+              console.error("staged analytics-config is missing a public capture token");
+              process.exit(1);
+            }
+            if (key.startsWith("phx_")) {
+              console.error("refused a personal/admin key");
+              process.exit(2);
+            }
+            console.log("public_capture_token_ok len=" + key.length);
+          '
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

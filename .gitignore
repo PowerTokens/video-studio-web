@@ -1,1 +1,5 @@
 tests/node_modules/
+
+# Local PostHog project key (never commit)
+js/analytics-config.local.js
+

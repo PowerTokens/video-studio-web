@@ -160,6 +160,37 @@
     return 'none';
   }
 
+  var SAFE_CTA_KIND = {
+    'native-prompt': true,
+    'ios-safari-sheet': true,
+    'ios-other-sheet': true,
+    'android-menu-sheet': true,
+    'none': true
+  };
+
+  function resolveAnalytics(env, win) {
+    try {
+      if (env && env.analytics) return env.analytics;
+    } catch (e1) { /* ignore */ }
+    try {
+      if (win && win.VSAnalytics) return win.VSAnalytics;
+    } catch (e2) { /* ignore */ }
+    try {
+      return root.VSAnalytics || null;
+    } catch (e3) {
+      return null;
+    }
+  }
+
+  function trackPwa(analytics, event, props) {
+    try {
+      if (!analytics || typeof analytics.track !== 'function') return false;
+      return analytics.track(event, props || {});
+    } catch (err) {
+      return false;
+    }
+  }
+
   function keyboardOpen(env, inputFocused) {
     if (inputFocused) return true;
     try {
@@ -194,6 +225,24 @@
     var destroyed = false;
     var timers = [];
     var listeners = [];
+    var offerShownThisSession = false;
+    var installAcceptedTracked = false;
+
+    function trackPwaEvent(event, props) {
+      return trackPwa(resolveAnalytics(env, win), event, props);
+    }
+
+    function notifyOfferShown() {
+      if (offerShownThisSession) return false;
+      offerShownThisSession = true;
+      return trackPwaEvent('pwa_offer_shown', {});
+    }
+
+    function notifyInstallAccepted() {
+      if (installAcceptedTracked) return false;
+      installAcceptedTracked = true;
+      return trackPwaEvent('pwa_install_accepted', {});
+    }
 
     function platform() {
       var preview = parsePreviewFlag(env.search != null ? env.search : (win.location && win.location.search));
@@ -294,6 +343,7 @@
       var wantSheet = !!sheetName && !blockedByInput();
       bannerVisible = wantBanner;
       setHidden(bannerEl(), !wantBanner);
+      if (wantBanner) notifyOfferShown();
       setHidden(overlayEl(), !wantSheet);
       applyBodyClass('pwa-banner-on', wantBanner);
       applyBodyClass('pwa-sheet-on', wantSheet);
@@ -357,6 +407,7 @@
     }
 
     function dismissPersistent() {
+      var alreadyInstalled = installed() || installAcceptedTracked;
       recordDismiss();
       closeSheet();
       bannerVisible = false;
@@ -364,11 +415,15 @@
       setHidden(overlayEl(), true);
       applyBodyClass('pwa-banner-on', false);
       applyBodyClass('pwa-sheet-on', false);
+      if (!alreadyInstalled) trackPwaEvent('pwa_offer_dismissed', {});
       if (env.onChange) env.onChange({ banner: false, sheet: null, dismissed: true });
     }
 
     function onCta() {
       var kind = ctaKind();
+      var clickProps = {};
+      if (SAFE_CTA_KIND[kind]) clickProps.cta_kind = kind;
+      trackPwaEvent('pwa_install_click', clickProps);
       if (kind === 'native-prompt') {
         return invokeNativePrompt();
       }
@@ -407,12 +462,15 @@
       return Promise.resolve(outcome).then(function (choice) {
         var result = (choice && (choice.outcome || choice)) || '';
         if (result === 'accepted') {
+          var already = installed() || installAcceptedTracked;
           recordInstalled();
+          if (!already) notifyInstallAccepted();
           dismissPersistent();
           return { action: 'native', outcome: 'accepted' };
         }
         // Native dialog dismissed: hide for this session only, no 30-day cooldown.
         hideBannerSession();
+        trackPwaEvent('pwa_install_prompt_dismissed', {});
         return { action: 'native', outcome: 'dismissed' };
       }, function () {
         openSheet('android-menu');
@@ -431,6 +489,7 @@
     }
 
     function onAppInstalled() {
+      var already = installed() || installAcceptedTracked;
       recordInstalled();
       closeSheet();
       setHidden(bannerEl(), true);
@@ -438,6 +497,7 @@
       applyBodyClass('pwa-banner-on', false);
       applyBodyClass('pwa-sheet-on', false);
       bannerVisible = false;
+      if (!already) notifyInstallAccepted();
       if (env.onChange) env.onChange({ banner: false, sheet: null, installed: true });
     }
 

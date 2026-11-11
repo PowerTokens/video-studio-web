@@ -147,9 +147,39 @@
     s.remove(PROFILE_KEY);
   }
 
+  function mapLoginError(code) {
+    var t = String(code || '').trim().toLowerCase().replace(/[\s-]/g, '_');
+    if (t === 'network' || t === 'http_error') return 'NETWORK';
+    if (t === 'timeout') return 'TIMEOUT';
+    if (t === 'access_denied') return 'CANCELLED';
+    if (t === 'pkce_unsupported' || t === 'unavailable') return 'NOT_ALLOWED';
+    if (
+      t === 'state_mismatch' || t === 'missing_code' || t === 'missing_verifier' ||
+      t === 'token_exchange_failed' || t === 'userinfo_failed' || t === 'invalid_grant' ||
+      t === 'invalid_request' || t === 'unauthorized_client' || t.indexOf('auth') >= 0
+    ) return 'AUTH';
+    return 'UNKNOWN';
+  }
+
+  function notifyLoginStart() {
+    try {
+      if (root.VSAnalytics && root.VSAnalytics.notifyLoginStart) root.VSAnalytics.notifyLoginStart();
+    } catch (e) { /* never break login */ }
+  }
+
+  function notifyLoginFailed(code) {
+    try {
+      if (root.VSAnalytics && root.VSAnalytics.notifyLoginFailed) {
+        root.VSAnalytics.notifyLoginFailed({ errorCode: mapLoginError(code) });
+      }
+    } catch (e) { /* never break login */ }
+  }
+
   function startLogin(opts) {
     opts = opts || {};
+    notifyLoginStart();
     if (!root.crypto || !root.crypto.subtle) {
+      notifyLoginFailed('pkce_unsupported');
       return Promise.reject(new Error('pkce_unsupported'));
     }
     var verifier = makeVerifier();
@@ -273,6 +303,7 @@
     var params = new URLSearchParams(search || root.location.search || '');
     var err = params.get('error');
     if (err) {
+      notifyLoginFailed(err);
       return Promise.resolve({
         ok: false,
         error: err,
@@ -287,9 +318,11 @@
     var expected = ssGet(SS_STATE);
     var verifier = ssGet(SS_VERIFIER);
     if (!expected || state !== expected) {
+      notifyLoginFailed('state_mismatch');
       return Promise.resolve({ ok: false, error: 'state_mismatch' });
     }
     if (!verifier) {
+      notifyLoginFailed('missing_verifier');
       return Promise.resolve({ ok: false, error: 'missing_verifier' });
     }
     var uri = redirectUri();
@@ -297,17 +330,21 @@
       ssRemove(SS_VERIFIER);
       ssRemove(SS_STATE);
       if (!tok.ok || !tok.body || !tok.body.access_token) {
+        var tokErr = (tok.body && tok.body.error) || 'token_exchange_failed';
+        notifyLoginFailed(tokErr);
         return {
           ok: false,
-          error: (tok.body && tok.body.error) || 'token_exchange_failed',
+          error: tokErr,
           error_description: (tok.body && tok.body.error_description) || ''
         };
       }
       return fetchUserinfo(tok.body.access_token).then(function (ui) {
         if (!ui.ok || !ui.body) {
+          var uiErr = (ui.body && ui.body.error) || 'userinfo_failed';
+          notifyLoginFailed(uiErr);
           return {
             ok: false,
-            error: (ui.body && ui.body.error) || 'userinfo_failed',
+            error: uiErr,
             error_description: (ui.body && ui.body.error_description) || ''
           };
         }
@@ -345,9 +382,17 @@
           }
         }
         var profile = getProfile();
+        try {
+          if (root.VSAnalytics && root.VSAnalytics.notifyLoginSuccess) {
+            root.VSAnalytics.notifyLoginSuccess({
+              keyApplied: keyApplied
+            });
+          }
+        } catch (ignoreAnalytics) { /* never break login */ }
         return { ok: true, profile: profile, keyApplied: keyApplied, credits: profile && profile.credits };
       });
     }, function () {
+      notifyLoginFailed('network');
       return { ok: false, error: 'network' };
     });
   }
