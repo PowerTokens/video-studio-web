@@ -66,7 +66,7 @@ VSI18n.register('ko', {
   first_frame_wan_note: "Wan 문서에는 공개 URL이 필요합니다. 기기의 이미지는 포함 이미지로 보내며, 실제 Key로는 아직 확인하지 않았습니다. 실패하면 공개 URL을 쓰세요.",
   first_frame_too_large: "압축 후에도 4 MB를 넘습니다. 더 작은 이미지를 선택하세요.",
   first_frame_bad: "이 이미지를 읽지 못했습니다. JPG, PNG, WebP를 시도하세요.",
-  cost_estimate: "PT %s 예상: 약 %s 크레딧(≈ $%s · $%s/초). 예상 금액대로 청구되며 가산은 없습니다.",
+  cost_estimate: "PT 예상: 약 %s 크레딧(≈ $%s · $%s/초). 예상 금액대로 청구되며 가산은 없습니다.",
   cost_invalid: "올바른 길이와 해상도를 선택하세요.",
   generate_btn: "영상 생성",
   generating_btn: "제출 중…",

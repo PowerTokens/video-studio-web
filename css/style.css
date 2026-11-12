@@ -680,7 +680,6 @@ select option, select optgroup {
   .col-right-stack {
     position: sticky; top: 72px; align-self: start;
   }
-  .gen-current-card { position: static; margin-bottom: 12px; }
   .cmp-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .task-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -719,15 +718,8 @@ select option, select optgroup {
   justify-content: space-between;
   gap: 8px 14px;
 }
-.gen-sticky-meta {
-  flex: 1 1 180px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.gen-sticky-meta .cost { margin: 0; }
-.gen-primary-actions { margin-top: 0; flex: none; }
+.gen-primary-actions { margin-top: 0; flex: 1; }
+.gen-primary-actions .btn-accent { width: 100%; }
 @media (min-width: 640px) {
   .gen-sticky-bar { margin-left: -24px; margin-right: -24px; padding-left: 24px; padding-right: 24px; }
 }
@@ -754,7 +746,6 @@ select option, select optgroup {
     padding: 16px;
     box-shadow: 0 1px 2px rgba(27, 41, 60, .03);
   }
-  .gen-sticky-meta { flex: none; }
   .gen-primary-actions { width: 100%; }
   .gen-primary-actions .btn { width: 100%; min-width: 0; }
 }
@@ -803,7 +794,7 @@ select option, select optgroup {
 body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 .tabs [data-tab="chat"][hidden] { display: none !important; }
 
-/* Entry button retired: Chat tab is on by default (PR #37+). */
+/* Entry button retired: Chat is a first-class tab (PR #37+). */
 .chat-pilot-entry-wrap { display: none !important; margin: 0; }
 .chat-pilot-entry { display: none !important; }
 
@@ -1029,14 +1020,35 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 }
 
 @media (max-width: 640px) {
-  /* Chat stays content-sized on phones. Sticky .chat-dock docks when the page scrolls.
-     Do not stretch panel/shell to 100dvh — that recreates the empty middle gap. */
+  /* The phone composer always stays at the viewport bottom. Measured heights
+     keep the last message/chip scrollable above it, including wrapped copy. */
   body.pilot-chat-on .page:has(#panel-chat:not([hidden])) {
-    padding-bottom: 8px;
+    --chat-bottom-clearance: var(--chat-statusbar-height, calc(34px + env(safe-area-inset-bottom, 0px)));
+    padding-bottom: calc(var(--chat-dock-height, 180px) + var(--chat-bottom-clearance) + var(--chat-viewport-inset, 0px) + 16px);
+  }
+  body.pilot-chat-on.pwa-banner-on .page:has(#panel-chat:not([hidden])) {
+    --chat-bottom-clearance: var(--chat-banner-height, calc(84px + env(safe-area-inset-bottom, 0px)));
   }
   .chat-shell { gap: 8px; }
   .chat-dock {
-    padding: 12px 0 10px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--chat-bottom-clearance) + var(--chat-viewport-inset, 0px));
+    margin-top: 0;
+    padding: 12px 16px 10px;
+    background: var(--page);
+  }
+  /* Mask the area behind and below the floating banner, including its inset. */
+  body.pwa-banner-on .chat-dock::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: var(--chat-bottom-clearance);
+    background: var(--page);
+    pointer-events: none;
   }
 }
 
@@ -1133,6 +1145,11 @@ body.pwa-banner-on {
 }
 body.pwa-banner-on .chat-dock {
   bottom: calc(var(--chat-statusbar-clearance) + var(--pwa-banner-clearance, 0px));
+}
+@media (max-width: 640px) {
+  body.pwa-banner-on .chat-dock {
+    bottom: calc(var(--chat-bottom-clearance) + var(--chat-viewport-inset, 0px));
+  }
 }
 body.pwa-banner-on .gen-sticky-bar {
   bottom: calc(34px + var(--pwa-banner-clearance, 0px));
@@ -1246,3 +1263,23 @@ body.pwa-banner-on .toast {
 .pwa-ico svg { width: 18px; height: 18px; display: block; }
 
 /* Anonymous usage-stats notice — compact, non-blocking */
+
+@media (max-width: 640px) {
+  /* Keep the single primary action reachable above the install offer. */
+  .page:has(#panel-generate:not([hidden])) {
+    padding-bottom: calc(90px + var(--chat-statusbar-height, 34px));
+  }
+  body.pwa-banner-on .page:has(#panel-generate:not([hidden])) {
+    padding-bottom: calc(90px + var(--chat-banner-height, 84px));
+  }
+  #panel-generate .gen-sticky-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    margin: 0;
+    bottom: var(--chat-statusbar-height, 34px);
+  }
+  body.pwa-banner-on #panel-generate .gen-sticky-bar {
+    bottom: var(--chat-banner-height, 84px);
+  }
+}

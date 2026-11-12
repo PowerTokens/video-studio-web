@@ -22,7 +22,7 @@
   var STORE_FLAG = 'vsw.pilot.chat';
   var EXAMPLE_IDS = ['shopping', 'canyon', 'seal', 'locker'];
   var CHEAP_DEFAULT = {
-    model: 'wan3.0-video',
+    model: 'dreamina-seedance-2-0-mini-260615',
     duration: 5,
     resolution: '720p',
     ratio: '9:16'

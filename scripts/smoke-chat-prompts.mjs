@@ -310,7 +310,7 @@ const clamped = pilot.clampPlan({
 });
 assert.equal(clamped.duration, 5);
 assert.equal(clamped.resolution, '720p');
-assert.equal(clamped.model, 'wan3.0-video');
+assert.equal(clamped.model, 'dreamina-seedance-2-0-mini-260615');
 
 function walkText(node) {
   let s = node && node.textContent ? String(node.textContent) : '';

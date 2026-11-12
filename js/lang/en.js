@@ -66,7 +66,7 @@ VSI18n.register('en', {
   first_frame_wan_note: 'Wan docs ask for a public image URL. A local image is sent as an embedded image, which hasn’t been verified with a live key yet; if it fails, use a public URL.',
   first_frame_too_large: 'The image is still over 4 MB after compression. Please choose a smaller one.',
   first_frame_bad: 'Couldn’t read this image. Try a JPG, PNG or WebP.',
-  cost_estimate: 'PT %s estimate: about %s credits (≈ $%s · $%s/s)—billed as quoted, no markup.',
+  cost_estimate: 'PT estimate: about %s credits (≈ $%s · $%s/s)—billed as quoted, no markup.',
   cost_invalid: 'Choose a valid duration and resolution.',
   generate_btn: 'Generate video',
   generating_btn: 'Submitting…',

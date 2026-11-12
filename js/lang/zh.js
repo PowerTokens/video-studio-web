@@ -66,7 +66,7 @@ VSI18n.register('zh', {
   first_frame_wan_note: 'Wan 文档要求公网图片链接；本地图片会以内嵌图片提交，尚未用真实 Key 验证，失败时请改用公网链接。',
   first_frame_too_large: '图片压缩后仍超过 4 MB，请换一张更小的图片。',
   first_frame_bad: '无法读取这张图片，请换一张 JPG / PNG / WebP 图片。',
-  cost_estimate: '按 PT %s 价约 %s 积分（约 $%s · $%s/秒）——按此扣费，不加收。',
+  cost_estimate: '按 PT 价约 %s 积分（约 $%s · $%s/秒）——按此扣费，不加收。',
   cost_invalid: '请选择有效的时长与分辨率。',
   generate_btn: '生成视频',
   generating_btn: '提交中…',

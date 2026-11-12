@@ -216,7 +216,7 @@
     })
   };
 
-  var DEFAULT_MODEL_ID = 'wan3.0-video';
+  var DEFAULT_MODEL_ID = 'dreamina-seedance-2-0-mini-260615';
   var MODEL_ORDER = [
     'wan3.0-video',
     'wan3.0-video-prime',

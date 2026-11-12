@@ -348,8 +348,8 @@
   function setTab(name, push) {
     if (name === 'key' || name === 'keys') name = 'account'; // legacy Key tab → Account
     var invalid = TABS.indexOf(name) < 0;
-    // No hash / unknown hash lands on Chat. Generate stays reachable at #generate.
-    if (invalid) name = 'chat';
+    // No hash / unknown hash lands on Generate.
+    if (invalid) name = 'generate';
     if (name === 'chat' && !(rootChatPilotEnabled())) {
       name = 'generate';
       invalid = true;
@@ -360,10 +360,10 @@
       b.classList.toggle('active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-    // push=true updates URL. Chat is the hashless default; other tabs keep #name.
+    // push=true updates URL. Generate is the hashless default; other tabs keep #name.
     // Dead hashes (#batch / #compare) fall back here and drop the hash.
     if ((push || invalid) && history.replaceState) {
-      history.replaceState(null, '', location.pathname + location.search + (name === 'chat' ? '' : '#' + name));
+      history.replaceState(null, '', location.pathname + location.search + (name === 'generate' ? '' : '#' + name));
     }
     window.scrollTo(0, 0);
 
@@ -688,7 +688,7 @@
       var n = active.getAttribute('data-tab');
       if (TABS.indexOf(n) >= 0) return n;
     }
-    return 'chat';
+    return 'generate';
   }
 
   function pulseLoginCta() {
@@ -978,6 +978,7 @@
   }
 
   function renderCurrent() {
+    if (!$('gen-current') || !$('gen-current-params')) return;
     var m = M.getModel(gen.model);
     var parts = [t('param_seconds', gen.duration), resLabel(gen.resolution), ratioLabel(gen.ratio)];
     if (genImage || $('gen-ff-url').value.trim()) parts.push(t('media_first_frame'));
@@ -1053,24 +1054,20 @@
 
   function renderGenCost() {
     var costEl = $('gen-cost');
-    var stickyCost = $('gen-sticky-cost');
     if (!costEl || typeof gen === 'undefined' || !gen) return;
     try {
       var c = M.estimateCost(gen.duration, gen.resolution, gen.model);
       var credits = M.estimateCreditsFromUsd(c.total);
       var costText = t(
         'cost_estimate',
-        M.PRICE_CHECKED_DATE,
         localeNum(credits),
         money(c.total),
         money(c.perSecond)
       );
       costEl.textContent = costText;
-      if (stickyCost) stickyCost.textContent = costText;
       syncGenerateAvailability(credits);
     } catch (e) {
       costEl.textContent = t('cost_invalid');
-      if (stickyCost) stickyCost.textContent = t('cost_invalid');
       syncGenerateAvailability(null);
     }
   }
@@ -1287,6 +1284,11 @@
     var wrap = el('div', 'preset-sample');
     wrap.appendChild(el('p', 'preset-sample-label', t('preset_sample_label')));
     var img = el('img', 'preset-sample-gif');
+    img.onerror = function () {
+      if (wrap.parentNode !== box) return;
+      box.innerHTML = '';
+      box.appendChild(el('p', 'empty', t('result_empty')));
+    };
     img.src = EXAMPLE_PREVIEW[id] || EXAMPLE_PREVIEW.locker;
     img.alt = t('preset_sample_label');
     img.loading = 'lazy';
@@ -1923,7 +1925,7 @@
         b.addEventListener('click', function () { setTab(b.getAttribute('data-tab'), true); });
       });
       window.addEventListener('hashchange', function () {
-        setTab((location.hash || '').replace('#', '') || 'chat', false);
+        setTab((location.hash || '').replace('#', '') || 'generate', false);
       });
       bindKey();
       bindOauth();
@@ -1955,14 +1957,14 @@
         });
       }
       var initialTab = (location.hash || '').replace(/^#/, '');
-      // Bare index (no hash) opens Chat. #generate / #tasks / #account still select those tabs.
-      if (!initialTab) initialTab = 'chat';
+      // Bare index opens Generate; explicit hashes select the other tabs.
+      if (!initialTab) initialTab = 'generate';
       setTab(initialTab, false);
       maybeDefaultGenPreset();
       if (!window.__vswHashBound) {
         window.__vswHashBound = true;
         window.addEventListener('hashchange', function () {
-          setTab((location.hash || '').replace(/^#/, '') || 'chat', false);
+          setTab((location.hash || '').replace(/^#/, '') || 'generate', false);
         });
       }
       A.onChange(scheduleRender);

@@ -66,7 +66,7 @@ VSI18n.register('ja', {
   first_frame_wan_note: "Wan の説明では公開 URL が必要です。手元の画像は埋め込みで送り、実 Key では未確認です。失敗したら公開 URL を使ってください。",
   first_frame_too_large: "圧縮後も 4 MB を超えています。より小さい画像を選んでください。",
   first_frame_bad: "この画像は読めませんでした。JPG、PNG、WebP を試してください。",
-  cost_estimate: "PT %s の見積もり：約 %s クレジット（≈ $%s · $%s/秒）。見積もりどおりの請求で、上乗せはありません。",
+  cost_estimate: "PT の見積もり：約 %s クレジット（≈ $%s · $%s/秒）。見積もりどおりの請求で、上乗せはありません。",
   cost_invalid: "有効な長さと解像度を選んでください。",
   generate_btn: "動画を生成",
   generating_btn: "送信中…",
