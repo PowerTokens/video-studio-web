@@ -630,12 +630,17 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
   assert.ok(!JSON.stringify(sent).includes('payment'));
 
   sent.length = 0;
+  for (const source of ['cta-windows', 'cta-mac', 'cta', 'releases', 'redirect']) {
+    assert.equal(A.sanitize('desktop_download_click', { source: source.toUpperCase() }).source, source);
+  }
+  assert.equal(A.notifyDesktopDownloadClick('cta-windows'), true);
+  assert.equal(A.notifyDesktopDownloadClick('cta-mac'), true);
   assert.equal(A.notifyDesktopDownloadClick('cta'), true);
   assert.equal(A.notifyDesktopDownloadClick('releases'), true);
   assert.equal(A.notifyDesktopDownloadClick('redirect'), true);
   assert.ok(!('source' in A.sanitize('desktop_download_click', { source: 'installed' })));
   A.flush();
-  assert.equal(sent.filter((x) => x.event === 'desktop_download_click').length, 3);
+  assert.equal(sent.filter((x) => x.event === 'desktop_download_click').length, 5);
 }
 
 // --- surface_open once per session, key verify leaks nothing, language, input_mode ---

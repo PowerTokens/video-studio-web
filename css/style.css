@@ -625,6 +625,9 @@ select option, select optgroup {
 }
 .desktop-cta-actions .btn { text-decoration: none; font-weight: 600; }
 .desktop-cta-actions .btn:hover { text-decoration: none; }
+.desktop-cta [hidden], .desktop-cta[hidden] { display: none; }
+.desktop-cta-mac-note { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.phone-cta { justify-content: center; }
 /* ---------- footer / status bar / toast ---------- */
 .footer {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; padding: 12px 12px 14px;

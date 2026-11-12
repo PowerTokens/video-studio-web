@@ -761,10 +761,15 @@
       chip._vswBillingBound = true;
       chip.addEventListener('click', function () { notifyBillingClick('credits_chip'); });
     }
-    var cta = $('desktop-download-btn');
-    if (cta && !cta._vswDlBound) {
-      cta._vswDlBound = true;
-      cta.addEventListener('click', function () { notifyDesktopDownloadClick('cta'); });
+    var windows = $('desktop-download-windows');
+    if (windows && !windows._vswDlBound) {
+      windows._vswDlBound = true;
+      windows.addEventListener('click', function () { notifyDesktopDownloadClick('cta-windows'); });
+    }
+    var mac = $('desktop-download-mac');
+    if (mac && !mac._vswDlBound) {
+      mac._vswDlBound = true;
+      mac.addEventListener('click', function () { notifyDesktopDownloadClick('cta-mac'); });
     }
     var releases = $('desktop-releases-link');
     if (releases && !releases._vswDlBound) {

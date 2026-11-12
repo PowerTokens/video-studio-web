@@ -88,7 +88,7 @@
   var SAFE_BILLING_SOURCE = {
     header: true, account: true, quota: true, credits_chip: true, chat: true
   };
-  var SAFE_DOWNLOAD_SOURCE = { cta: true, releases: true, redirect: true };
+  var SAFE_DOWNLOAD_SOURCE = { cta: true, 'cta-windows': true, 'cta-mac': true, releases: true, redirect: true };
   var SESSION_MAX_MS = 12 * 60 * 60 * 1000;
   var MODEL_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
   var ALLOWED_INGEST_HOSTS = {

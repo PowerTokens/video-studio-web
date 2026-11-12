@@ -215,11 +215,13 @@ function makeDoc() {
       closest() { return null; },
       addEventListener(ev, fn) { listeners.push({ id, ev, fn }); },
       removeEventListener() {},
+      click() { for (const l of listeners) if (l.id === id && l.ev === 'click') l.fn({ preventDefault() {} }); },
       querySelectorAll() { return []; }
     };
     nodes.set(id, rec);
     return rec;
   }
+  for (const id of ['web-bottom-cta', 'web-bottom-desktop', 'web-bottom-phone', 'phone-add-home-btn']) el(id);
   const banner = el('pwa-install-banner');
   const overlay = el('pwa-install-overlay');
   const sheet = el('pwa-install-sheet');
@@ -292,6 +294,60 @@ function makeController(overrides) {
   if (elapsed) t += elapsed;
   return { ctrl, store, doc, win, tick: (ms) => { t += ms; } };
 }
+
+check('bottom CTA device modes ignore viewport, preview and desktop install state', () => {
+  for (const nav of [desktopChrome, androidChrome, safariIOS, iPadOS, { userAgent: 'Unknown Mobile' }]) {
+    for (const installed of [false, true]) {
+      const { ctrl, doc } = makeController({ nav, installed, search: '?pwa_preview=ios' });
+      ctrl.syncVisibility();
+      const desktop = P.isDesktop(nav, {});
+      assert.equal(doc.getElementById('web-bottom-desktop').hidden, !desktop);
+      assert.equal(doc.getElementById('web-bottom-phone').hidden, desktop || installed);
+      assert.equal(doc.getElementById('web-bottom-cta').hidden, !desktop && installed);
+    }
+  }
+  for (const nav of [desktopChrome, safariIOS]) {
+    const { ctrl, doc } = makeController({ nav, media: { '(display-mode: standalone)': true } });
+    ctrl.syncVisibility();
+    assert.equal(doc.getElementById('web-bottom-cta').hidden, nav === safariIOS);
+  }
+});
+
+check('bottom visibility parks banner without dismissal and cooldown keeps bottom CTA', () => {
+  const { ctrl, store, doc } = makeController({ elapsed: 21000 });
+  ctrl.syncVisibility();
+  assert.equal(ctrl.getState().bannerVisible, true);
+  ctrl.setBottomCtaInView(true);
+  assert.equal(ctrl.getState().bannerVisible, false);
+  assert.equal(store[P.STORAGE_DISMISS], undefined);
+  ctrl.setBottomCtaInView(false);
+  assert.equal(ctrl.getState().bannerVisible, true);
+  ctrl.dismissPersistent();
+  ctrl.syncVisibility();
+  assert.equal(ctrl.getState().bannerVisible, false);
+  assert.equal(doc.getElementById('web-bottom-cta').hidden, false);
+});
+
+check('bottom phone click uses existing sheet and PWA analytics despite cooldown', () => {
+  const events = [];
+  const { ctrl, doc } = makeController({ nav: safariIOS, analytics: { track: (event) => events.push(event) } });
+  ctrl.mount();
+  ctrl.dismissPersistent();
+  doc.getElementById('phone-add-home-btn').click();
+  assert.equal(ctrl.getState().sheet, 'ios-safari');
+  assert.equal(events.filter((e) => e === 'pwa_install_click').length, 1);
+  assert.ok(!events.includes('desktop_download_click'));
+  ctrl.destroy();
+});
+
+check('bottom markup uses direct packages and phone has no download links', () => {
+  for (const [id, file] of [['windows', 'PowerTokensVideoStudio.exe'], ['mac', 'PowerTokensVideoStudio-macOS-arm64.dmg']]) {
+    assert.ok(html.includes('href="https://github.com/PowerTokens/video-studio/releases/latest/download/' + file + '" class="btn btn-accent" id="desktop-download-' + id + '"'));
+  }
+  assert.ok(!html.includes('id="desktop-download-btn"'));
+  const phone = html.split('id="web-bottom-phone"')[1].split('</div>')[0];
+  assert.ok(!phone.includes('href=') && !phone.includes('releases/latest'));
+});
 
 check('desktop controller is not offerable', () => {
   const { ctrl } = makeController({ nav: desktopChrome });
