@@ -64,7 +64,7 @@ VSI18n.register('pt', {
   first_frame_wan_note: "A documentação do Wan pede um URL público. A imagem local é enviada incorporada e ainda não foi verificada com uma chave real; se falhar, use um URL público.",
   first_frame_too_large: "A imagem continua acima de 4 MB depois de comprimir. Escolha uma mais pequena.",
   first_frame_bad: "Não foi possível ler a imagem. Tente JPG, PNG ou WebP.",
-  cost_estimate: "Estimativa PT %s: cerca de %s créditos (≈ $%s · $%s/s)—faturado conforme esta estimativa, sem margem.",
+  cost_estimate: "Estimativa PT: cerca de %s créditos (≈ $%s · $%s/s)—faturado conforme esta estimativa, sem margem.",
   cost_invalid: "Escolha uma duração e resolução válidas.",
   generate_btn: "Gerar vídeo",
   generating_btn: "A enviar…",

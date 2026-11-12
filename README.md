@@ -16,13 +16,13 @@ Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=rea
 
 1. Open the [live page](https://powertokens.github.io/video-studio-web/).
 2. Sign in with PowerTokens (header). Paste an API key only under **Account → Advanced** if you need to.
-3. Tabs: **Chat** (对话出片, on by default), **Generate**, **History**, **Account**. On a phone, the tabs use short labels (Chat / Generate / History / Account).
+3. Tabs: **Chat** (对话出片), **Generate** (default landing tab), **History**, **Account**. On a phone, the tabs use short labels (Chat / Generate / History / Account).
 4. On **Generate**, tap a preset (Pet daily, Fantasy scene, Fun short, or Drama dialogue) to fill the prompt and match duration, ratio, and resolution. Then **Generate video**.
 5. Batch import, model compare, storyboard, and continue-from-previous stay in the [desktop app](https://github.com/PowerTokens/video-studio/releases/latest) (Windows and unsigned Apple Silicon Mac Beta). Web no longer ships Batch or Compare tabs.
 
 ## Chat to video
 
-**对话出片** is a first-class tab (default on; `?pilot=off` still disables it). It calls cheap chat models via `POST https://api.powertokens.ai/v1/chat/completions` (prefer `glm-4.7-flash` with `thinking` disabled; on repeated upstream 429/1305 fall back to `glm-4.5-air` then `deepseek-flash`) using the same Bearer key as Generate, then offers **填进生成表**. Transient errors retry with backoff; on failure you can retry, draft from your text, or fall back to classic Generate.
+**对话出片** is a first-class tab (available alongside the default Generate tab; `?pilot=off` still disables Chat). It calls cheap chat models via `POST https://api.powertokens.ai/v1/chat/completions` (prefer `glm-4.7-flash` with `thinking` disabled; on repeated upstream 429/1305 fall back to `glm-4.5-air` then `deepseek-flash`) using the same Bearer key as Generate, then offers **填进生成表**. Transient errors retry with backoff; on failure you can retry, draft from your text, or fall back to classic Generate.
 
 ## OAuth sign-in (web)
 

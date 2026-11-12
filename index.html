@@ -14,20 +14,20 @@
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" sizes="180x180">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="css/style.css?v=20261112-cta">
+<link rel="stylesheet" href="css/style.css?v=20261112-gen">
 <link rel="preload" href="js/i18n.js?v=20261104-LoginGate" as="script">
-<link rel="preload" href="js/lang/zh.js?v=20261112-cta" as="script">
-<link rel="preload" href="js/lang/en.js?v=20261112-cta" as="script">
-<link rel="preload" href="js/lang/es.js?v=20261112-cta" as="script">
-<link rel="preload" href="js/lang/pt.js?v=20261112-cta" as="script">
-<link rel="preload" href="js/lang/ja.js?v=20261112-cta" as="script">
-<link rel="preload" href="js/lang/ko.js?v=20261112-cta" as="script">
-<link rel="preload" href="js/models.js?v=20261104-LoginGate" as="script">
+<link rel="preload" href="js/lang/zh.js?v=20261112-gen" as="script">
+<link rel="preload" href="js/lang/en.js?v=20261112-gen" as="script">
+<link rel="preload" href="js/lang/es.js?v=20261112-gen" as="script">
+<link rel="preload" href="js/lang/pt.js?v=20261112-gen" as="script">
+<link rel="preload" href="js/lang/ja.js?v=20261112-gen" as="script">
+<link rel="preload" href="js/lang/ko.js?v=20261112-gen" as="script">
+<link rel="preload" href="js/models.js?v=20261112-gen" as="script">
 <link rel="preload" href="js/api.js?v=20261104-LoginGate" as="script">
 <link rel="preload" href="js/utm.js?v=20261104-LoginGate" as="script">
 <link rel="preload" href="js/oauth.js?v=20261106-DefaultChat" as="script">
-<link rel="preload" href="js/chat-pilot.js?v=20261105-ExampleLogin" as="script">
-<link rel="preload" href="js/app.js?v=20261112-cta" as="script">
+<link rel="preload" href="js/chat-pilot.js?v=20261112-gen" as="script">
+<link rel="preload" href="js/app.js?v=20261112-gen" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -60,11 +60,11 @@
 
 <nav class="tabs" aria-label="Tabs">
   <div class="tabs-inner" role="tablist">
-    <button role="tab" type="button" data-tab="chat" class="active" aria-selected="true">
+    <button role="tab" type="button" data-tab="chat" aria-selected="false">
       <span class="tab-full" data-i18n="tab_chat">对话出片</span>
       <span class="tab-short" data-i18n="tab_chat_short">对话</span>
     </button>
-    <button role="tab" type="button" data-tab="generate">
+    <button role="tab" type="button" data-tab="generate" class="active" aria-selected="true">
       <span class="tab-full" data-i18n="tab_generate">生成视频</span>
       <span class="tab-short" data-i18n="tab_generate_short">生成</span>
     </button>
@@ -83,7 +83,7 @@
 <main class="page">
 
   <!-- ============ 对话出片（试点） ============ -->
-  <section id="panel-chat" class="panel panel-chat" role="tabpanel">
+  <section id="panel-chat" class="panel panel-chat" role="tabpanel" hidden>
     <div class="chat-shell">
       <header class="chat-top">
         <div class="chat-top-main">
@@ -106,13 +106,13 @@
           <textarea id="chat-input" rows="1" data-i18n-ph="chat_input_ph" placeholder="用白话说说你想拍什么…"></textarea>
           <button type="button" id="chat-send" class="btn btn-accent chat-send" data-i18n="chat_send">发送</button>
         </div>
-        <p class="chat-footnote muted small"><span data-i18n="chat_footnote">对话由 glm-4.7-flash 协助写提示词（通常不计视频积分）；真正出片仍走生成表。失败时可回经典生成。</span><span class="chat-build" title="cache-bust"> · HidePlan</span></p>
+        <p class="chat-footnote muted small"><span data-i18n="chat_footnote">对话由 glm-4.7-flash 协助写提示词（通常不计视频积分）；真正出片仍走生成表。失败时可回经典生成。</span></p>
       </div>
     </div>
   </section>
 
   <!-- ============ 生成视频 ============ -->
-  <section id="panel-generate" class="panel" role="tabpanel" hidden>
+  <section id="panel-generate" class="panel" role="tabpanel">
     <div class="heading">
       <h1 data-i18n="gen_title">生成视频</h1>
       <p data-i18n="gen_desc">点预设直接开拍，或自己写描述；调整参数，生成带原生音效的视频。</p>
@@ -195,19 +195,9 @@
 
       <div class="col-right">
         <div class="col-right-stack">
-          <section class="card gen-current-card" id="gen-current-card">
-            <h3 class="card-title" data-i18n="current_card">当前配置</h3>
-            <p id="gen-current" class="badge badge-block">Wan 3.0（wan3.0-video）</p>
-            <p id="gen-current-params" class="muted small">5 秒 · 720p · 16:9</p>
-            <p class="muted small" data-i18n="current_saved">完成后可在下方「任务进度」里播放和下载。</p>
-          </section>
-
           <div class="gen-sticky-bar" id="gen-sticky-bar">
             <div class="gen-sticky-inner">
-              <div class="gen-sticky-meta">
-                <p id="gen-sticky-cost" class="muted small cost"></p>
-                <button type="button" id="gen-insufficient" class="link gen-insufficient" hidden data-i18n="credits_insufficient">积分不足 · 去充值</button>
-              </div>
+              <button type="button" id="gen-insufficient" class="link gen-insufficient" hidden data-i18n="credits_insufficient">积分不足 · 去充值</button>
               <div class="actions gen-primary-actions">
                 <button type="button" id="gen-submit" class="btn btn-accent" data-i18n="generate_btn">生成视频</button>
                 <button type="button" id="gen-stop" class="btn" data-i18n="stop_btn" hidden disabled>停止等待</button>
@@ -399,20 +389,21 @@
 
 <script src="js/i18n.js?v=20261104-LoginGate"></script>
 <!-- Translations: one file per language. Add a new language by adding one line here. -->
-<script src="js/lang/zh.js?v=20261112-cta"></script>
-<script src="js/lang/en.js?v=20261112-cta"></script>
-<script src="js/lang/es.js?v=20261112-cta"></script>
-<script src="js/lang/pt.js?v=20261112-cta"></script>
-<script src="js/lang/ja.js?v=20261112-cta"></script>
-<script src="js/lang/ko.js?v=20261112-cta"></script>
+<script src="js/lang/zh.js?v=20261112-gen"></script>
+<script src="js/lang/en.js?v=20261112-gen"></script>
+<script src="js/lang/es.js?v=20261112-gen"></script>
+<script src="js/lang/pt.js?v=20261112-gen"></script>
+<script src="js/lang/ja.js?v=20261112-gen"></script>
+<script src="js/lang/ko.js?v=20261112-gen"></script>
 <script src="js/analytics-config.js?v=20261111-1.17"></script>
 <script src="js/analytics.js?v=20261112-cta"></script>
-<script src="js/models.js?v=20261104-LoginGate"></script>
+<script src="js/models.js?v=20261112-gen"></script>
 <script src="js/api.js?v=20261112-1.17"></script>
 <script src="js/utm.js?v=20261104-LoginGate"></script>
 <script src="js/oauth.js?v=20261112-1.17"></script>
-<script src="js/chat-pilot.js?v=20261112-1.17"></script>
-<script src="js/app.js?v=20261112-cta"></script>
+<script src="js/chat-pilot.js?v=20261112-gen"></script>
+<script src="js/app.js?v=20261112-gen"></script>
 <script src="js/pwa-install.js?v=20261112-cta"></script>
+<script src="js/chat-layout.js?v=20261112-gen"></script>
 </body>
 </html>
