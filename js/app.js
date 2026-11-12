@@ -1913,29 +1913,6 @@
     balanceTimer = setTimeout(refreshBalance, 1500);
   }
 
-  function refreshAnalyticsUi() {
-    var A10n = window.VSAnalytics;
-    if (!A10n) return;
-    var consent = A10n.consentState ? A10n.consentState() : 'unset';
-    var banner = $('analytics-banner');
-    var toggle = $('analytics-toggle');
-    if (banner) banner.hidden = consent !== 'unset';
-    if (toggle) toggle.checked = consent === 'granted';
-  }
-
-  function bindAnalyticsUi() {
-    var accept = $('analytics-accept');
-    var decline = $('analytics-decline');
-    var toggle = $('analytics-toggle');
-    function grant(on) {
-      try { if (window.VSAnalytics) window.VSAnalytics.setConsent(!!on); } catch (e) { /* ignore */ }
-      refreshAnalyticsUi();
-    }
-    if (accept) accept.addEventListener('click', function () { grant(true); });
-    if (decline) decline.addEventListener('click', function () { grant(false); });
-    if (toggle) toggle.addEventListener('change', function () { grant(toggle.checked); });
-  }
-
   function boot() {
     try {
       if (!M || !A || !I) throw new Error('core modules missing');
@@ -1948,7 +1925,6 @@
       window.addEventListener('hashchange', function () {
         setTab((location.hash || '').replace('#', '') || 'chat', false);
       });
-      bindAnalyticsUi();
       bindKey();
       bindOauth();
       bindBillingAndDownload();
@@ -2000,7 +1976,6 @@
       maybeHandleOauthQuery();
       if (window.VSAnalytics && window.VSAnalytics.boot) {
         window.VSAnalytics.boot({ appVersion: 'web-1.17' });
-        refreshAnalyticsUi();
       }
       setInterval(tick, 1000);
     } catch (err) {

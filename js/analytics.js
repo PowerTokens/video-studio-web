@@ -4,8 +4,8 @@
  * Not the official posthog-js SDK: no autocapture, session replay, heatmaps, or
  * person-profile enrichment. Only allowlisted critical events are sent. Prompts,
  * keys, tokens, emails, assets, raw error text, OAuth codes, and URL query
- * strings are never accepted. Fail open; bounded queue only after opt-in when
- * a destination exists. No identifiers are stored before consent. This MVP
+ * strings are never accepted. Fail open; bounded queue when
+ * a destination exists. Analytics is default on. This MVP
  * uses a random install UUID as distinct_id and does not link accounts.
  * The ingest host may still see the client IP; $geoip_disable and
  * $process_person_profile=false are set, and we do not claim IP anonymity.
@@ -283,6 +283,8 @@
         state.login_success_token = '';
       }
     }
+    state.consent = CONSENT_GRANTED;
+    persist();
   }
 
   function persist() {
@@ -326,11 +328,11 @@
 
   function consentState() {
     ensureLoaded();
-    return state.consent === CONSENT_GRANTED || state.consent === CONSENT_DENIED ? state.consent : CONSENT_UNSET;
+    return CONSENT_GRANTED;
   }
 
   function isEnabled() {
-    return consentState() === CONSENT_GRANTED;
+    return hasDestination();
   }
 
   function isPageVisible() {
@@ -627,17 +629,9 @@
 
   function setConsent(granted) {
     ensureLoaded();
-    state.consent = granted ? CONSENT_GRANTED : CONSENT_DENIED;
-    state.queue = [];
-    state.account_distinct_id = '';
-    persist();
-    if (granted) {
-      if (!state.install_id) state.install_id = uuid();
-      persist();
-      ensureSession();
-      captureAppOpen();
-      scheduleFlush();
-    }
+    ensureSession();
+    captureAppOpen();
+    scheduleFlush();
   }
 
   function identifyAccount(userId, cb) {

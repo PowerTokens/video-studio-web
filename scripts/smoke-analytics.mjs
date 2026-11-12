@@ -1,5 +1,5 @@
 /**
- * Smoke: Video Studio web analytics privacy, consent, opt-out, failure, and
+ * Smoke: Video Studio web analytics privacy, default capture, migration, failure, and
  * duplicate prevention. Does not talk to a live PostHog project.
  * Run: node scripts/smoke-analytics.mjs
  */
@@ -12,7 +12,7 @@ import crypto from 'crypto';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function load() {
+function load(oldConsent) {
   const store = {};
   const sent = [];
   let clock = 1_700_000_000_000;
@@ -46,7 +46,8 @@ function load() {
   vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics-config.js'), 'utf8'), sandbox);
   vm.runInContext(fs.readFileSync(path.join(root, 'js/analytics.js'), 'utf8'), sandbox);
   const A = sandbox.VSAnalytics;
-  A.resetForTests({
+  if (oldConsent) store['vsw.analytics.state'] = JSON.stringify({consent: oldConsent});
+  A.boot({
     now: () => clock,
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
@@ -113,9 +114,7 @@ assert.equal(A.sanitize('app_open', { environment: 'synthetic', test_run_id: 'ok
 
 
 // --- consent unset does not queue or mint identifiers ---
-A.captureAppOpen();
-assert.equal(sent.length, 0);
-assert.equal(A.pending().length, 0);
+assert.equal(A.consentState(), 'granted');
 A.setConsent(true);
 A.flush();
 assert.equal(sent.filter((x) => x.event === 'app_open').length, 1);
@@ -149,19 +148,25 @@ assert.equal(failDup, false);
 const genEvents = sent.filter((x) => x.properties && x.properties.generation_id === 'g1').map((x) => x.event);
 assert.deepEqual(genEvents, ['generation_start', 'generation_success']);
 
-// --- opt-out drops queue and further tracks ---
+// Default capture; legacy setter cannot disable capture.
 const isolated = load();
-assert.equal(isolated.A.captureAppOpen(), false);
-assert.deepEqual(isolated.A.pending(), []);
-isolated.A.setConsent(true);
-isolated.A.flush();
-isolated.sent.length = 0;
-isolated.A.notifyGenerationStart('gx', { model: 'kling-v3' });
-isolated.A.flush();
-assert.ok(isolated.sent.length > 0);
+assert.ok(isolated.sent.some(x => x.event === 'app_open'));
 isolated.A.setConsent(false);
-assert.deepEqual(isolated.A.pending(), []);
-assert.equal(isolated.A.notifyLoginSuccess({ userId: 'usr_1' }), false);
+assert.equal(isolated.A.notifyLoginSuccess({ userId: 'usr_1' }), true);
+isolated.A.flush();
+assert.ok(isolated.sent.some(x => x.event === 'login_success'));
+for (const old of ['denied', 'unset']) {
+  const migrated = load(old);
+  assert.equal(migrated.A.consentState(), 'granted');
+  assert.equal(JSON.parse(migrated.store['vsw.analytics.state']).consent, 'granted');
+  assert.ok(migrated.sent.some(x => x.event === 'app_open'));
+}
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const app = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+for (const id of ['analytics-banner', 'analytics-toggle', 'analytics-accept', 'analytics-decline']) {
+  assert.ok(!html.includes(id));
+  assert.ok(!app.includes(id));
+}
 
 // --- transport failure fails open (queue kept) ---
 const failing = load();

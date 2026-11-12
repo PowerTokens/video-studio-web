@@ -3,7 +3,7 @@
 Minimal PostHog *capture* of critical events. This is not `posthog-js`:
 autocapture, session replay, heatmaps, and person-profile enrichment are off.
 
-No events are stored or sent until the user opts in **and** a project key is
+Capture starts automatically when a project key is
 configured for an official ingest host. The committed key is empty; nothing is
 live, and offline smoke tests are not a verified backend integration.
 
@@ -18,7 +18,7 @@ live, and offline smoke tests are not a verified backend integration.
 
 The client posts to `{host}/i/v0/e/` as documented in the
 [Capture API](https://posthog.com/docs/api/capture). Any other host is ignored.
-Until a key is present, opted-in events are not queued for later upload.
+Until a key is present, events are not queued for later upload.
 GitHub Pages has no server env, so fill `analytics-config.js` at deploy time or
 inject the `window.VS_POSTHOG_*` values from a private build step.
 
@@ -38,17 +38,15 @@ Per [Controlling data collection](https://posthog.com/docs/privacy/data-collecti
   **Discard client IP data** in the PostHog project if IPs must not be stored.
 - This client does **not** claim IP anonymity.
 
-## Consent
+## Default-on policy (2026-11-12)
 
-- Default is unset: no `install_id`, no session, no event queue, no network.
-- Accepting the notice (or the Account-tab toggle) is required before any
-  identifier is minted.
-- Denied: only the local denial flag is kept.
-- Opting in later does not upload earlier activity.
+Analytics starts automatically with an official public project key. Stored denied
+and unset states migrate to granted on load. There is no consent banner or
+account toggle. Without a destination, no events are queued or sent.
 
 ## Identity (MVP)
 
-`distinct_id` is a random install UUID created only after opt-in, shared across
+`distinct_id` is a random install UUID created locally, shared across
 tabs in `localStorage`. This MVP does **not** link events to a PowerTokens
 account. `login_success` is a funnel step only.
 
@@ -63,8 +61,8 @@ fresh load also ends an unterminated previous session (crash recovery) before
 
 | Event | When it fires | Extra properties |
 | --- | --- | --- |
-| `app_open` | Once per session after opt-in | — |
-| `session_end` | Once per `session_id` when the page unloads, or when a new session starts after the ~30-minute idle window, or on the next consented start if a previous session was not ended (crash). Tab hide/show within the idle window does not end or double-end the session | `duration_ms` (wall time), `active_ms` (time the page was visible). Integers, each capped at 12 hours |
+| `app_open` | Once per session on startup | — |
+| `session_end` | Once per `session_id` when the page unloads, or when a new session starts after the ~30-minute idle window, or on the next start if a previous session was not ended (crash). Tab hide/show within the idle window does not end or double-end the session | `duration_ms` (wall time), `active_ms` (time the page was visible). Integers, each capped at 12 hours |
 | `login_start` | User started the OAuth redirect (login button or in-app login start). Not a completed sign-in | — |
 | `login_success` | Once per session, inside OAuth `handleCallback` after a successful sign-in | `key_applied` |
 | `login_failed` | OAuth/login finished unsuccessfully | safe `error_code` only |
@@ -131,7 +129,7 @@ file on the production `index.html` (a missing file would 404 on GitHub Pages).
 `index.html` and `oauth/callback.html` already allow `connect-src https:`, which
 includes `https://us.i.posthog.com` and `https://eu.i.posthog.com`.
 `download.html` allows only those two official ingest hosts (plus `'self'`),
-so a consented `desktop_download_click` can be flushed with `sendBeacon`
+so a `desktop_download_click` can be flushed with `sendBeacon`
 before the exe redirect; the download is not delayed on failure.
 
 ## Synthetic / test markers
