@@ -340,6 +340,14 @@ check('bottom phone click uses existing sheet and PWA analytics despite cooldown
   ctrl.destroy();
 });
 
+check('desktop bottom CTA has short copy without releases link or Mac note', () => {
+  assert.ok(!html.includes('desktop-releases-link'));
+  assert.ok(!html.includes('desktop-cta-mac-note'));
+  assert.ok(!html.includes('data-i18n="desktop_cta_mac_note"'));
+  assert.ok(html.includes('data-i18n="desktop_cta_title">高阶对话、批量、模型对比，用桌面版。</p>'));
+  assert.ok(zh.includes('高阶对话、批量、模型对比，用桌面版。'));
+});
+
 check('bottom markup uses direct packages and phone has no download links', () => {
   for (const [id, file] of [['windows', 'PowerTokensVideoStudio.exe'], ['mac', 'PowerTokensVideoStudio-macOS-arm64.dmg']]) {
     assert.ok(html.includes('href="https://github.com/PowerTokens/video-studio/releases/latest/download/' + file + '" class="btn btn-accent" id="desktop-download-' + id + '"'));

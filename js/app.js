@@ -771,11 +771,6 @@
       mac._vswDlBound = true;
       mac.addEventListener('click', function () { notifyDesktopDownloadClick('cta-mac'); });
     }
-    var releases = $('desktop-releases-link');
-    if (releases && !releases._vswDlBound) {
-      releases._vswDlBound = true;
-      releases.addEventListener('click', function () { notifyDesktopDownloadClick('releases'); });
-    }
   }
 
   function bindOauth() {
