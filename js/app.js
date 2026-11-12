@@ -1226,18 +1226,21 @@
     renderGenParams();
   }
 
-  /** After filling a long prompt, show the start (browsers often jump to the end). */
+  /** After filling a long prompt, show the start (browsers often jump to the end).
+      Do not focus the textarea: on a phone that opens the keyboard after a preset tap. */
   function showPromptStart(ta) {
     if (!ta) return;
     try {
-      ta.focus();
-      if (typeof ta.setSelectionRange === 'function') ta.setSelectionRange(0, 0);
-      else {
-        ta.selectionStart = 0;
-        ta.selectionEnd = 0;
+      ta.scrollTop = 0;
+      // Only move the caret if the field is already focused (user is editing).
+      if (document.activeElement === ta) {
+        if (typeof ta.setSelectionRange === 'function') ta.setSelectionRange(0, 0);
+        else {
+          ta.selectionStart = 0;
+          ta.selectionEnd = 0;
+        }
       }
     } catch (e) { /* ignore */ }
-    ta.scrollTop = 0;
   }
 
   /** After filling a preset, bring Settings / Generate into view on short viewports. */
