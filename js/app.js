@@ -1227,12 +1227,24 @@
     renderGenParams();
   }
 
+  /** Grow the prompt field so the filled text is readable, without opening the keyboard. */
+  function fitGenPrompt(ta) {
+    ta = ta || $('gen-prompt');
+    if (!ta) return;
+    var min = 220;
+    var max = Math.max(min, Math.round((window.innerHeight || 600) * 0.55));
+    ta.style.height = 'auto';
+    var h = Math.max(min, ta.scrollHeight + 2);
+    ta.style.height = Math.min(max, h) + 'px';
+    ta.scrollTop = 0;
+  }
+
   /** After filling a long prompt, show the start (browsers often jump to the end).
       Do not focus the textarea: on a phone that opens the keyboard after a preset tap. */
   function showPromptStart(ta) {
     if (!ta) return;
     try {
-      ta.scrollTop = 0;
+      fitGenPrompt(ta);
       // Only move the caret if the field is already focused (user is editing).
       if (document.activeElement === ta) {
         if (typeof ta.setSelectionRange === 'function') ta.setSelectionRange(0, 0);
@@ -1354,7 +1366,8 @@
   function bindGen() {
     var prompt = $('gen-prompt');
     prompt.value = gen.prompt;
-    prompt.addEventListener('input', function () { gen.prompt = prompt.value; saveGen(); });
+    fitGenPrompt(prompt);
+    prompt.addEventListener('input', function () { gen.prompt = prompt.value; saveGen(); fitGenPrompt(prompt); });
     $('gen-model').addEventListener('change', function (e) { selectGenModel(e.target.value); });
     $('gen-model-details').addEventListener('click', function () { openDetails.on = !openDetails.on; renderGenModels(); });
     $('gen-duration').addEventListener('input', function (e) {
