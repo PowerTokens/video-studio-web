@@ -696,6 +696,10 @@ select option, select optgroup {
 .preset-sample-note { margin: 8px 0 0; }
 
 
+#progress-card {
+  scroll-margin-top: 68px;
+}
+
 /* ---------- beginner P0: sticky generate + collapsed first-frame ---------- */
 .gen-sticky-bar {
   position: sticky;
