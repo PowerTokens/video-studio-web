@@ -756,6 +756,8 @@ select option, select optgroup {
   background: transparent;
   padding: 0;
   font: inherit;
+  display: block;
+  margin: 4px 0 10px;
 }
 .gen-insufficient:hover { text-decoration: underline; }
 
@@ -1151,9 +1153,6 @@ body.pwa-banner-on .chat-dock {
     bottom: calc(var(--chat-bottom-clearance) + var(--chat-viewport-inset, 0px));
   }
 }
-body.pwa-banner-on .gen-sticky-bar {
-  bottom: calc(34px + var(--pwa-banner-clearance, 0px));
-}
 body.pwa-banner-on .statusbar {
   /* Keep the gesture/home inset on the banner instead of stacking two bars. */
   visibility: hidden;
@@ -1264,22 +1263,24 @@ body.pwa-banner-on .toast {
 
 /* Anonymous usage-stats notice — compact, non-blocking */
 
-@media (max-width: 640px) {
-  /* Keep the single primary action reachable above the install offer. */
-  .page:has(#panel-generate:not([hidden])) {
-    padding-bottom: calc(90px + var(--chat-statusbar-height, 34px));
-  }
-  body.pwa-banner-on .page:has(#panel-generate:not([hidden])) {
-    padding-bottom: calc(90px + var(--chat-banner-height, 84px));
-  }
+@media (max-width: 999px) {
+  /* In-flow action: do not pin Generate or the top-up link to the viewport. */
   #panel-generate .gen-sticky-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    margin: 0;
-    bottom: var(--chat-statusbar-height, 34px);
+    position: static;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    margin: 12px 0 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    z-index: auto;
   }
-  body.pwa-banner-on #panel-generate .gen-sticky-bar {
-    bottom: var(--chat-banner-height, 84px);
+  #panel-generate .gen-sticky-inner {
+    display: block;
+    max-width: none;
   }
 }
+

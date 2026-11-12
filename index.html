@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" sizes="180x180">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="css/style.css?v=20261112-gen">
+<link rel="stylesheet" href="css/style.css?v=20261112-gen2">
 <link rel="preload" href="js/i18n.js?v=20261104-LoginGate" as="script">
 <link rel="preload" href="js/lang/zh.js?v=20261112-gen" as="script">
 <link rel="preload" href="js/lang/en.js?v=20261112-gen" as="script">
@@ -188,6 +188,7 @@
             </div>
           </div>
           <p id="gen-cost" class="muted small cost"></p>
+          <button type="button" id="gen-insufficient" class="link gen-insufficient" hidden data-i18n="credits_insufficient">积分不足 · 去充值</button>
           <p id="gen-error" class="error" hidden></p>
           <p class="muted small" data-i18n="cloud_note">提交后不会自动重复提交；刷新或关闭页面，任务仍在云端继续，可在「任务记录 / 恢复」里找回。</p>
         </section>
@@ -197,7 +198,6 @@
         <div class="col-right-stack">
           <div class="gen-sticky-bar" id="gen-sticky-bar">
             <div class="gen-sticky-inner">
-              <button type="button" id="gen-insufficient" class="link gen-insufficient" hidden data-i18n="credits_insufficient">积分不足 · 去充值</button>
               <div class="actions gen-primary-actions">
                 <button type="button" id="gen-submit" class="btn btn-accent" data-i18n="generate_btn">生成视频</button>
                 <button type="button" id="gen-stop" class="btn" data-i18n="stop_btn" hidden disabled>停止等待</button>
