@@ -38,6 +38,7 @@ const DL_KEYS = [
   'dl_mac_intro',
   'dl_mac_dmg',
   'dl_mac_zip',
+  'dl_mac_dmg_hint',
   'dl_mac_gatekeeper',
   'dl_mac_step_finder',
   'dl_mac_step_settings',
@@ -50,6 +51,9 @@ assert.ok(!/http-equiv="refresh"/i.test(html), 'download page must not meta-refr
 assert.ok(html.includes('PowerTokensVideoStudio.exe'));
 assert.ok(html.includes('PowerTokensVideoStudio-macOS-arm64.dmg'));
 assert.ok(html.includes('PowerTokensVideoStudio-macOS-arm64.app.zip'));
+assert.ok(html.includes('>PowerTokensVideoStudio.dmg</a>'), 'Mac DMG link text should be the shortened filename');
+assert.ok(html.includes('>PowerTokensVideoStudio.app.zip</a>'), 'Mac zip link text should be the shortened filename');
+assert.ok(!/Download \.dmg|下载 \.dmg/.test(html), 'Mac links must not use “Download .dmg” wording');
 assert.ok(html.includes('Beta'));
 assert.ok(/<html lang="en">/.test(html), 'HTML default language must be English');
 assert.ok(!/<html lang="zh-Hans">/.test(html), 'HTML must not be hardcoded Chinese');
@@ -271,6 +275,9 @@ function textFor(result, key) {
         code + ' is missing ' + key
       );
     }
+    assert.equal(probe.I.STRINGS[code].dl_mac_dmg, 'PowerTokensVideoStudio.dmg', code + ' dmg label');
+    assert.equal(probe.I.STRINGS[code].dl_mac_zip, 'PowerTokensVideoStudio.app.zip', code + ' zip label');
+    assert.equal(probe.I.STRINGS[code].dl_win_link, 'PowerTokensVideoStudio.exe', code + ' exe label');
   }
 }
 
