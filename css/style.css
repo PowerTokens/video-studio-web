@@ -625,6 +625,8 @@ select option, select optgroup {
 }
 .desktop-cta-actions .btn { text-decoration: none; font-weight: 600; }
 .desktop-cta-actions .btn:hover { text-decoration: none; }
+.desktop-cta [hidden], .desktop-cta[hidden] { display: none; }
+.phone-cta { justify-content: center; }
 /* ---------- footer / status bar / toast ---------- */
 .footer {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; padding: 12px 12px 14px;
@@ -1244,13 +1246,3 @@ body.pwa-banner-on .toast {
 .pwa-ico svg { width: 18px; height: 18px; display: block; }
 
 /* Anonymous usage-stats notice — compact, non-blocking */
-.analytics-banner {
-  max-width: 960px;
-  margin: 0 auto 12px;
-  padding: 12px 16px;
-  background: var(--page, #f6f7f8);
-  border: 1px solid var(--line, #e3e5e8);
-  border-radius: 10px;
-}
-.analytics-banner p { margin: 0 0 8px; font-size: 13px; color: var(--muted, #5c6570); }
-.analytics-banner-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }

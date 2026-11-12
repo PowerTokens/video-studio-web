@@ -219,6 +219,9 @@
     var interacted = !!env.interacted;
     var startedAt = nowMs(env);
     var bannerVisible = false;
+    var bottomCtaInView = false;
+    var bottomCtaMode = null;
+    var bottomObserver = null;
     var sheetName = null;
     var lastFocus = null;
     var inputFocused = false;
@@ -337,9 +340,25 @@
       else doc.body.classList.remove(name);
     }
 
+    function syncBottomCta() {
+      bottomCtaMode = isDesktop(nav, win) ? 'desktop' :
+        (isStandalone(win, nav) || installed() ? 'hidden' : 'phone');
+      setHidden($('web-bottom-cta'), bottomCtaMode === 'hidden');
+      setHidden($('web-bottom-desktop'), bottomCtaMode !== 'desktop');
+      setHidden($('web-bottom-phone'), bottomCtaMode !== 'phone');
+      var aside = $('web-bottom-cta');
+      if (aside) aside.setAttribute('aria-labelledby', bottomCtaMode === 'desktop' ? 'web-bottom-desktop-title' : 'phone-add-home-btn');
+    }
+
+    function setBottomCtaInView(value) {
+      bottomCtaInView = !!value;
+      syncVisibility();
+    }
+
     function syncVisibility() {
       if (destroyed) return;
-      var wantBanner = ready() && !blockedByInput() && !sheetName;
+      syncBottomCta();
+      var wantBanner = ready() && !blockedByInput() && !sheetName && !bottomCtaInView && (!memory._sessionHide || previewForce());
       var wantSheet = !!sheetName && !blockedByInput();
       bannerVisible = wantBanner;
       setHidden(bannerEl(), !wantBanner);
@@ -491,6 +510,7 @@
     function onAppInstalled() {
       var already = installed() || installAcceptedTracked;
       recordInstalled();
+      syncBottomCta();
       closeSheet();
       setHidden(bannerEl(), true);
       setHidden(overlayEl(), true);
@@ -503,6 +523,7 @@
 
     function schedule() {
       if (destroyed) return;
+      syncBottomCta();
       if (memory._sessionHide && !previewForce()) {
         setHidden(bannerEl(), true);
         applyBodyClass('pwa-banner-on', false);
@@ -589,6 +610,22 @@
         bind(win.visualViewport, 'resize', schedule);
         bind(win.visualViewport, 'scroll', schedule);
       }
+      syncBottomCta();
+      var phoneCta = $('phone-add-home-btn');
+      if (phoneCta) bind(phoneCta, 'click', function (e) { if (e && e.preventDefault) e.preventDefault(); onCta(); });
+      var bottom = $('web-bottom-cta');
+      if (bottom && typeof win.IntersectionObserver === 'function') {
+        bottomObserver = new win.IntersectionObserver(function (entries) {
+          for (var n = 0; n < entries.length; n++) {
+            var entry = entries[n];
+            if (entry.target !== bottom) continue;
+            // Enter at 45%, leave below 35% to avoid edge flicker.
+            if (!entry.isIntersecting || entry.intersectionRatio < 0.35) setBottomCtaInView(false);
+            else if (entry.intersectionRatio >= 0.45) setBottomCtaInView(true);
+          }
+        }, { threshold: [0, 0.35, 0.45] });
+        bottomObserver.observe(bottom);
+      }
       var cta = $('pwa-install-cta');
       var close = $('pwa-install-close');
       var gotit = doc.querySelectorAll('[data-pwa-gotit]');
@@ -623,6 +660,7 @@
 
     function destroy() {
       destroyed = true;
+      if (bottomObserver) bottomObserver.disconnect();
       for (var i = 0; i < listeners.length; i++) {
         var L = listeners[i];
         try { L.target.removeEventListener(L.ev, L.fn, L.opts); } catch (e) { /* ignore */ }
@@ -653,11 +691,15 @@
       mount: mount,
       destroy: destroy,
       syncVisibility: syncVisibility,
+      syncBottomCta: syncBottomCta,
+      setBottomCtaInView: setBottomCtaInView,
       isInputBlocked: blockedByInput,
       setInputFocused: function (v) { inputFocused = !!v; schedule(); },
       getState: function () {
         return {
           bannerVisible: bannerVisible,
+          bottomCtaInView: bottomCtaInView,
+          bottomCtaMode: bottomCtaMode,
           sheet: sheetName,
           platform: platform(),
           kind: ctaKind(),
