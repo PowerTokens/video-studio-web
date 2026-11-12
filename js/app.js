@@ -8,12 +8,13 @@
 
   var lang = 'en';
   var EXAMPLE_IDS = ['shopping', 'canyon', 'seal', 'locker'];
-  /** Recommended model per example preset. null = any model (do not change Settings). */
+  /** Presets fill the prompt and duration/ratio/resolution only.
+      They do not change the model, which stays at the default (Seedance 2.0 Mini) unless the user picks another. */
   var EXAMPLE_MODELS = {
-    shopping: 'wan3.0-video',
-    canyon: 'wan3.0-video',
-    seal: 'wan3.0-video',
-    locker: 'wan3.0-video'
+    shopping: null,
+    canyon: null,
+    seal: null,
+    locker: null
   };
   var EXAMPLE_FAMILIES = {
     shopping: 'wan',
@@ -1243,16 +1244,14 @@
     } catch (e) { /* ignore */ }
   }
 
-  /** After filling a preset, bring Settings / Generate into view on short viewports. */
-  function scrollParamsIntoView(target) {
-    var anchor = $('gen-submit');
-    if (!anchor) return;
-    var card = anchor.closest ? anchor.closest('.card') : null;
-    var el = card || anchor;
-    if (el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  /** After the user taps a preset, jump to the example video in Progress. */
+  function scrollPreviewIntoView() {
+    var el = $('progress-card') || $('gen-result');
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function applyExample(id, target, btn) {
+  function applyExample(id, target, btn, opts) {
+    opts = opts || {};
     var wasActive = btn && btn.classList.contains('active');
     if (wasActive) {
       $('gen-prompt').value = '';
@@ -1277,9 +1276,9 @@
     showPromptStart($('gen-prompt'));
     previewPresetId = id;
     renderResults();
-    // Match Settings to showcase prompt specs (duration / ratio / resolution), then snap to model.
+    // Match duration / ratio / resolution to the preset; leave the current model (default Seedance 2.0 Mini) alone.
     applyExampleSpecs(id, target);
-    scrollParamsIntoView(target);
+    if (!opts.skipScroll) scrollPreviewIntoView();
   }
 
   function showPresetPreview(box, id) {
@@ -1306,7 +1305,7 @@
     if (!p) {
       var id = EXAMPLE_IDS[0];
       var btn = document.querySelector('#gen-example-chips .example-chip[data-example="' + id + '"]');
-      if (btn) applyExample(id, 'gen', btn);
+      if (btn) applyExample(id, 'gen', btn, { skipScroll: true });
       return;
     }
     for (var i = 0; i < EXAMPLE_IDS.length; i++) {
