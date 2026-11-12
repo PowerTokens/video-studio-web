@@ -161,7 +161,7 @@ VSI18n.register('es', {
   get_btn: "Abrir gestión de claves",
   footer_desktop: "Descargar la app de escritorio",
   footer_license: "Licencia MIT",
-  desktop_cta_title: "Chat avanzado, lotes y comparación de modelos: usa la app de escritorio.",
+  desktop_cta_title: "Chat avanzado, lotes, comparación de modelos, storyboard y continuar-desde-el-anterior: usa la app de escritorio.",
   desktop_cta_desc: "La web sirve para probar un clip. El lote en Excel, el storyboard desde guion y continuar desde el clip anterior están en la app de escritorio para Windows y Apple Silicon Mac (el build de Mac es una Beta sin firmar) — sin Python, la misma clave API.",
   desktop_cta_windows: "Descargar para Windows",
   desktop_cta_mac: "Descargar para Mac",

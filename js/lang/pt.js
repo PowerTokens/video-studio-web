@@ -161,7 +161,7 @@ VSI18n.register('pt', {
   get_btn: "Abrir gestão de chaves",
   footer_desktop: "Descarregar a app de secretária",
   footer_license: "Licença MIT",
-  desktop_cta_title: "Chat avançado, lotes e comparação de modelos — use a app de secretária.",
+  desktop_cta_title: "Chat avançado, lotes, comparação de modelos, storyboard e continuar-do-anterior — use a app de secretária.",
   desktop_cta_desc: "A web serve para experimentar um clipe. O lote em Excel, o storyboard a partir do guião e continuar a partir do clipe anterior estão na app de secretária para Windows e Apple Silicon Mac (a versão Mac é uma Beta sem assinatura) — sem Python, a mesma chave API.",
   desktop_cta_windows: "Descarregar para Windows",
   desktop_cta_mac: "Descarregar para Mac",

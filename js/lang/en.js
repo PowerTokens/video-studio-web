@@ -163,7 +163,7 @@ VSI18n.register('en', {
   get_btn: 'Open key management',
   footer_desktop: 'Download the desktop app',
   footer_license: 'MIT License',
-  desktop_cta_title: 'Advanced chat, batch, and model comparison — use the desktop app.',
+  desktop_cta_title: 'Advanced chat, batch, model comparison, storyboard, and continue-from-previous — use the desktop app.',
   desktop_cta_desc: 'The web version is great for a quick clip. Full features (Excel batch, script-to-storyboard, continue from previous clip) are in the desktop app for Windows and Apple Silicon Mac (the Mac build is an unsigned Beta) — no Python required, same API Key.',
   desktop_cta_windows: "Download for Windows",
   desktop_cta_mac: "Download for Mac",

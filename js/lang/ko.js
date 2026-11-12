@@ -163,7 +163,7 @@ VSI18n.register('ko', {
   get_btn: "Key 관리 열기",
   footer_desktop: "데스크톱 앱 다운로드",
   footer_license: "MIT 라이선스",
-  desktop_cta_title: "고급 대화, 일괄, 모델 비교는 데스크톱 앱에서.",
+  desktop_cta_title: "고급 대화, 일괄, 모델 비교, 스토리보드, 이전 클립에서 이어 만들기는 데스크톱 앱에서.",
   desktop_cta_desc: "웹은 짧은 한 편을 시험하기에 맞습니다. Excel 일괄, 대본으로 스토리보드, 이전 클립에서 이어 만들기는 Windows와 Apple Silicon Mac 데스크톱 앱에 있습니다(Mac은 서명되지 않은 Beta). Python은 필요 없고, 같은 API Key를 씁니다.",
   desktop_cta_windows: "Windows용 다운로드",
   desktop_cta_mac: "Mac용 다운로드",

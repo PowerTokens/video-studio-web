@@ -168,7 +168,7 @@ VSI18n.register('zh', {
   // Footer
   footer_desktop: '下载桌面版',
   footer_license: 'MIT 许可证',
-  desktop_cta_title: '高阶对话、批量、模型对比，用桌面版。',
+  desktop_cta_title: '高阶对话、批量、模型对比、分镜、接上一段，用桌面版。',
   desktop_cta_desc: '网页版适合随手试一条。完整功能（Excel 批量、剧本分镜、接上一段）在桌面客户端，支持 Windows 与 Apple Silicon Mac（Mac 为未签名 Beta），免装 Python，同一个 API Key。',
   desktop_cta_windows: "下载 Windows 版",
   desktop_cta_mac: "下载 Mac 版",
