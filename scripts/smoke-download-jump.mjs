@@ -37,8 +37,6 @@ const DL_KEYS = [
   'dl_badge_beta',
   'dl_mac_intro',
   'dl_mac_dmg',
-  'dl_mac_zip',
-  'dl_mac_dmg_hint',
   'dl_mac_gatekeeper',
   'dl_mac_step_finder',
   'dl_mac_step_settings',
@@ -50,9 +48,10 @@ const DL_KEYS = [
 assert.ok(!/http-equiv="refresh"/i.test(html), 'download page must not meta-refresh (it would send Mac users the EXE)');
 assert.ok(html.includes('PowerTokensVideoStudio.exe'));
 assert.ok(html.includes('PowerTokensVideoStudio-macOS-arm64.dmg'));
-assert.ok(html.includes('PowerTokensVideoStudio-macOS-arm64.app.zip'));
 assert.ok(html.includes('>PowerTokensVideoStudio.dmg</a>'), 'Mac DMG link text should be the shortened filename');
-assert.ok(html.includes('>PowerTokensVideoStudio.app.zip</a>'), 'Mac zip link text should be the shortened filename');
+assert.ok(!html.includes('id="zip-link"'), 'download page should not offer a zip link');
+assert.ok(!html.includes('PowerTokensVideoStudio-macOS-arm64.app.zip'), 'zip should not be a download-page href (it stays on the GitHub release)');
+assert.ok(!html.includes('dl_mac_zip'), 'zip i18n key should be gone from the page');
 assert.ok(!/Download \.dmg|下载 \.dmg/.test(html), 'Mac links must not use “Download .dmg” wording');
 assert.ok(html.includes('Beta'));
 assert.ok(/<html lang="en">/.test(html), 'HTML default language must be English');
@@ -276,7 +275,7 @@ function textFor(result, key) {
       );
     }
     assert.equal(probe.I.STRINGS[code].dl_mac_dmg, 'PowerTokensVideoStudio.dmg', code + ' dmg label');
-    assert.equal(probe.I.STRINGS[code].dl_mac_zip, 'PowerTokensVideoStudio.app.zip', code + ' zip label');
+    assert.ok(!Object.prototype.hasOwnProperty.call(probe.I.STRINGS[code], 'dl_mac_zip'), code + ' should not have dl_mac_zip');
     assert.equal(probe.I.STRINGS[code].dl_win_link, 'PowerTokensVideoStudio.exe', code + ' exe label');
   }
 }
