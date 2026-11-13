@@ -38,7 +38,9 @@ After userinfo, the default account `key` is saved into the same local key pool 
 
 There is no green “paste a Key” banner for new users — Sign in in the header is the main path. Manual API Key paste remains under **Account → Advanced** (collapsed).
 
-Credits / top-up still open the PowerTokens billing page in the browser (product-forced UTM). In-app create-payment is not wired yet.
+After you sign in, the credits chip in the header opens an in-app checkout. You can pick a package or enter a custom amount (USD 5–2000) and pay by credit card or PayPal; when payment completes, credits refresh in the app. History and invoices still open the official billing page. If you are not signed in, the chip starts sign-in first.
+
+登录后，顶栏积分入口会打开应用内充值：可选择套餐或输入自定义金额（5–2000 美元），支持信用卡和 PayPal；付款完成后积分会在应用内刷新。历史订单和发票仍会打开官网账单页。未登录时，该入口会先引导登录。
 
 ## Languages
 
