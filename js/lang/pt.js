@@ -270,7 +270,7 @@ VSI18n.register('pt', {
   model_desc_seedance_25: "Seedance 2.5 aponta a narrativas mais longas com áudio nativo sincronizado, até 30 segundos e 480p–1080p. Aceita texto para vídeo, imagem para vídeo e referências multimodais para manter cena e personagem.",
   model_desc_kling_v3: "Kling v3 oferece texto para vídeo e imagem para vídeo (primeiro / último fotograma) com áudio nativo opcional. Duração 3–15 segundos; escolha 720p, 1080p ou modo 4K se precisar de mais resolução.",
   examples_label: "Experimentar um preset",
-  examples_hint: "Toque num cartão para preencher um prompt de exemplo e alinhar duração / proporção / resolução. Toque de novo para limpar.",
+  examples_hint: "Toque num cartão para preencher um prompt de exemplo e alinhar duração / proporção / resolução.",
   examples_filled: "Preset carregado — edite ou gere como está.",
   examples_cleared: "Preset limpo — escreva o seu próprio prompt.",
   preset_sample_label: "Pré-visualização de exemplo",

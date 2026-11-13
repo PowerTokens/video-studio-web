@@ -279,7 +279,7 @@ VSI18n.register('zh', {
   model_desc_kling_v3: "Kling v3 支持文生视频与图生视频（首帧 / 尾帧），可选原生音频。时长 3–15 秒；可选 720p、1080p 或 4K 模式，需要更高输出分辨率时选用。",
   // Beginner preset cards + how-to (keep in sync with index.html data-i18n keys)
   examples_label: "试试预设",
-  examples_hint: "点卡片填入示例提示词，并自动对齐时长 / 比例 / 分辨率；再点一次清空。默认是更省积分的短片预设。",
+  examples_hint: "点卡片填入示例提示词，并自动对齐时长 / 比例 / 分辨率。默认是更省积分的短片预设。",
   examples_filled: "已填入预设 — 可直接生成，也可再改。",
   examples_cleared: "已取消预设，可自行输入描述。",
   preset_sample_label: "示例效果",

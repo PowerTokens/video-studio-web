@@ -274,7 +274,7 @@ VSI18n.register('en', {
   model_desc_kling_v3: "Kling v3 offers text-to-video and image-to-video (first / last frame) with optional native audio. Duration 3–15 seconds; choose 720p, 1080p, or 4K mode when you need higher output resolution.",
   // Beginner preset cards + how-to (keep in sync with index.html data-i18n keys)
   examples_label: "Try a preset",
-  examples_hint: "Tap a card to fill a sample prompt and match duration / ratio / resolution. Tap again to clear. The first card is a cheaper short clip for beginners.",
+  examples_hint: "Tap a card to fill a sample prompt and match duration / ratio / resolution. The first card is a cheaper short clip for beginners.",
   examples_filled: "Preset loaded — edit it or generate as-is.",
   examples_cleared: "Preset cleared — write your own prompt.",
   preset_sample_label: "Example preview",

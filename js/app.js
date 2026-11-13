@@ -22,12 +22,12 @@
     seal: 'wan',
     locker: 'wan'
   };
-  /** Local showcase GIFs (from PowerTokens/video-studio README) shown in Progress on preset click. */
+  /** Small local motion previews with matching static posters. */
   var EXAMPLE_PREVIEW = {
-    shopping: 'assets/presets/product.gif',
-    canyon: 'assets/presets/cinematic.gif',
-    seal: 'assets/presets/fantasy.gif',
-    locker: 'assets/presets/drama.gif'
+    shopping: 'assets/presets/product.mp4',
+    canyon: 'assets/presets/cinematic.mp4',
+    seal: 'assets/presets/fantasy.mp4',
+    locker: 'assets/presets/drama.mp4'
   };
   /** Settings to apply with each Generate preset. Default first card stays beginner-cheap (~5s · 720p). */
   var EXAMPLE_SPECS = {
@@ -36,7 +36,7 @@
     seal: { duration: 5, ratio: '9:16', resolution: '720p' },
     locker: { duration: 5, ratio: '9:16', resolution: '720p' }
   };
-  /** Active Generate-tab preset id for Progress sample; cleared on generate / preset clear. */
+  /** Active Generate-tab preset id for the independent example surface. */
   var previewPresetId = null;
 
   function $(id) { return document.getElementById(id); }
@@ -1272,26 +1272,20 @@
     } catch (e) { /* ignore */ }
   }
 
-  /** After the user taps a preset, jump to the example video in Progress. */
-  function scrollPreviewIntoView() {
-    var el = $('progress-card') || $('gen-result');
-    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function positionPresetPreview() {
+    var box = $('gen-preset-preview');
+    var host = window.matchMedia('(min-width: 1000px)').matches ? $('gen-preview-desktop') : $('gen-preview-mobile');
+    if (box && host && box.parentNode !== host) host.appendChild(box);
   }
-
+  function scrollPreviewIntoView() {
+    var box = $('gen-preset-preview');
+    if (!box || box.hidden) return;
+    var r = box.getBoundingClientRect();
+    if (r.top < 68 || r.bottom > window.innerHeight) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
   function applyExample(id, target, btn, opts) {
     opts = opts || {};
-    var wasActive = btn && btn.classList.contains('active');
-    if (wasActive) {
-      $('gen-prompt').value = '';
-      gen.prompt = '';
-      saveGen();
-      showPromptStart($('gen-prompt'));
-      previewPresetId = null;
-      renderResults();
-      setExampleActive(target, null);
-      return;
-    }
-
+    if (btn && btn.classList.contains('active')) return;
     var prompt = examplePrompt(id);
     $('gen-prompt').value = prompt;
     gen.prompt = prompt;
@@ -1303,29 +1297,45 @@
     }
     showPromptStart($('gen-prompt'));
     previewPresetId = id;
-    renderResults();
+    showPresetPreview($('gen-preset-preview'), id);
     // Match duration / ratio / resolution to the preset; leave the current model (default Seedance 2.0 Mini) alone.
     applyExampleSpecs(id, target);
     if (!opts.skipScroll) scrollPreviewIntoView();
   }
 
   function showPresetPreview(box, id) {
+    positionPresetPreview();
+    box.hidden = false;
+    if (box.dataset.preset === id) {
+      box.querySelector('.preset-sample-label').textContent = t('preset_sample_label');
+      box.querySelector('.preset-sample-note').textContent = t('preset_sample_note');
+      box.querySelector('video').setAttribute('aria-label', t('preset_sample_label'));
+      return;
+    }
+    box.dataset.preset = id;
     box.innerHTML = '';
     var wrap = el('div', 'preset-sample');
     wrap.appendChild(el('p', 'preset-sample-label', t('preset_sample_label')));
-    var img = el('img', 'preset-sample-gif');
-    img.onerror = function () {
-      if (wrap.parentNode !== box) return;
-      box.innerHTML = '';
-      box.appendChild(el('p', 'empty', t('result_empty')));
-    };
-    img.src = EXAMPLE_PREVIEW[id] || EXAMPLE_PREVIEW.locker;
-    img.alt = t('preset_sample_label');
-    img.loading = 'lazy';
-    wrap.appendChild(img);
+    var video = el('video', 'preset-sample-video');
+    video.width = id === 'locker' ? 480 : 320;
+    video.height = id === 'locker' ? 270 : 570;
+    video.poster = EXAMPLE_PREVIEW[id].replace('.mp4', '-poster.webp');
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute('muted', '');
+    video.autoplay = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.preload = 'auto';
+    video.setAttribute('aria-label', t('preset_sample_label'));
+    video.src = EXAMPLE_PREVIEW[id];
+    wrap.appendChild(video);
     wrap.appendChild(el('p', 'preset-sample-note muted small', t('preset_sample_note')));
     box.appendChild(wrap);
+    video.play().catch(function () { /* Poster stays visible if autoplay is unavailable. */ });
   }
+  window.addEventListener('resize', positionPresetPreview);
 
   /** On empty Generate prompt, select first preset via applyExample. If stored prompt still matches a preset, only restore chip + sample. */
   function maybeDefaultGenPreset() {
@@ -1344,7 +1354,7 @@
       if (b) {
         setExampleActive('gen', b);
         previewPresetId = eid;
-        renderResults();
+        showPresetPreview($('gen-preset-preview'), eid);
       }
       break;
     }
@@ -1527,7 +1537,6 @@
     btn.textContent = t('generating_btn');
     btn.setAttribute('data-i18n', 'generating_btn');
     var plan = { model: gen.model, prompt: prompt, duration: gen.duration, resolution: gen.resolution, ratio: gen.ratio, cost: cost, has_image: !!media.length };
-    previewPresetId = null;
     A.store.set('last_single', null);
     var first = true;
     A.submit(plan, built, key, function (info) {
@@ -1785,14 +1794,8 @@
     var box = $('gen-result');
     var id = A.store.get('last_single', null);
     var rec = id ? A.getTask(id) : null;
-    var busy = !!(rec && (rec.state === 'submitting' || rec.state === 'queued' || rec.state === 'running'));
-    if (busy || (rec && !previewPresetId)) {
-      syncCards(box, rec ? [rec] : [], {}, 'result_empty');
-    } else if (previewPresetId && EXAMPLE_PREVIEW[previewPresetId]) {
-      showPresetPreview(box, previewPresetId);
-    } else {
-      syncCards(box, [], {}, 'result_empty');
-    }
+    syncCards(box, rec ? [rec] : [], {}, 'result_empty');
+    if (previewPresetId) showPresetPreview($('gen-preset-preview'), previewPresetId);
     syncStopVisibility();
   }
 
