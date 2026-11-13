@@ -8,6 +8,12 @@ VSI18n.register('ja', {
   htmlLang: "ja",
   match: ["ja"]
 }, {
+  chat_greeting_choices: "こんにちは！撮りたい映像を教えてください。一緒に形にしましょう。こちらから選んでも始められます：",
+  chat_use_prompt: "このプロンプトを使う",
+  chat_change_scene: "別のシーン",
+  chat_add_detail: "詳しく伝える",
+  chat_use_or_change: "このまま使いますか？変更しますか？",
+  chat_pick_title: "始めたいテーマを選んでください：",
   page_title: "PowerTokens Video Studio ウェブ · 複数モデルの AI 動画",
   subtitle: "複数モデルの AI 動画生成 · ウェブ版",
   key_chip_none: "ログインすると Key が入ります",
@@ -295,7 +301,7 @@ VSI18n.register('ja', {
   chat_subtitle: "案がしっくりくるまで話し、プロンプトをコピーします。生成は任意です。",
   chat_reset: "最初から",
   chat_examples_label: "タップすると、撮れる書き方が見えます",
-  chat_input_ph: "撮りたいものを、ふつうの言葉で…",
+  chat_input_ph: "PT に返信：どんな映像を撮りたいですか？",
   chat_send: "送信",
   chat_footnote: "対話はプロンプト作成を手伝います（通常、動画クレジットはかかりません）。気に入ったらコピーし、書き出すときだけ生成します。",
   chat_entry_btn: "対話で作る（試験）",

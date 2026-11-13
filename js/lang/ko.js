@@ -8,6 +8,12 @@ VSI18n.register('ko', {
   htmlLang: "ko",
   match: ["ko"]
 }, {
+  chat_greeting_choices: "안녕하세요! 찍고 싶은 장면을 알려주시면 함께 구체화할게요. 주제를 골라 시작해도 좋아요:",
+  chat_use_prompt: "이 프롬프트 사용",
+  chat_change_scene: "다른 장면",
+  chat_add_detail: "내용 추가하기",
+  chat_use_or_change: "이대로 사용할까요, 수정할까요?",
+  chat_pick_title: "시작할 주제를 골라주세요:",
   page_title: "PowerTokens Video Studio 웹 · 여러 모델 AI 영상",
   subtitle: "여러 모델 AI 영상 생성 · 웹",
   key_chip_none: "로그인하면 Key가 채워집니다",
@@ -295,7 +301,7 @@ VSI18n.register('ko', {
   chat_subtitle: "안이 마음에 들 때까지 이야기한 다음 프롬프트를 복사합니다. 생성은 선택입니다.",
   chat_reset: "처음부터",
   chat_examples_label: "누르면 찍을 수 있는 문장이 보입니다",
-  chat_input_ph: "찍고 싶은 것을 편하게 말해 주세요…",
+  chat_input_ph: "PT에게 답장: 어떤 영상을 찍고 싶나요?",
   chat_send: "보내기",
   chat_footnote: "대화는 프롬프트 작성을 돕습니다(보통 영상 크레딧은 들지 않습니다). 마음에 들면 복사하고, 렌더할 때만 생성하세요.",
   chat_entry_btn: "대화로 만들기(시범)",

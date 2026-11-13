@@ -53,7 +53,7 @@ function elMock() {
       const want = String(sel || '').replace(/^\./, '');
       let hit = null;
       eachNodeLocal(this, function (n) {
-        if (!hit && n !== node && n.className === want) hit = n;
+        if (!hit && n !== node && String(n.className).split(' ').includes(want)) hit = n;
       });
       return hit;
     },
@@ -327,77 +327,30 @@ function findClass(node, cls) {
 }
 
 lang = 'en';
-pilot.presentExample('shopping');
-const threadText = walkText(document.getElementById('chat-thread'));
-const blurb = I.t('en', 'chat_example_shopping_blurb');
-assert.ok(threadText.includes(blurb), 'example click speaks the short scene');
-assert.ok(threadText.includes(I.t('en', 'chat_example_ready')));
-assert.ok(!threadText.includes('I still need a bit more detail'));
-assert.ok(!threadText.includes('insufficient_user_quota'));
-const promptBody = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt-body');
-assert.ok(promptBody && promptBody.textContent.includes('Subject:'));
-assert.ok(promptBody.textContent.includes('cheese blocks'));
-assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt').open, true);
-assert.equal(api.isWeakOrEchoPrompt(promptBody.textContent, blurb), false);
-assert.ok(!blurb.includes('Subject:'));
-pilot.refreshUi();
+pilot.resetConversation();
+const opening = document.getElementById('chat-thread');
+const openingChips = [];
 function eachNode(node, fn) {
   if (!node) return;
   fn(node);
   for (const child of node.children || []) eachNode(child, fn);
 }
-eachNode(document.getElementById('chat-example-chips'), function (node) {
-  if (node.className === 'chat-example-chip') {
-    assert.equal(node.title || '', '', 'example chips should not use a hover title');
-    assert.equal(node.getAttribute('aria-label'), null, 'example chips should not dump a label into aria-label');
-  }
-});
-
-lang = 'zh';
-pilot.resetConversation();
+eachNode(opening, node => { if (node.getAttribute('data-example')) openingChips.push(node); });
+assert.equal(openingChips.length, 4);
+openingChips.forEach((chip, i) => assert.equal(chip.textContent, I.t('en', 'example_' + ['shopping', 'canyon', 'seal', 'locker'][i] + '_label')));
 pilot.presentExample('shopping');
-const zhTitle = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-title');
-const zhPrompt = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt-body');
-assert.equal(zhTitle.textContent, I.t('zh', 'example_shopping_label'));
-assert.ok(zhPrompt.textContent.includes('芝士'));
-lang = 'en';
+const userRow = opening.children[1];
+assert.equal(walkText(userRow).trim(), I.t('en', 'example_shopping_label'));
+assert.ok(walkText(opening).includes('cheese blocks'));
+assert.ok(walkText(opening).includes(I.t('en', 'chat_use_or_change')));
+assert.equal(document.getElementById('chat-plan-mount').children.length, 0);
+const actions = findClass(opening, 'chat-plan-actions');
+assert.equal(actions.children.length, 3);
+actions.children[1].click();
+assert.equal(opening.children.at(-1).querySelector('.chat-example-chips').children.length, 4);
+lang = 'zh';
 pilot.refreshUi();
-const enTitle = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-title');
-const enPrompt = findClass(document.getElementById('chat-plan-mount'), 'chat-plan-prompt-body');
-assert.equal(enTitle.textContent, I.t('en', 'example_shopping_label'));
-assert.ok(enPrompt.textContent.includes('Subject:'));
-assert.ok(!enPrompt.textContent.includes('芝士'));
-const bubbles = [];
-eachNode(document.getElementById('chat-thread'), function (node) {
-  if (node.className && String(node.className).indexOf('chat-bubble') >= 0) bubbles.push(node.textContent);
-});
-assert.ok(bubbles.indexOf(I.t('en', 'chat_example_shopping_blurb')) >= 0, 'example line follows the new language');
-assert.ok(bubbles.indexOf(I.t('en', 'chat_example_ready')) >= 0);
-assert.ok(bubbles.indexOf(I.t('zh', 'chat_example_shopping_blurb')) < 0);
-eachNode(document.getElementById('chat-example-chips'), function (node) {
-  if (node.className === 'chat-example-chip') {
-    assert.equal(node.title || '', '', 'language switch must not restore a chip hover title');
-    assert.equal(node.getAttribute('aria-label'), null);
-  }
-});
-
-const keepBtns = [];
-eachNode(document.getElementById('chat-plan-mount'), function (node) {
-  if (node.className === 'btn' && String(node.textContent || '') === I.t('en', 'chat_keep_refining')) {
-    keepBtns.push(node);
-  }
-});
-assert.equal(keepBtns.length, 1, 'Keep chatting on the example plan card');
-keepBtns[0].click();
-assert.equal(document.getElementById('chat-plan-mount').children.length, 0, 'Keep chatting hides the plan card');
-assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null);
-
-pilot.presentExample('canyon');
-assert.ok(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), 'another example shows a card again');
-document.getElementById('chat-input').value = 'i m';
-document.getElementById('chat-send').click();
-assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null, 'typed follow-up hides the prior card');
-assert.ok(walkText(document.getElementById('chat-thread')).includes(I.t('en', 'chat_clarify_nonsensical')));
+assert.ok(walkText(opening).includes('芝士'));
 
 // Logged-out chips must take the same gate as Send, including when a local plan exists.
 let flashCalls = 0;
@@ -417,7 +370,7 @@ loginCalls.length = 0;
 lang = 'en';
 pilot.resetConversation();
 const chips = [];
-eachNode(document.getElementById('chat-example-chips'), function (node) {
+eachNode(document.getElementById('chat-thread'), function (node) {
   if (node.className === 'chat-example-chip') chips.push(node);
 });
 assert.equal(chips.length, 4, 'four example chips');
@@ -429,7 +382,7 @@ for (const id of ['shopping', 'canyon', 'seal', 'locker']) {
   assert.ok(!loggedOutThread.includes(I.t('en', 'chat_example_' + id + '_blurb')), 'logged-out example does not post ' + id);
 }
 assert.equal(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), null, 'logged-out example does not mount a plan card');
-assert.equal(document.getElementById('chat-examples').hidden, false, 'example chips stay available until login');
+
 assert.deepEqual(loginCalls, ['example', 'example', 'example', 'example']);
 assert.equal(flashCalls, 0, 'logged-out example does not call Flash');
 document.getElementById('chat-input').value = 'a cat on a windowsill';
@@ -446,7 +399,7 @@ flashCalls = 0;
 pilot.resetConversation();
 pilot.presentExample('shopping');
 assert.ok(walkText(document.getElementById('chat-thread')).includes(I.t('en', 'chat_example_ready')), 'logged-in example still replies immediately');
-assert.ok(findClass(document.getElementById('chat-plan-mount'), 'chat-plan-card'), 'logged-in example still mounts a local plan');
+assert.ok(findClass(document.getElementById('chat-thread'), 'chat-plan-inline'), 'logged-in example stays in thread');
 assert.equal(loginCalls.length, 0, 'logged-in example does not ask for login');
 assert.equal(flashCalls, 0, 'logged-in example plan stays local');
 document.getElementById('chat-input').value = 'i m';

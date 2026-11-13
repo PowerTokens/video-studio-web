@@ -6,6 +6,12 @@ VSI18n.register('pt', {
   htmlLang: "pt",
   match: ["pt"]
 }, {
+  chat_greeting_choices: "Olá! Conte o que quer filmar e vamos definir a cena. Ou escolha um ponto de partida:",
+  chat_use_prompt: "Usar este prompt",
+  chat_change_scene: "Outra cena",
+  chat_add_detail: "Adicionar detalhes",
+  chat_use_or_change: "Quer usar esta versão ou mudar algo?",
+  chat_pick_title: "Escolha um ponto de partida:",
   page_title: "PowerTokens Video Studio Web · Vídeo IA multi-modelo",
   subtitle: "Geração de vídeo IA multi-modelo · Web",
   key_chip_none: "Entre para obter uma chave",
@@ -293,7 +299,7 @@ VSI18n.register('pt', {
   chat_subtitle: "Converse até o plano ficar bom; depois copie o prompt. Gerar é opcional.",
   chat_reset: "Recomeçar",
   chat_examples_label: "Toque uma e veja como se descreve o plano",
-  chat_input_ph: "Descreva o vídeo que você quer…",
+  chat_input_ph: "Responda ao PT: o que você quer filmar?",
   chat_send: "Enviar",
   chat_footnote: "O chat ajuda a escrever o prompt (em geral não cobra vídeo). Copie quando estiver satisfeito; Gerar só na renderização.",
   chat_entry_btn: "Experimentar Chat para vídeo (piloto)",

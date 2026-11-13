@@ -8,6 +8,12 @@ VSI18n.register('zh', {
   htmlLang: 'zh-CN',      // <html lang>
   match: ['zh']          // browser language prefixes that pick this language by default
 }, {
+  chat_greeting_choices: "你好！说说你想拍什么，我们一起把画面写清楚。也可以先选一个开头：",
+  chat_use_prompt: "用这版提示词",
+  chat_change_scene: "换个场景",
+  chat_add_detail: "我再补充",
+  chat_use_or_change: "想用这版，还是改一改？",
+  chat_pick_title: "选一个开头：",
   page_title: 'PowerTokens Video Studio 网页版 · 多模型 AI 视频生成',
   subtitle: "多模型 AI 视频生成 · 网页版",
   key_chip_none: "登录后自动填入 Key",
@@ -304,7 +310,7 @@ VSI18n.register('zh', {
   chat_subtitle: "先把方案聊满意，再复制提示词；生成是可选下一步。",
   chat_reset: "重新开始",
   chat_examples_label: "点一条，看可拍的写法",
-  chat_input_ph: "用白话说说你想拍什么…",
+  chat_input_ph: "回复 PT，聊聊你想拍的画面…",
   chat_send: "发送",
   chat_footnote: "对话帮你写提示词（通常不计视频积分）。聊满意后先复制；真正出片再走生成。",
   chat_entry_btn: "试试对话出片（试点）",
