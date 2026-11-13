@@ -1384,7 +1384,11 @@ dialog.payment-picker:focus, dialog.payment-picker:focus-visible { outline:none;
 
 .payment-picker h2 { font-size:20px; margin:0 32px 22px 0; }
 
-.payment-packages { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.payment-packages { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+
+@media (max-width:540px) {
+  .payment-packages { gap:8px; }
+}
 
 .payment-picker .payment-card { border:1px solid #dfe7ee; border-radius:14px; background:white; color:#1b293c; padding:16px; cursor:pointer; text-align:left; }
 
@@ -1426,6 +1430,7 @@ dialog.payment-picker:focus, dialog.payment-picker:focus-visible { outline:none;
 
 .payment-picker .payment-check { display:block; width:100%; background:transparent; border:0; padding:12px; color:#5f7388; }
 
-.payment-picker > a { display:block; text-align:center; color:#5f7388; font-size:13px; }
+.payment-links { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 16px; text-align:center; }
+.payment-links a { color:#5f7388; font-size:13px; overflow-wrap:anywhere; }
 
 .payment-picker button:focus-visible { outline:3px solid #419f92; outline-offset:2px; }

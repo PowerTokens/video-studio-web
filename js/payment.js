@@ -57,18 +57,26 @@
     function el(tag, text, parent) { var n = document.createElement(tag); if (text) n.textContent = text; (parent || dialog).appendChild(n); return n; }
     el('h2', 'Video Studio · ' + c[0]);
     var close = el('button', '×'); close.className = 'payment-close'; close.setAttribute('aria-label', c[8]); close.onclick = function () { dialog.close(); };
-    var select = {value: '22'}, channel = {value: 'limeng'};
+    var select = {value: 'preset-5'}, channel = {value: 'limeng'};
     var cards = el('div'); cards.className = 'payment-packages';
     var packageButtons = [];
-    root.VSPaymentPackages.forEach(function (p) {
-      var b = el('button', '', cards); b.type = 'button'; b.className = 'payment-card'; b.setAttribute('data-package', p.id);
-      if (p.is_recommended) { var badge = el('span', c[1], b); badge.className = 'payment-badge'; }
-      var price = el('strong', p.amount_type === 2 ? c[16] : '$' + p.sales_price, b);
+    // UI keys are distinct from official package ids: both $5 and Custom use 33.
+    var uiCards = [
+      {key:'preset-5', packageId:33, amount:5, credits:5000, recommended:true},
+      {key:'22', packageId:22},
+      {key:'23', packageId:23},
+      {key:'custom', packageId:33, custom:true}
+    ];
+    uiCards.forEach(function (card) {
+      var p = root.VSPaymentPackages.find(function (p) { return p.id === card.packageId; });
+      var b = el('button', '', cards); b.type = 'button'; b.className = 'payment-card'; b.setAttribute('data-package', p.id); b.setAttribute('data-selection', card.key);
+      if (card.recommended) { var badge = el('span', c[1], b); badge.className = 'payment-badge'; }
+      var price = el('strong', card.custom ? c[16] : '$' + (card.amount || p.sales_price), b);
       price.className = 'payment-price';
-      el('span', p.amount_type === 2 ? c[2] : p.credits_amount.toLocaleString(), b).className = 'payment-credits';
-      if (p.amount_type !== 2) el('span', c[15], b);
-      packageButtons.push({button:b, id:String(p.id)});
-      b.onclick = function () { select.value = String(p.id); updateSelection(); };
+      el('span', card.custom ? c[2] : (card.credits || p.credits_amount).toLocaleString(), b).className = 'payment-credits';
+      if (!card.custom) el('span', c[15], b);
+      packageButtons.push({button:b, id:card.key});
+      b.onclick = function () { select.value = card.key; updateSelection(); };
     });
     var custom = el('label'); custom.className = 'payment-custom';
     el('span', c[2], custom);
@@ -108,13 +116,15 @@
     function updateSelection() {
       packageButtons.forEach(function (x) { x.button.setAttribute('aria-pressed', String(x.id === select.value)); });
       methodButtons.forEach(function (x) { x.button.checked = x.id === channel.value; });
-      custom.hidden = select.value !== '33';
+      custom.hidden = select.value !== 'custom';
     }
     updateSelection();
     var message = el('p', active ? c[6] : ''); message.className = 'payment-status'; message.setAttribute('role','status');
     var buy = el('button', c[5]); buy.className = 'payment-buy'; buy.disabled = !!active;
     var manual = el('button', c[7]); manual.className = 'payment-check';
-    var history = el('a', c[13]); history.href = 'https://powertokens.ai/billing'; history.target = '_blank'; history.rel = 'noopener';
+    var links = el('div'); links.className = 'payment-links';
+    var history = el('a', c[13], links); history.href = 'https://powertokens.ai/billing'; history.target = '_blank'; history.rel = 'noopener';
+    var feedback = el('a', c[14] + ': service@powertokens.ai', links); feedback.href = 'mailto:service@powertokens.ai';
     var timer, deadline = Date.now() + 300000;
     function current() { return O.isLoggedIn() && O.getAccessToken() === token; }
     async function check() {
@@ -137,7 +147,7 @@
     buy.onclick = async function () {
       if (busy || active || !current()) return;
       var body;
-      try { body = payload(select.value, amount.value, channel.value); } catch (_) { message.textContent = c[12]; return; }
+      try { var card = uiCards.find(function (card) { return card.key === select.value; }); body = payload(card.packageId, card.custom ? amount.value : card.amount, channel.value); } catch (_) { message.textContent = c[12]; return; }
       // Reserve a tab synchronously so mobile popup blockers allow checkout.
       var checkout = window.open('about:blank', '_blank'); if (checkout) checkout.opener = null;
       busy = true; buy.disabled = true;

@@ -169,6 +169,7 @@ VSI18n.register('ko', {
   get_btn: "Key 관리 열기",
   footer_desktop: "데스크톱 앱 다운로드",
   footer_license: "MIT 라이선스",
+  footer_feedback: '의견 보내기: service@powertokens.ai',
   desktop_cta_title: "고급 대화, 일괄, 모델 비교, 스토리보드, 이전 클립에서 이어 만들기는 데스크톱 앱에서.",
   desktop_cta_desc: "웹은 짧은 한 편을 시험하기에 맞습니다. Excel 일괄, 대본으로 스토리보드, 이전 클립에서 이어 만들기는 Windows와 Apple Silicon Mac 데스크톱 앱에 있습니다(Mac은 서명되지 않은 Beta). Python은 필요 없고, 같은 API Key를 씁니다.",
   desktop_cta_windows: "Windows용 다운로드",
@@ -366,5 +367,6 @@ VSI18n.register('ko', {
   dl_mac_step_settings: "한 번 연 다음, ‘시스템 설정 → 개인정보 보호 및 보안’에서 ‘확인 없이 열기’를 클릭합니다.",
   dl_footer_releases: "모든 버전",
   dl_footer_web: "Video Studio 웹",
+  dl_footer_feedback: '의견 보내기: service@powertokens.ai',
   dl_lang_label: "언어",
 });
