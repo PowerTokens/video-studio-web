@@ -169,6 +169,7 @@ VSI18n.register('ja', {
   get_btn: "Key 管理を開く",
   footer_desktop: "デスクトップアプリをダウンロード",
   footer_license: "MIT ライセンス",
+  footer_feedback: 'お問い合わせ: service@powertokens.ai',
   desktop_cta_title: "高度な対話、一括、モデル比較、絵コンテ、前のクリップから続ける機能は、デスクトップ版で。",
   desktop_cta_desc: "ウェブは短い一本を試すのに向いています。Excel 一括、台本から絵コンテ、前のクリップから続ける機能は、Windows と Apple Silicon Mac のデスクトップ版です（Mac は未署名の Beta）。Python は不要で、同じ API Key を使います。",
   desktop_cta_windows: "Windows 版をダウンロード",
@@ -366,5 +367,6 @@ VSI18n.register('ja', {
   dl_mac_step_settings: "一度開こうとしてから、「システム設定 → プライバシーとセキュリティ」を開き、「このまま開く」をクリックします。",
   dl_footer_releases: "すべてのバージョン",
   dl_footer_web: "Video Studio ウェブ版",
+  dl_footer_feedback: 'お問い合わせ: service@powertokens.ai',
   dl_lang_label: "言語",
 });

@@ -169,6 +169,7 @@ VSI18n.register('en', {
   get_btn: 'Open key management',
   footer_desktop: 'Download the desktop app',
   footer_license: 'MIT License',
+  footer_feedback: 'Feedback: service@powertokens.ai',
   desktop_cta_title: 'Advanced chat, batch, model comparison, storyboard, and continue-from-previous — use the desktop app.',
   desktop_cta_desc: 'The web version is great for a quick clip. Full features (Excel batch, script-to-storyboard, continue from previous clip) are in the desktop app for Windows and Apple Silicon Mac (the Mac build is an unsigned Beta) — no Python required, same API Key.',
   desktop_cta_windows: "Download for Windows",
@@ -388,5 +389,6 @@ VSI18n.register('en', {
   dl_mac_step_settings: 'Open it once, then go to System Settings → Privacy & Security and click Open Anyway.',
   dl_footer_releases: 'All releases',
   dl_footer_web: 'Video Studio web',
+  dl_footer_feedback: 'Feedback: service@powertokens.ai',
   dl_lang_label: 'Language',
 });

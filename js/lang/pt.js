@@ -167,6 +167,7 @@ VSI18n.register('pt', {
   get_btn: "Abrir gestão de chaves",
   footer_desktop: "Descarregar a app de secretária",
   footer_license: "Licença MIT",
+  footer_feedback: 'Feedback: service@powertokens.ai',
   desktop_cta_title: "Chat avançado, lotes, comparação de modelos, storyboard e continuar-do-anterior — use a app de secretária.",
   desktop_cta_desc: "A web serve para experimentar um clipe. O lote em Excel, o storyboard a partir do guião e continuar a partir do clipe anterior estão na app de secretária para Windows e Apple Silicon Mac (a versão Mac é uma Beta sem assinatura) — sem Python, a mesma chave API.",
   desktop_cta_windows: "Descarregar para Windows",
@@ -364,5 +365,6 @@ VSI18n.register('pt', {
   dl_mac_step_settings: "Abra-a uma vez e, em seguida, vá a Definições do Sistema → Privacidade e segurança e clique em Abrir mesmo assim.",
   dl_footer_releases: "Todas as versões",
   dl_footer_web: "Video Studio web",
+  dl_footer_feedback: 'Feedback: service@powertokens.ai',
   dl_lang_label: "Idioma",
 });

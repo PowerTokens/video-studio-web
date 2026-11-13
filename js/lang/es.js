@@ -167,6 +167,7 @@ VSI18n.register('es', {
   get_btn: "Abrir gestión de claves",
   footer_desktop: "Descargar la app de escritorio",
   footer_license: "Licencia MIT",
+  footer_feedback: 'Comentarios: service@powertokens.ai',
   desktop_cta_title: "Chat avanzado, lotes, comparación de modelos, storyboard y continuar-desde-el-anterior: usa la app de escritorio.",
   desktop_cta_desc: "La web sirve para probar un clip. El lote en Excel, el storyboard desde guion y continuar desde el clip anterior están en la app de escritorio para Windows y Apple Silicon Mac (el build de Mac es una Beta sin firmar) — sin Python, la misma clave API.",
   desktop_cta_windows: "Descargar para Windows",
@@ -364,5 +365,6 @@ VSI18n.register('es', {
   dl_mac_step_settings: "Ábrela una vez y, a continuación, ve a Ajustes del Sistema → Privacidad y seguridad y pulsa Abrir de todos modos.",
   dl_footer_releases: "Todas las versiones",
   dl_footer_web: "Video Studio web",
+  dl_footer_feedback: 'Comentarios: service@powertokens.ai',
   dl_lang_label: "Idioma",
 });
