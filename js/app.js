@@ -756,11 +756,27 @@
     setTab('account', true);
   }
 
+
+  document.addEventListener('click', function (event) {
+    var link = event.target.closest('a');
+    if (link && link.id !== 'billing-chip' && /powertokens\.ai\/(?:[a-zA-Z-]+\/)?billing/.test(link.href) && !link.closest('.payment-picker')) {
+      event.preventDefault();
+      openInAppPayment('quota_tip');
+    }
+  });
+
+  function openInAppPayment(source) {
+    notifyBillingClick(source);
+    if (window.VSPayment && typeof window.VSPayment.show === 'function') {
+      window.VSPayment.show({lang: lang, login: startOauthLogin, refresh: renderCredits});
+    }
+  }
+
   function bindBillingAndDownload() {
     var chip = $('billing-chip');
     if (chip && !chip._vswBillingBound) {
       chip._vswBillingBound = true;
-      chip.addEventListener('click', function () { notifyBillingClick('credits_chip'); });
+      chip.addEventListener('click', function (event) { event.preventDefault(); openInAppPayment('credits_chip'); });
     }
     var windows = $('desktop-download-windows');
     if (windows && !windows._vswDlBound) {
@@ -1390,12 +1406,8 @@
     if (insuff) {
       insuff.addEventListener('click', function (e) {
         e.preventDefault();
-        notifyBillingClick('quota');
         focusBillingChip();
-        var chip = $('billing-chip');
-        if (chip && chip.href) {
-          try { window.open(chip.href, '_blank', 'noopener'); } catch (err) { /* ignore */ }
-        }
+        openInAppPayment('quota');
       });
     }
 

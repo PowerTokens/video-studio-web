@@ -149,3 +149,39 @@ These steps are related by the same anonymous `install_id` / `session_id`. The p
 5. **Social sharing** — **no existing share feature** (`navigator.share`, social buttons, or a confirmed publish callback). Still unmeasurable. Do not label a post as published. Clipboard copies are not share events.
 
 Filter production dashboards with `environment = production`.
+
+## Automatic UTM and payment funnel
+
+Every newly queued event, including session end, carries plain `utm_source`,
+`utm_medium`, `utm_campaign`, optional `utm_content` / `utm_term`, plus the
+corresponding `initial_utm_*` fields. Attribution comes from `VSUtm.lastTouch()`
+and `VSUtm.firstTouch()`; only those five known fields are copied. Missing core
+fields use videostudio / web / video-studio, including when the helper is absent
+or fails. Values are trimmed and must match `[A-Za-z0-9._-]{1,80}`; unsafe or
+overlong values are omitted. Click ids, URLs and query strings are never copied.
+Caller-provided attribution cannot override these touches.
+
+Payment uses the same names intended for desktop:
+
+| Event | Trigger | Properties |
+| --- | --- | --- |
+| `payment_start` | Confirmed buy, immediately before create request | `package_id`, `channel`, `source=dialog` |
+| `payment_checkout_opened` | Successful create with accepted redirect and checkout handoff | `package_id`, `channel` |
+| `payment_failed` | Create rejection, network failure or invalid redirect before handoff | `package_id`, `channel`, normalized `error_code` |
+| `payment_success` | Existing polling detects paid status or its profile-refresh completion fallback | `package_id`, `channel` when known |
+
+Package ids are strings restricted to 22/23/24/33; channels are limeng/paypal.
+CHECKOUT normalizes to VALIDATION and PAYMENT to UNKNOWN. Payment helpers are
+`notify_payment_start`, `notify_payment_checkout_opened`, `notify_payment_failed`,
+and `notify_payment_success`; all analytics failures are ignored by checkout.
+Safe package/channel context survives pending-payment restoration; old saved
+payments may omit it. The create API transport and body remain unchanged.
+No payment amounts, balances, credits, order identifiers, checkout URLs, account
+identifiers, credentials or raw error messages are analytics properties.
+
+Offline verification: `scripts/smoke-analytics.mjs` and
+`scripts/smoke-payment.mjs`. The latter drives the actual dialog handlers in a
+mock DOM, stubs every network call and popup, polls success, and exercises create
+rejection, invalid redirect, network failure and throwing analytics. It checks
+queued event counts, UTM defaults and forbidden-field exclusion. No checkout tab
+or live order is created by these tests.

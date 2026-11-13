@@ -1356,3 +1356,62 @@ body.pilot-chat-on .page:has(#panel-chat:not([hidden])) { padding-bottom: 0; --c
 
 body:has(#panel-chat:not([hidden])) .desktop-cta,
 body:has(#panel-chat:not([hidden])) .phone-cta { display: none; }
+
+/* In-app payment picker */
+/* Anonymous usage-stats notice — compact, non-blocking */
+
+/* Checkout: distinct price, credit balance, and payment method hierarchy. */
+/* Reset native dialog chrome, including the UA focus outline and padding. */
+dialog.payment-picker { position:relative; width:min(560px, calc(100vw - 32px)); box-sizing:border-box; padding:24px; border:1px solid #dfe7ee; outline:none; border-radius:18px; background:#f5f7fb; color:#1b293c; box-shadow:0 16px 48px #1b293c26; }
+
+dialog.payment-picker:focus, dialog.payment-picker:focus-visible { outline:none; }
+
+.payment-picker::backdrop { background:#1b293c66; }
+
+.payment-picker h2 { font-size:20px; margin:0 32px 22px 0; }
+
+.payment-packages { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+.payment-picker .payment-card { border:1px solid #dfe7ee; border-radius:14px; background:white; color:#1b293c; padding:16px; cursor:pointer; text-align:left; }
+
+.payment-card { display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-height:135px; position:relative; }
+
+.payment-picker .payment-card[aria-pressed="true"] { border:2px solid #53b2a5; background:#eaf6f2; padding:15px; }
+
+.payment-price { font-size:26px; margin-top:18px; }
+
+.payment-credits { font-size:19px; font-weight:600; }
+
+.payment-card > span:last-child { color:#5f7388; font-size:13px; }
+
+.payment-badge { position:absolute; top:8px; right:10px; color:#267d70; font-size:12px; }
+
+.payment-methods { display:flex; flex-wrap:wrap; gap:12px 24px; margin-top:20px; }
+
+.payment-picker .payment-method { display:flex; align-items:center; gap:8px; min-height:40px; padding:0; color:#1b293c; cursor:pointer; font-size:14px; }
+
+.payment-method input[type="radio"] { appearance:auto; width:18px; height:18px; margin:0 2px 0 0; accent-color:#267d70; cursor:pointer; }
+
+.payment-method input:focus-visible { outline:2px solid #267d70; outline-offset:3px; }
+
+.payment-icon { display:block; width:24px; height:18px; flex:0 0 24px; }
+
+.payment-status { margin:0; }
+
+.payment-status:not(:empty) { margin-top:12px; }
+
+.payment-custom { margin-top:12px; }
+
+.payment-custom:not([hidden]) { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+
+.payment-custom input { width:100px; }
+
+.payment-picker .payment-close { position:absolute; top:10px; right:12px; border:0; background:transparent; font-size:25px; color:#708194; }
+
+.payment-picker .payment-buy { margin-top:24px; margin-bottom:12px; width:100%; background:#53b2a5; border:0; border-radius:10px; padding:12px; color:#1b293c; font-weight:600; }
+
+.payment-picker .payment-check { display:block; width:100%; background:transparent; border:0; padding:12px; color:#5f7388; }
+
+.payment-picker > a { display:block; text-align:center; color:#5f7388; font-size:13px; }
+
+.payment-picker button:focus-visible { outline:3px solid #419f92; outline-offset:2px; }

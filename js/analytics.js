@@ -34,6 +34,7 @@
     login_failed: true,
     logout: true,
     billing_click: true,
+    payment_start: true, payment_checkout_opened: true, payment_failed: true, payment_success: true,
     desktop_download_click: true,
     surface_open: true,
     key_verified: true,
@@ -47,6 +48,9 @@
     generation_id: true, requested_duration_s: true, key_applied: true,
     environment: true, test_run_id: true, chat_id: true,
     cta_kind: true, active_ms: true, source: true, language: true,
+    package_id: true, channel: true,
+    utm_source: true, utm_medium: true, utm_campaign: true, utm_content: true, utm_term: true,
+    initial_utm_source: true, initial_utm_medium: true, initial_utm_campaign: true, initial_utm_content: true, initial_utm_term: true,
     input_mode: true
   };
 
@@ -62,6 +66,7 @@
     $pathname: true, referrer: true, $referrer: true, video_url: true,
     media: true, image: true, assets: true, credits: true, balance: true,
     password: true, secret: true, raw: true, userinfo: true, profile: true,
+    amount: true, sales_price: true, currency: true, orderNo: true, order_no: true, order_id: true, order_number: true, redirectUrl: true, checkout_url: true,
     sub: true, user_id: true, distinct_email: true
   };
 
@@ -74,7 +79,7 @@
     NO_RESUME: true, QUERY_FORBIDDEN: true
   };
 
-  var ERROR_ALIAS = { CANCELED: 'CANCELLED', UNCERTAIN_RELOAD: 'UNCERTAIN' };
+  var ERROR_ALIAS = { CANCELED: 'CANCELLED', UNCERTAIN_RELOAD: 'UNCERTAIN', CHECKOUT: 'VALIDATION', PAYMENT: 'UNKNOWN' };
   var SAFE_SURFACES = { generate: true, compare: true, batch: true, chat: true, tasks: true, account: true, history: true, keys: true };
   var SAFE_CTA_KIND = {
     'native-prompt': true,
@@ -86,7 +91,7 @@
   var SAFE_INPUT_MODE = { t2v: true, i2v: true };
   var SAFE_LANGUAGES = { zh: true, en: true, es: true, pt: true, ja: true, ko: true };
   var SAFE_BILLING_SOURCE = {
-    header: true, account: true, quota: true, credits_chip: true, chat: true
+    dialog: true, header: true, account: true, quota: true, quota_tip: true, credits_chip: true, chat: true
   };
   var SAFE_DOWNLOAD_SOURCE = { cta: true, 'cta-windows': true, 'cta-mac': true, releases: true, redirect: true };
   var SESSION_MAX_MS = 12 * 60 * 60 * 1000;
@@ -193,7 +198,15 @@
       if (!Object.prototype.hasOwnProperty.call(src, key)) continue;
       if (FORBIDDEN[key] || !ALLOWED_PROPS[key]) continue;
       value = src[key];
-      if (key === 'error_code') value = normalizeErrorCode(value);
+      if (/^(initial_)?utm_/.test(key)) {
+        value = safeUtm(value);
+        if (!value) continue;
+      } else if (key === 'package_id') {
+        value = String(value);
+        if (!/^(22|23|24|33)$/.test(value)) continue;
+      } else if (key === 'channel') {
+        if (value !== 'limeng' && value !== 'paypal') continue;
+      } else if (key === 'error_code') value = normalizeErrorCode(value);
       else if (key === 'surface') {
         value = String(value || '').trim().toLowerCase();
         if (!SAFE_SURFACES[value]) continue;
@@ -528,7 +541,28 @@
     return true;
   }
 
+  function safeUtm(value) {
+    if (typeof value !== 'string') return null;
+    var text = value.trim();
+    return /^[A-Za-z0-9._-]{1,80}$/.test(text) ? text : null;
+  }
+
+  function attachUtm(props) {
+    var defaults = {utm_source: 'videostudio', utm_medium: 'web', utm_campaign: 'video-studio'};
+    ['lastTouch', 'firstTouch'].forEach(function (method, index) {
+      var touch = {};
+      try { if (root.VSUtm) touch = root.VSUtm[method]() || {}; } catch (_) {}
+      Object.keys(defaults).concat(['utm_content', 'utm_term']).forEach(function (key) {
+        var target = (index ? 'initial_' : '') + key;
+        delete props[target];
+        var value = safeUtm(Object.prototype.hasOwnProperty.call(touch, key) ? touch[key] : defaults[key]);
+        if (value) props[target] = value;
+      });
+    });
+  }
+
   function enqueue(item) {
+    attachUtm(item.properties);
     state.queue = (state.queue || []).concat([item]);
     if (state.queue.length > QUEUE_MAX) state.queue = state.queue.slice(-QUEUE_MAX);
   }
@@ -933,6 +967,10 @@
     notifyLogout: notifyLogout,
     notifyLoginSuccess: notifyLoginSuccess,
     notifyBillingClick: notifyBillingClick,
+    notify_payment_start: function (props) { return track('payment_start', props); },
+    notify_payment_checkout_opened: function (props) { return track('payment_checkout_opened', props); },
+    notify_payment_failed: function (props) { return track('payment_failed', props); },
+    notify_payment_success: function (props) { return track('payment_success', props); },
     notifyDesktopDownloadClick: notifyDesktopDownloadClick,
     notifySurfaceOpen: notifySurfaceOpen,
     notifyKeyVerified: notifyKeyVerified,

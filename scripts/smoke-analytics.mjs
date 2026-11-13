@@ -12,11 +12,12 @@ import crypto from 'crypto';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function load(oldConsent) {
+function load(oldConsent, utm) {
   const store = {};
   const sent = [];
   let clock = 1_700_000_000_000;
   const sandbox = {
+    VSUtm: utm,
     window: {},
     globalThis: null,
     localStorage: {
@@ -694,3 +695,33 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
 }
 
 console.log('smoke-analytics: ok');
+
+// Attribution is automatic, including the independently queued session end.
+for (const utm of [undefined, {firstTouch:()=>({}),lastTouch:()=>({})}, {
+  firstTouch:()=>({utm_source:' first-touch ',utm_content:'bad?query=secret',gclid:'private'}),
+  lastTouch:()=>({utm_source:'last-touch',utm_term:'bad&value',utm_campaign:'x'.repeat(81)})
+}]) {
+  const {A: a, sent: events} = load(undefined, utm);
+  a.notifyBillingClick('header');
+  a.handlePageLeaving();
+  for (const item of events) {
+    const p = item.properties;
+    assert.equal(p.utm_medium, 'web');
+    assert.equal(p.initial_utm_medium, 'web');
+    assert.equal(p.utm_source, utm?.lastTouch().utm_source || 'videostudio');
+    assert.equal(p.initial_utm_source, utm?.firstTouch().utm_source?.trim() || 'videostudio');
+    assert.ok(!('gclid' in p));
+    assert.ok(!('utm_term' in p));
+    assert.ok(!('initial_utm_content' in p));
+  }
+}
+for (const event of ['payment_start','payment_checkout_opened','payment_failed','payment_success']) {
+  const p = A.sanitize(event, {package_id:22,channel:'paypal',source:'dialog',error_code:'CHECKOUT',
+    orderNo:'private',order_no:'private',url:'private',href:'private',amount:1,credits:1,redirectUrl:'private'});
+  assert.equal(p.package_id,'22'); assert.equal(p.channel,'paypal');
+  assert.equal(p.error_code,'VALIDATION');
+  for (const key of ['orderNo','order_no','url','href','amount','credits','redirectUrl']) assert.ok(!(key in p));
+  const bad = A.sanitize(event,{package_id:99,channel:'other',utm_source:'bad/value'});
+  assert.ok(!('package_id' in bad)); assert.ok(!('channel' in bad)); assert.ok(!('utm_source' in bad));
+}
+console.log('UTM and payment event privacy passed.');
