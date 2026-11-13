@@ -8,6 +8,12 @@ VSI18n.register('en', {
   htmlLang: 'en',      // <html lang>
   match: ['en']          // browser language prefixes that pick this language by default
 }, {
+  chat_greeting_choices: "Hi! Tell me what you want to film and we’ll shape the shot together. Or pick a starting point:",
+  chat_use_prompt: "Use this prompt",
+  chat_change_scene: "Try another scene",
+  chat_add_detail: "Add my details",
+  chat_use_or_change: "Want to use this, or change it?",
+  chat_pick_title: "Pick a starting point:",
   page_title: 'PowerTokens Video Studio Web · Multi-model AI video',
   subtitle: "Multi-model AI video generation · Web",
   key_chip_none: "Sign in to get a key",
@@ -299,7 +305,7 @@ VSI18n.register('en', {
   chat_subtitle: "Chat until the plan feels right, then copy the prompt — Generate is optional.",
   chat_reset: "Start over",
   chat_examples_label: "Tap one to see a shootable description",
-  chat_input_ph: "Describe the video you want…",
+  chat_input_ph: "Reply to PT — what would you like to film?",
   chat_send: "Send",
   chat_footnote: "Chat helps write the prompt (usually not billed as video). Copy when you are happy; Generate only when you want to render.",
   chat_entry_btn: "Try Chat to video (pilot)",

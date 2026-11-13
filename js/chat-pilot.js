@@ -613,7 +613,14 @@
 
   function scrollThread() {
     var scroller = document.querySelector('.chat-scroll') || $('chat-thread');
-    if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    if (!scroller) return;
+    // Wait for inline plans/actions and the measured dock to finish layout.
+    // Align the history bottom so tall replies leave their actions above the dock.
+    function toBottom() { scroller.scrollTop = scroller.scrollHeight; }
+    if (root.requestAnimationFrame) root.requestAnimationFrame(function () {
+      root.requestAnimationFrame(toBottom);
+    });
+    else toBottom();
   }
 
   function appendBubble(role, text) {
@@ -785,141 +792,48 @@
 
   function renderPlanCard(plan, opts) {
     opts = opts || {};
-    var mount = $('chat-plan-mount');
-    if (!mount || !plan) return;
-    var keepOpen = false;
-    var keepSoft = false;
-    if (opts.silent) {
-      var prevDetails = mount.querySelector('.chat-plan-prompt');
-      keepOpen = !!(prevDetails && prevDetails.open);
-      var prevSoft = mount.querySelector('[data-soft-credits]');
-      keepSoft = !!(prevSoft && !prevSoft.hidden);
-    }
-    mount.innerHTML = '';
+    if (!plan) return;
     lastPlan = plan;
-    var textModel = opts.textModel || lastTextModel || FLASH_MODEL;
-    var credits = estimateCredits(plan);
-    var have = deps.getCredits ? deps.getCredits() : null;
-    // Video estimate vs balance is not a free-chat warning. glm-4.7-flash is $0.
-    var insuff = planCardShowsVideoCreditSoft(textModel) &&
-      typeof credits === 'number' && typeof have === 'number' && credits > have;
-
-    var card = el('div', 'chat-plan-card');
-    card.appendChild(el('p', 'chat-plan-kicker', t('chat_plan_kicker')));
-    card.appendChild(el('h3', 'chat-plan-title', plan.title || plan.summary || t('chat_plan_title_fallback')));
-    if (plan.summary) card.appendChild(el('p', 'chat-plan-summary', plan.summary));
-
-    var meta = el('p', 'chat-plan-meta muted small');
-    var M = root.VSModels;
-    var modelLabel = plan.model;
-    try { if (M && M.getModel) modelLabel = M.label(M.getModel(plan.model), (deps.getLang && deps.getLang()) || 'zh') + ' (' + plan.model + ')'; } catch (e) {}
-    meta.textContent = [
-      modelLabel,
-      plan.duration + 's',
-      plan.resolution,
-      plan.ratio,
-      typeof credits === 'number' ? t('chat_plan_credits', String(credits)) : ''
-    ].filter(Boolean).join(' · ');
-    card.appendChild(meta);
-
-    var details = el('details', 'chat-plan-prompt');
-    var sum = el('summary', '', t('chat_plan_prompt_toggle'));
-    details.appendChild(sum);
-    var pre = el('pre', 'chat-plan-prompt-body', plan.prompt);
-    details.appendChild(pre);
-    // Example chips already have a finished prompt; show it immediately.
-    if (opts.openPrompt) details.open = true;
-    card.appendChild(details);
-
-    // Sunk-cost UX: never gate on credits. Primary = Copy; keep refining; Fill Generate secondary.
+    var thread = $('chat-thread');
+    var row = thread && thread.children[thread.children.length - 1];
+    var bubble = row && row.querySelector('.chat-bubble--assistant');
+    if (!bubble) bubble = appendBubble('assistant', t('chat_example_ready')).bubble;
+    var card = el('div', 'chat-plan-inline');
+    var pre = el('div', 'chat-plan-prompt-body', plan.prompt);
+    if (plan.exampleId) pre.setAttribute('data-i18n', (lookupString('chat_example_' + plan.exampleId + '_prompt') ? 'chat_example_' : 'example_') + plan.exampleId + '_prompt');
+    card.appendChild(pre);
+    var question = el('p', 'chat-plan-question', t('chat_use_or_change'));
+    question.setAttribute('data-i18n', 'chat_use_or_change');
+    card.appendChild(question);
     var actions = el('div', 'chat-plan-actions');
-    var copyBtn = el('button', 'btn btn-accent', t('chat_copy_prompt'));
-    copyBtn.type = 'button';
-    copyBtn.addEventListener('click', function () {
-      track('chat_copy_prompt', {
-        model: plan.model,
-        duration: plan.duration,
-        resolution: plan.resolution,
-        credits: credits,
-        insuff: !!insuff
-      });
-      copyPlanPrompt(plan.prompt).then(function (ok) {
-        if (deps.toast) deps.toast(ok ? t('chat_copied_toast') : t('chat_copy_failed'));
-        if (ok) {
-          details.open = true;
-          if (insuff) revealSoftCredits(card, credits, have);
-        }
-      });
-    });
-    actions.appendChild(copyBtn);
-
-    var refine = el('button', 'btn', t('chat_keep_refining'));
-    refine.type = 'button';
-    refine.addEventListener('click', function () {
-      track('chat_keep_refining', { model: plan.model });
-      // Hide the card so chat can continue without a stuck plan under the thread.
-      clearPlanMount();
-      focusComposer();
-      if (deps.toast) deps.toast(t('chat_keep_refining_toast'));
-    });
-    actions.appendChild(refine);
-
-    var fill = el('button', 'btn', t('chat_fill_form'));
-    fill.type = 'button';
-    fill.addEventListener('click', function () {
-      track('chat_fill_form', {
-        model: plan.model,
-        duration: plan.duration,
-        resolution: plan.resolution,
-        credits: credits,
-        insuff: !!insuff
-      });
+    function action(key, fn) {
+      var button = el('button', 'chat-example-chip', t(key));
+      button.type = 'button';
+      button.setAttribute('data-i18n', key);
+      button.addEventListener('click', function () { if (!busy) fn(); });
+      actions.appendChild(button);
+    }
+    action('chat_use_prompt', function () {
+      applyLocaleToExamplePlan(plan);
       if (deps.fillGenerate) deps.fillGenerate(plan);
       if (deps.gotoGenerate) deps.gotoGenerate();
       if (deps.toast) deps.toast(t('chat_filled_toast'));
     });
-    actions.appendChild(fill);
-    card.appendChild(actions);
-
-    // Soft credits hint only (muted). No blocking Top up CTA on the plan card.
-    if (insuff) {
-      if (!opts.silent) {
-        track('credits_insufficient_soft', {
-          need: credits,
-          have: have,
-          model: plan.model,
-          duration: plan.duration,
-          resolution: plan.resolution
-        });
-      }
-      var soft = el('p', 'chat-plan-soft muted small');
-      soft.setAttribute('data-soft-credits', '1');
-      soft.hidden = true; // reveal after copy, or leave a one-line tip below
-      soft.textContent = t('chat_credits_soft', String(credits), String(have));
-      card.appendChild(soft);
-      var tip = el('p', 'chat-plan-tip muted small', t('chat_plan_copy_tip'));
-      card.appendChild(tip);
-    } else {
-      card.appendChild(el('p', 'chat-plan-tip muted small', t('chat_plan_copy_tip')));
-    }
-
-    mount.appendChild(card);
-    if (opts.silent) {
-      if (keepOpen) details.open = true;
-      if (keepSoft) {
-        var softEl = card.querySelector('[data-soft-credits]');
-        if (softEl) softEl.hidden = false;
-      }
-      return;
-    }
-    scrollThread();
-    track('chat_plan_ready', {
-      model: plan.model,
-      duration: plan.duration,
-      resolution: plan.resolution,
-      credits: credits,
-      insuff: !!insuff
+    action('chat_change_scene', function () {
+      appendBubble('user', t('chat_change_scene'));
+      var turn = appendBubble('assistant', t('chat_pick_title'));
+      renderExamples(turn.bubble);
+      scrollThread();
     });
+    action('chat_add_detail', focusComposer);
+    if (!plan.exampleId) action('chat_copy_prompt', function () {
+      copyPlanPrompt(plan.prompt).then(function (ok) {
+        if (deps.toast) deps.toast(t(ok ? 'chat_copied_toast' : 'chat_copy_failed'));
+      });
+    });
+    card.appendChild(actions);
+    bubble.appendChild(card);
+    scrollThread();
   }
 
   function revealSoftCredits(card, credits, have) {
@@ -930,23 +844,20 @@
     soft.textContent = t('chat_credits_soft', String(credits), String(have));
   }
 
-  function renderExamples() {
-    var box = $('chat-example-chips');
-    if (!box) return;
-    box.innerHTML = '';
+  function renderExamples(bubble) {
+    if (!bubble) return;
+    var box = el('div', 'chat-example-chips');
+    box.setAttribute('role', 'group');
     EXAMPLE_IDS.forEach(function (id) {
-      var b = el('button', 'chat-example-chip');
-      b.type = 'button';
-      b.setAttribute('data-example', id);
-      b.appendChild(el('span', 'chat-example-title', t('example_' + id + '_label')));
-      var blurb = lookupString('chat_example_' + id + '_blurb') || t('example_' + id + '_blurb');
-      if (blurb && blurb.indexOf('example_') !== 0 && blurb.indexOf('chat_example_') !== 0) {
-        b.appendChild(el('span', 'chat-example-blurb', blurb));
-      }
-      // No title / aria-label hover. The label is already on the chip; the prompt opens on click.
-      b.addEventListener('click', function () { onExample(id); });
-      box.appendChild(b);
+      var key = 'example_' + id + '_label';
+      var button = el('button', 'chat-example-chip', t(key));
+      button.type = 'button';
+      button.setAttribute('data-example', id);
+      button.setAttribute('data-i18n', key);
+      button.addEventListener('click', function () { onExample(id); });
+      box.appendChild(button);
     });
+    bubble.appendChild(box);
   }
 
   function setBusy(on) {
@@ -1010,14 +921,13 @@
     if (!requireLoginForChat('example')) return;
     ensureSession();
     track('chat_example_click', { example_id: id });
-    // The chip speaks a short scene. The reply is the finished prompt, not a question.
-    var userVisible = lookupString('chat_example_' + id + '_blurb') ||
-      t('chat_example_user', t('example_' + id + '_label'));
+    // The user picks a title; PT supplies the shootable content in its turn.
+    var userVisible = t('example_' + id + '_label');
     var prompt = planPromptForExample(id) || t('example_' + id + '_prompt');
     var apiUser = userVisible + '\n\n[example_id=' + id + ']\n' + t('chat_example_ref_prefix') + '\n' + prompt;
     var userBubble = appendBubble('user', userVisible);
     if (userBubble && userBubble.bubble) {
-      userBubble.bubble.setAttribute('data-i18n', 'chat_example_' + id + '_blurb');
+      userBubble.bubble.setAttribute('data-i18n', 'example_' + id + '_label');
       userBubble.bubble.setAttribute('data-example-id', id);
     }
     hideExamples();
@@ -1030,7 +940,7 @@
     plan.exampleId = id;
     var spoken = t('chat_example_ready');
     var readyBubble = appendBubble('assistant', spoken);
-    if (readyBubble && readyBubble.bubble) readyBubble.bubble.setAttribute('data-i18n', 'chat_example_ready');
+    // Inline prompt and actions belong to this assistant turn.
     messages.push({
       role: 'assistant',
       content: JSON.stringify({
@@ -1445,7 +1355,7 @@
     appendBubble('user', text);
     hideExamples();
     messages.push({ role: 'user', content: text });
-    // Continuing the thread: drop any prior plan card (example or earlier draft).
+    // Clear transient error actions while retaining earlier assistant turns.
     clearPlanMount();
     // User clicked Send with a non-empty message after the login gate.
     // Local clarify is still a submit, but it is not a server-reply success.
@@ -1468,9 +1378,14 @@
     clearPlanMount();
     var ex = $('chat-examples');
     if (ex) ex.hidden = false;
-    var greet = appendBubble('assistant', t('chat_greeting'));
-    if (greet && greet.bubble) greet.bubble.setAttribute('data-i18n', 'chat_greeting');
-    renderExamples();
+    var greet = appendBubble('assistant', t('chat_greeting_choices'));
+    if (greet && greet.bubble) {
+      greet.bubble.textContent = '';
+      var greetingText = el('span', '', t('chat_greeting_choices'));
+      greetingText.setAttribute('data-i18n', 'chat_greeting_choices');
+      greet.bubble.appendChild(greetingText);
+    }
+    renderExamples(greet && greet.bubble);
     var status = $('chat-status');
     if (status) { status.hidden = true; status.textContent = ''; status.removeAttribute('data-i18n'); }
   }
@@ -1527,7 +1442,7 @@
       if (!n.getAttribute) return;
       var key = n.getAttribute('data-i18n');
       if (!key) return;
-      if (key.indexOf('chat_example_') !== 0 && key.indexOf('example_') !== 0) return;
+      if (key.indexOf('chat_') !== 0 && key.indexOf('example_') !== 0) return;
       var val = t(key);
       if (val && val !== key) n.textContent = val;
     });
@@ -1562,15 +1477,12 @@
 
   function refreshUi() {
     applyChrome();
-    if (isEnabled()) renderExamples();
+
     // Chip click freezes title, blurb, and shot prompt. Chrome [data-i18n] updates
     // on setLang; these copies do not, so a Chinese boot stays Chinese after a switch.
     relocalizeMarked($('chat-thread'));
     relocalizeExampleMessages();
-    if (lastPlan && deps && deps.t) {
-      applyLocaleToExamplePlan(lastPlan);
-      renderPlanCard(lastPlan, { silent: true });
-    }
+
   }
 
   function applyChrome() {

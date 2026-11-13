@@ -808,9 +808,7 @@ body.pilot-chat-on .tabs [data-tab="chat"] { display: inline-flex; }
 .chat-pilot-entry { display: none !important; }
 
 .panel-chat { padding-bottom: 0; }
-/* Chat layout: content-sized when short (composer under thread/examples);
-   sticky dock when the page scrolls. Do NOT force a full-viewport flex column
-   — that left a tall empty middle on phones (PR #39). */
+/* The thread owns the space and scrolling above the reply dock. */
 .chat-shell {
   display: flex; flex-direction: column; gap: 10px;
   max-width: 720px; margin: 0 auto;
@@ -1291,3 +1289,70 @@ body.pwa-banner-on .toast {
   }
 }
 
+
+/* Chat turns share the page surface; suggestions and drafts belong to PT. */
+.chat-thread { background: transparent; border: 0; padding: 10px 0; gap: 22px; }
+.chat-bubble--assistant { background: transparent; border: 0; padding: 0; min-width: 0; }
+.chat-example-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chat-example-chip { display: inline-flex; padding: 8px 12px; border-radius: 20px; font: inherit; font-size: 13px; line-height: 1.4; }
+.chat-plan-inline { margin-top: 12px; }
+.chat-plan-prompt-body { font-family: inherit; font-size: 14px; line-height: 1.65; max-height: none; overflow: visible; margin: 0; background: rgba(83,178,165,.055); }
+.chat-plan-question { margin: 14px 0 10px; }
+.chat-dock { border-top: 0; box-shadow: none; }
+
+/* Dialogue room: bounded message history and a substantial reply bar. */
+body:has(#panel-chat:not([hidden])) { overflow: hidden; }
+body:has(#panel-chat:not([hidden])) .footer,
+body:has(#panel-chat:not([hidden])) .statusbar { display: none; }
+body.pilot-chat-on .page:has(#panel-chat:not([hidden])) { padding-bottom: 0; --chat-bottom-clearance: 0px; }
+.chat-shell {
+  height: var(--chat-room-height, calc(100dvh - 210px));
+  gap: 0;
+}
+.chat-top { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.chat-scroll {
+  flex: 1 1 auto; min-height: 0; max-height: none;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 18px 4px 16px; scrollbar-width: thin;
+}
+.chat-thread { margin-top: auto; padding: 0; gap: 20px; }
+.chat-bubble--assistant {
+  background: var(--white); border: 1px solid var(--line);
+  border-radius: 16px; border-top-left-radius: 4px; padding: 14px;
+}
+.chat-bubble--user { border-radius: 16px; border-bottom-right-radius: 4px; padding: 12px 16px; }
+.chat-avatar { width: 30px; height: 30px; }
+.chat-dock {
+  position: relative; bottom: auto; margin: 0; padding: 12px 0 max(14px, env(safe-area-inset-bottom));
+  background: var(--page); border-top: 1px solid var(--line);
+}
+.chat-composer {
+  padding: 10px; gap: 10px; background: #fff;
+  border: 1.5px solid #a4c9c1; border-radius: 20px;
+  box-shadow: 0 3px 16px rgba(36, 87, 75, .08);
+}
+.chat-composer:focus-within { border-color: var(--accent-text); box-shadow: 0 0 0 3px rgba(83,178,165,.12); }
+.chat-composer textarea {
+  min-width: 0; min-height: 78px; max-height: 180px;
+  padding: 6px 4px; border: 0; border-radius: 0;
+  background: transparent; font-size: 16px; line-height: 24px;
+}
+.chat-composer textarea:focus { outline: none; }
+.chat-composer textarea::placeholder { color: #647e79; opacity: 1; }
+.chat-send { min-width: 64px; height: 46px; border-radius: 13px; font-weight: 700; }
+.chat-footnote { display: none; }
+.chat-status { font-size: 12px; margin-left: 38px; }
+@media (max-width: 640px) {
+  body.pilot-chat-on .page:has(#panel-chat:not([hidden])) { padding-bottom: 0; }
+  .chat-shell { padding-bottom: calc(var(--chat-dock-height, 132px) + var(--chat-bottom-clearance) + var(--chat-viewport-inset, 0px)); }
+  .chat-top { padding-bottom: 10px; }
+  .chat-scroll { padding-top: 14px; }
+  .chat-dock { position: fixed; left: 0; right: 0; padding: 10px 12px max(12px, env(safe-area-inset-bottom)); bottom: calc(var(--chat-bottom-clearance) + var(--chat-viewport-inset, 0px)); }
+}
+@media (min-width: 641px) {
+  body.pwa-banner-on .chat-dock { bottom: auto; }
+  body.pilot-chat-on.pwa-banner-on .page:has(#panel-chat:not([hidden])) { padding-bottom: var(--chat-banner-height, 100px); }
+}
+
+body:has(#panel-chat:not([hidden])) .desktop-cta,
+body:has(#panel-chat:not([hidden])) .phone-cta { display: none; }

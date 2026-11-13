@@ -185,7 +185,7 @@ const plan = {
   ratio: '9:16'
 };
 
-const mount = byId['chat-plan-mount'];
+const mount = byId['chat-thread'];
 
 function render(textModel) {
   events.length = 0;
@@ -206,7 +206,7 @@ assert.equal(mount.querySelector('[data-soft-credits]'), null, 'free flash plan 
 assert.equal(freeText.includes('chat_credits_soft'), false);
 assert.equal(freeText.includes('credits_insufficient'), false);
 assert.equal(freeText.includes('积分不足'), false);
-assert.equal(freeText.includes('chat_plan_credits|500'), true, 'video estimate can stay as a plan figure');
+assert.equal(freeText.includes('chat_plan_credits|500'), false, 'inline prompt does not need a separate estimate panel');
 assert.equal(freeEvents.includes('credits_insufficient_soft'), false);
 
 const copy = findButton(mount, 'chat_copy_prompt');
@@ -217,16 +217,8 @@ await Promise.resolve();
 assert.equal(mount.querySelector('[data-soft-credits]'), null, 'copy on free flash still does not reveal a credit warning');
 assert.equal(textsOf(mount).includes('chat_credits_soft'), false);
 
-const paidEvents = render('deepseek-flash');
-const soft = mount.querySelector('[data-soft-credits]');
-assert.ok(soft, 'paid text fallback may keep the video soft note');
-assert.equal(soft.hidden, true);
-assert.equal(soft.textContent, 'chat_credits_soft|500|12');
-assert.equal(paidEvents.includes('credits_insufficient_soft'), true);
-findButton(mount, 'chat_copy_prompt').click();
-await Promise.resolve();
-await Promise.resolve();
-assert.equal(mount.querySelector('[data-soft-credits]').hidden, false);
+render('deepseek-flash');
+assert.equal(mount.querySelector('[data-soft-credits]'), null, 'inline plans omit optional video credit notes');
 
 // Enough balance: nobody gets an insufficient tip, including paid text.
 pilot.init({
