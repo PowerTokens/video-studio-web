@@ -1,14 +1,14 @@
 # PowerTokens Video Studio · Web
 
-Web UI for **PowerTokens Video Studio 1.17** — **Wan · Seedance · Kling · and more** (companion to the Windows and unsigned Apple Silicon Mac Beta desktop apps).
+Web UI for **PowerTokens Video Studio 1.18** — **Wan · Seedance · Kling · and more** (companion to the Windows and unsigned Apple Silicon Mac Beta desktop apps).
 
 Live page: https://powertokens.github.io/video-studio-web/
 
-Desktop app (Windows, unsigned Apple Silicon Mac Beta, Chat, batch, model compare, storyboard, continue from the previous clip): https://github.com/PowerTokens/video-studio
+Desktop app (Windows, unsigned Apple Silicon Mac Beta, Chat, batch, model compare, storyboard, continue from the previous clip, in-app credit top-up): https://github.com/PowerTokens/video-studio
 
 Get an API key: https://powertokens.ai/api-keys?utm_source=github&utm_medium=readme&utm_campaign=video-studio-web
 
-网页版（Video Studio **1.17** 配套，支持 **Wan · Seedance · Kling 等**）已发布在上面的地址。桌面版（Windows、未签名的 Apple Silicon Mac Beta、对话、批量、模型对比、分镜、接上一段）见 [PowerTokens/video-studio](https://github.com/PowerTokens/video-studio)。
+网页版（Video Studio **1.18** 配套，支持 **Wan · Seedance · Kling 等**）已发布在上面的地址。桌面版（Windows、未签名的 Apple Silicon Mac Beta、对话、批量、模型对比、分镜、接上一段、应用内充值）见 [PowerTokens/video-studio](https://github.com/PowerTokens/video-studio)。
 
 获取 API Key：https://powertokens.ai/zh-Hans/api-keys?utm_source=github&utm_medium=readme&utm_campaign=video-studio-web
 
