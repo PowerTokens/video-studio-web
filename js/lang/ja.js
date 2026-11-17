@@ -368,5 +368,6 @@ VSI18n.register('ja', {
   dl_footer_releases: "すべてのバージョン",
   dl_footer_web: "Video Studio ウェブ版",
   dl_footer_feedback: 'お問い合わせ: service@powertokens.ai',
+  dl_star_ask: 'アプリが役に立ったら、<a href="https://github.com/PowerTokens/video-studio" rel="noopener">GitHub リポジトリ</a>に Star を付けていただけると、ほかの人にも見つけてもらいやすくなります。',
   dl_lang_label: "言語",
 });

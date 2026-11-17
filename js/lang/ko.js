@@ -368,5 +368,6 @@ VSI18n.register('ko', {
   dl_footer_releases: "모든 버전",
   dl_footer_web: "Video Studio 웹",
   dl_footer_feedback: '의견 보내기: service@powertokens.ai',
+  dl_star_ask: '이 앱이 도움이 되었다면 <a href="https://github.com/PowerTokens/video-studio" rel="noopener">GitHub 저장소</a>에 Star를 눌러 주세요. 다른 사람들이 더 쉽게 찾을 수 있습니다.',
   dl_lang_label: "언어",
 });

@@ -366,5 +366,6 @@ VSI18n.register('es', {
   dl_footer_releases: "Todas las versiones",
   dl_footer_web: "Video Studio web",
   dl_footer_feedback: 'Comentarios: service@powertokens.ai',
+  dl_star_ask: 'Si la aplicación te resulta útil, dale una estrella al <a href="https://github.com/PowerTokens/video-studio" rel="noopener">repositorio de GitHub</a>; así más personas podrán encontrarla.',
   dl_lang_label: "Idioma",
 });

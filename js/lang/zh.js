@@ -395,5 +395,6 @@ VSI18n.register('zh', {
   dl_footer_releases: '全部版本',
   dl_footer_web: 'Video Studio 网页版',
   dl_footer_feedback: '反馈: service@powertokens.ai',
+  dl_star_ask: '如果这个应用对你有用，欢迎给 <a href="https://github.com/PowerTokens/video-studio" rel="noopener">GitHub 仓库</a> 点个星，方便更多人发现它。',
   dl_lang_label: '语言',
 });
