@@ -410,3 +410,14 @@ assert.ok(walkText(document.getElementById('chat-thread')).includes(I.t('en', 'c
 assert.equal(flashCalls, 0, 'logged-in local clarify does not call Flash');
 
 console.log('smoke-chat-prompts ok');
+
+// Bridge uses the real send/login gate and keeps unsigned carried drafts.
+pilot.resetConversation();
+loggedIn = false;
+const beforeBridgeLogin = loginCalls.length;
+pilot.startFromGenerate('A quiet street at sunrise');
+assert.equal(els['chat-input'].value, 'A quiet street at sunrise');
+assert.equal(loginCalls.length, beforeBridgeLogin + 1);
+pilot.startFromGenerate('');
+assert.equal(loginCalls.length, beforeBridgeLogin + 1);
+console.log('Bridge login gate and empty prompt passed');

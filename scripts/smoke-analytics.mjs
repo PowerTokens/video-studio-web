@@ -807,3 +807,12 @@ for (const search of ['', '?error=access_denied', '?code=x&state=wrong', '?code=
   assert.ok(events.includes('reopen')); assert.ok(events.includes('back'));
 }
 console.log('Funnel wiring regressions passed.');
+
+for (const event of ['ai_plan_click', 'ai_plan_applied']) {
+  assert.equal(A.sanitize(event, {source: event === 'ai_plan_click' ? 'generate' : 'ai_plan', surface:'generate', prompt:'private', url:'https://private'}).prompt, undefined);
+  assert.equal(A.sanitize(event, {source:'ai_plan'}).source, 'ai_plan');
+}
+for (const event of ['generation_start', 'generation_success', 'generation_failed']) {
+  assert.equal(A.sanitize(event, {source:'ai_plan'}).source, 'ai_plan');
+  assert.equal(A.sanitize(event, {source:'secret prompt'}).source, undefined);
+}

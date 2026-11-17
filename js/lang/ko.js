@@ -8,6 +8,8 @@ VSI18n.register('ko', {
   htmlLang: "ko",
   match: ["ko"]
 }, {
+  ai_plan_button: "어떻게 쓸까요? AI와 함께 구상하기",
+  ai_plan_notice: "AI가 입력했어요. 강조된 항목을 확인한 뒤 생성하세요.",
   oauth_callback_returning: "Video Studio로 돌아가는 중…",
   oauth_callback_failed: "로그인 실패",
   oauth_callback_failure_message: "PowerTokens 로그인을 완료하지 못했습니다. Video Studio로 돌아가 다시 시도해 주세요.",

@@ -16,6 +16,7 @@
 
   var EVENTS = {
     example_click: true, prompt_edited: true, login_return_unsigned: true,
+    ai_plan_click: true, ai_plan_applied: true,
     app_open: true,
     login_success: true,
     generation_start: true,
@@ -240,7 +241,7 @@
         if (!SAFE_INPUT_MODE[value]) continue;
       } else if (key === 'source') {
         value = String(value || '').trim().toLowerCase();
-        if (!(SAFE_BILLING_SOURCE[value] || SAFE_DOWNLOAD_SOURCE[value] || (event === 'login_start' && ['generate','billing','other'].indexOf(value) >= 0))) continue;
+        if (!((['ai_plan_click', 'ai_plan_applied', 'generation_start', 'generation_success', 'generation_failed'].indexOf(event) >= 0 && ['generate', 'chat', 'ai_plan'].indexOf(value) >= 0) || SAFE_BILLING_SOURCE[value] || SAFE_DOWNLOAD_SOURCE[value] || (event === 'login_start' && ['generate','billing','other'].indexOf(value) >= 0))) continue;
       } else if (key === 'requested_duration_s') {
         value = parseInt(value, 10);
         if (!isFinite(value) || value < 0 || value > 3600) continue;
@@ -799,6 +800,7 @@
   function notifyGenerationStart(generationId, opts) {
     opts = opts || {};
     var props = { generation_id: generationId, surface: opts.surface || 'generate' };
+    if (opts.source === 'ai_plan') props.source = opts.source;
     if (opts.model) props.model = opts.model;
     if (opts.requestedDurationS != null) props.requested_duration_s = opts.requestedDurationS;
     if (opts.inputMode) props.input_mode = opts.inputMode;
@@ -811,6 +813,7 @@
   function notifyGenerationFinish(generationId, ok, opts) {
     opts = opts || {};
     var props = { generation_id: generationId, surface: opts.surface || 'generate' };
+    if (opts.source === 'ai_plan') props.source = opts.source;
     if (opts.model) props.model = opts.model;
     if (opts.durationMs != null) props.duration_ms = opts.durationMs;
     if (opts.inputMode) props.input_mode = opts.inputMode;

@@ -8,6 +8,8 @@ VSI18n.register('en', {
   htmlLang: 'en',      // <html lang>
   match: ['en']          // browser language prefixes that pick this language by default
 }, {
+  ai_plan_button: "Can't write it? Let AI help me plan",
+  ai_plan_notice: "AI plan ready — review the highlighted fields before generating.",
   oauth_callback_returning: "Returning to Video Studio…",
   oauth_callback_failed: "Sign-in failed",
   oauth_callback_failure_message: "Could not finish PowerTokens login. Please return to Video Studio and try again.",

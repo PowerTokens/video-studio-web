@@ -8,6 +8,8 @@ VSI18n.register('zh', {
   htmlLang: 'zh-CN',      // <html lang>
   match: ['zh']          // browser language prefixes that pick this language by default
 }, {
+  ai_plan_button: "不会写？让 AI 帮我构思",
+  ai_plan_notice: "AI 已帮你填好，请确认后再生成",
   oauth_callback_returning: "正在返回 Video Studio…",
   oauth_callback_failed: "登录失败",
   oauth_callback_failure_message: "未能完成 PowerTokens 登录。请返回 Video Studio 后重试。",

@@ -86,6 +86,8 @@ fresh load also ends an unterminated previous session (crash recovery) before
 | `generation_success` | Task reaches `done` (including a later resume of the same `local_id`) | `duration_ms`, optional `input_mode` |
 | `generation_failed` | Only irreversible states: `rejected` or `failed`. `stopped`, `timeout`, `query_down`, and `ready_no_url` can be resumed and do not close the funnel | safe `error_code`, optional `input_mode` |
 | `video_download` | User clicks **Download video** on a task card (including a “opened in a new tab” fallback). Not fired for in-player playback | `model`, `surface` |
+| `ai_plan_click` | Generate prompt assist button clicked | `source=generate`, optional `from_example` |
+| `ai_plan_applied` | Existing plan card fills Generate | `source=ai_plan` when the assist button was used this session, otherwise `source=chat`, `surface=generate` |
 | `chat_submit` | User confirmed **Send** (or Retry) with a non-empty message after the login gate. Not a completed reply | `chat_id`, `surface=chat`, optional `model` |
 | `chat_success` | The chat API/model reply for that `chat_id` completed | `chat_id`, `surface=chat`, optional `model` |
 | `chat_failed` | The chat API/model reply for that `chat_id` failed | `chat_id`, safe `error_code` only |
@@ -228,3 +230,5 @@ preset-5/preset-20/preset-50/custom and package ids 33/22/23/33. Opening the
 dialog emits no selection events. Closing it reports whether checkout remains
 pending; opening checkout in another tab does not close the dialog. Status 2
 clears pending context and emits cancellation rather than a start failure.
+
+Generate submissions from the AI planning bridge carry `source=ai_plan` through start, success and failure, including resumed task records. Light edits preserve attribution. Applying a preset, clearing the prompt or replacing the entire prompt clears attribution. Field highlights persist until that field is edited. Generate, presets and whole-prompt replacement dismiss the review notice.

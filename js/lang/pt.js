@@ -6,6 +6,8 @@ VSI18n.register('pt', {
   htmlLang: "pt",
   match: ["pt"]
 }, {
+  ai_plan_button: "Sem ideia do que escrever? Peça ajuda à IA",
+  ai_plan_notice: "A IA preencheu o plano. Revise os campos destacados antes de gerar.",
   oauth_callback_returning: "Voltando ao Video Studio…",
   oauth_callback_failed: "Falha ao entrar",
   oauth_callback_failure_message: "Não foi possível concluir o login no PowerTokens. Volte ao Video Studio e tente novamente.",
