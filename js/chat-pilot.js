@@ -920,7 +920,7 @@
     // before any user bubble, ready reply, plan card, or model call.
     if (!requireLoginForChat('example')) return;
     ensureSession();
-    track('chat_example_click', { example_id: id });
+    if (root.VSAnalytics) root.VSAnalytics.notifyExampleClick('chat', id);
     // The user picks a title; PT supplies the shootable content in its turn.
     var userVisible = t('example_' + id + '_label');
     var prompt = planPromptForExample(id) || t('example_' + id + '_prompt');
@@ -1321,11 +1321,11 @@
     return 'c' + Date.now().toString(16) + Math.random().toString(16).slice(2, 10);
   }
 
-  function notifyChatAnalyticsSubmit(model) {
+  function notifyChatAnalyticsSubmit(model, text) {
     currentChatId = mintChatId();
     try {
       if (root.VSAnalytics && typeof root.VSAnalytics.notifyChatSubmit === 'function') {
-        root.VSAnalytics.notifyChatSubmit(currentChatId, { model: model || '' });
+        root.VSAnalytics.notifyChatSubmit(currentChatId, { model: model || '', prompt: text });
       }
     } catch (e) { /* never break chat */ }
     return currentChatId;
@@ -1359,7 +1359,7 @@
     clearPlanMount();
     // User clicked Send with a non-empty message after the login gate.
     // Local clarify is still a submit, but it is not a server-reply success.
-    notifyChatAnalyticsSubmit(FLASH_MODEL);
+    notifyChatAnalyticsSubmit(FLASH_MODEL, text);
     if (isNonsensicalUserText(text)) {
       replyLocalClarify('nonsense');
       return;
@@ -1504,6 +1504,7 @@
     if (send) send.addEventListener('click', onSend);
     var input = $('chat-input');
     if (input) {
+      input.addEventListener('input', function () { if (root.VSAnalytics) root.VSAnalytics.notifyPromptEdited('chat'); });
       input.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();

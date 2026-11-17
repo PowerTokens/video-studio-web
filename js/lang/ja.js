@@ -8,6 +8,11 @@ VSI18n.register('ja', {
   htmlLang: "ja",
   match: ["ja"]
 }, {
+  oauth_callback_returning: "Video Studio に戻っています…",
+  oauth_callback_failed: "ログインに失敗しました",
+  oauth_callback_failure_message: "PowerTokens へのログインを完了できませんでした。Video Studio に戻って、もう一度お試しください。",
+  oauth_callback_return: "Video Studio に戻る",
+
   chat_greeting_choices: "こんにちは！撮りたい映像を教えてください。一緒に形にしましょう。こちらから選んでも始められます：",
   chat_use_prompt: "このプロンプトを使う",
   chat_change_scene: "別のシーン",

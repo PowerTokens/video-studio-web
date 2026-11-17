@@ -705,10 +705,11 @@
     toast(t('chat_need_login'));
     pulseLoginCta();
     // Keep the chat tip on screen briefly, then open the PowerTokens login flow.
-    window.setTimeout(function () { startOauthLogin(); }, 700);
+    window.setTimeout(function () { startOauthLogin('chat'); }, 700);
   }
 
-  function startOauthLogin() {
+  function startOauthLogin(source) {
+    source = source || 'other';
     var errEl = $('oauth-error');
     if (errEl) show(errEl, false);
     if (!O || !O.startLogin) {
@@ -717,7 +718,7 @@
     }
     setOauthBusy(true);
     // Return to the tab the user left (Chat when the URL has no hash).
-    O.startLogin({ returnHash: currentTabName() }).catch(function (e) {
+    O.startLogin({ source: source, returnHash: currentTabName() }).catch(function (e) {
       setOauthBusy(false);
       var code = (e && e.message) || 'error';
       var msg = oauthFailMessage(code);
@@ -750,7 +751,7 @@
     else toast(msg);
     var profile = O && O.getProfile ? O.getProfile() : null;
     if (!profile) {
-      startOauthLogin();
+      startOauthLogin('generate');
       return;
     }
     setTab('account', true);
@@ -768,7 +769,7 @@
   function openInAppPayment(source) {
     notifyBillingClick(source);
     if (window.VSPayment && typeof window.VSPayment.show === 'function') {
-      window.VSPayment.show({lang: lang, login: startOauthLogin, refresh: renderCredits});
+      window.VSPayment.show({lang: lang, login: function () { startOauthLogin('billing'); }, refresh: renderCredits});
     }
   }
 
@@ -796,8 +797,8 @@
     var panelLogin = $('oauth-login-btn');
     var headerLogout = $('oauth-logout');
     var panelLogout = $('oauth-logout-btn');
-    if (headerLogin) headerLogin.addEventListener('click', startOauthLogin);
-    if (panelLogin) panelLogin.addEventListener('click', startOauthLogin);
+    if (headerLogin) headerLogin.addEventListener('click', function () { startOauthLogin('header'); });
+    if (panelLogin) panelLogin.addEventListener('click', function () { startOauthLogin('account'); });
     if (headerLogout) headerLogout.addEventListener('click', doOauthLogout);
     if (panelLogout) panelLogout.addEventListener('click', doOauthLogout);
   }
@@ -1171,7 +1172,7 @@
       b.setAttribute('data-target', 'gen');
       if (family) b.setAttribute('data-family', family);
       b.setAttribute('aria-pressed', 'false');
-      b.addEventListener('click', function () { applyExample(id, 'gen', b); });
+      b.addEventListener('click', function () { if (window.VSAnalytics) window.VSAnalytics.notifyExampleClick('generate', id); applyExample(id, 'gen', b); });
       box.appendChild(b);
     });
     // Keep Generate chip selected across i18n re-renders.
@@ -1367,6 +1368,7 @@
     var promptEl = $('gen-prompt');
     if (promptEl) promptEl.value = plan.prompt;
     gen.prompt = plan.prompt;
+    if (window.VSAnalytics) window.VSAnalytics.carryExampleCycle('chat', 'generate', plan.prompt);
     if (plan.model && M.MODELS[plan.model] && gen.model !== plan.model) {
       selectGenModel(plan.model);
     }
@@ -1393,7 +1395,7 @@
     var prompt = $('gen-prompt');
     prompt.value = gen.prompt;
     fitGenPrompt(prompt);
-    prompt.addEventListener('input', function () { gen.prompt = prompt.value; saveGen(); fitGenPrompt(prompt); });
+    prompt.addEventListener('input', function () { if (window.VSAnalytics) window.VSAnalytics.notifyPromptEdited('generate'); gen.prompt = prompt.value; saveGen(); fitGenPrompt(prompt); });
     $('gen-model').addEventListener('change', function (e) { selectGenModel(e.target.value); });
     $('gen-model-details').addEventListener('click', function () { openDetails.on = !openDetails.on; renderGenModels(); });
     $('gen-duration').addEventListener('input', function (e) {
@@ -1979,7 +1981,7 @@
           fillGenerate: fillGenerateFromPlan,
           gotoGenerate: function () { setTab('generate', true); },
           gotoChat: function () { setTab('chat', true); },
-          promptLogin: startOauthLogin,
+          promptLogin: function () { startOauthLogin('chat'); },
           onNeedLogin: onNeedLoginForChat,
           billingUrl: function () { return buildBillingOutbound(t('billing_url'), (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.chat_billing) || 'web.chat_billing'); },
           toast: toast,
@@ -2007,7 +2009,7 @@
       renderOauthAccount();
       maybeHandleOauthQuery();
       if (window.VSAnalytics && window.VSAnalytics.boot) {
-        window.VSAnalytics.boot({ appVersion: 'web-1.17' });
+        window.VSAnalytics.boot({ appVersion: 'web-1.18' });
       }
       setInterval(tick, 1000);
     } catch (err) {

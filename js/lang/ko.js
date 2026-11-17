@@ -8,6 +8,11 @@ VSI18n.register('ko', {
   htmlLang: "ko",
   match: ["ko"]
 }, {
+  oauth_callback_returning: "Video Studio로 돌아가는 중…",
+  oauth_callback_failed: "로그인 실패",
+  oauth_callback_failure_message: "PowerTokens 로그인을 완료하지 못했습니다. Video Studio로 돌아가 다시 시도해 주세요.",
+  oauth_callback_return: "Video Studio로 돌아가기",
+
   chat_greeting_choices: "안녕하세요! 찍고 싶은 장면을 알려주시면 함께 구체화할게요. 주제를 골라 시작해도 좋아요:",
   chat_use_prompt: "이 프롬프트 사용",
   chat_change_scene: "다른 장면",

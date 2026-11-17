@@ -52,7 +52,7 @@ account. `login_success` is a funnel step only.
 
 ## Event schema
 
-Shared properties: `platform=web`, `app_version` (`web-1.17`), `session_id`,
+Shared properties: `platform=web`, `app_version` (`web-1.18`), `session_id`,
 `install_id`. Hash tab changes do not fire `app_open`. Switching away from the
 tab pauses `active_ms` but does not end the session. A new session starts after
 30 minutes idle, or after a real unload; `session_end` is emitted first. A
@@ -185,3 +185,14 @@ mock DOM, stubs every network call and popup, polls success, and exercises creat
 rejection, invalid redirect, network failure and throwing analytics. It checks
 queued event counts, UTM defaults and forbidden-field exclusion. No checkout tab
 or live order is created by these tests.
+
+
+## Funnel and login diagnostics
+
+`example_click` and `prompt_edited` accept `surface` and `example_id` from shopping, canyon, seal, locker. Example cycles live in memory. Manual edits emit once per cycle. Submission metadata accepts `from_example`, `prompt_edited`, `prompt_matches_example`, `example_id`, `is_repeat`, `after_success`, and `text_len_bucket` from b0_20, b21_50, b51_100, b101_200, b201_plus. Prompt comparisons normalize whitespace and use bundled translations.
+
+`quota_spent` and `quota_estimate` accept integers from 0 through 1000000. The latter uses an existing catalog estimate. `quota_spent` is the known job cost at generation success, omitted when unknown or invalid. It is not a wallet delta. Shared balance refreshes are never used. Never use credits, balance, amount, or credit-prefixed property names. Forbidden keys remain rejected even if allowlisted.
+
+`login_start` accepts header, account, chat, generate, billing, quota, credits_chip, dialog, other sources. `login_return_unsigned` accepts back, reopen, missing_code reasons. Web hooks pending PKCE on pageshow and reopen and emits missing_code from the callback. Desktop uses ephemeral loopback OAuth and emits missing_code when that callback lacks a code.
+
+Every event includes device_class and os enums. Web also includes browser, is_pwa, is_in_app_browser. No raw user-agent is captured. Desktop has no example chips. `payment_success` retains its existing notification and deduplication flow.
