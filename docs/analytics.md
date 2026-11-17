@@ -52,7 +52,7 @@ account. `login_success` is a funnel step only.
 
 ## Event schema
 
-Shared properties: `platform=web`, `app_version` (`web-1.18`), `session_id`,
+Shared properties: `platform=web`, `app_version` (`web-1.19`), `session_id`,
 `install_id`. Hash tab changes do not fire `app_open`. Switching away from the
 tab pauses `active_ms` but does not end the session. A new session starts after
 30 minutes idle, or after a real unload; `session_end` is emitted first. A

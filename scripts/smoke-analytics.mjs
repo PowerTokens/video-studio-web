@@ -223,7 +223,7 @@ assert.ok(thrower.A.pending().length >= 1);
     storage: sandbox.localStorage,
     transport: null,
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.18',
+    appVersion: 'web-1.19',
   });
   E.setConsent(true);
   E.flush();
@@ -376,7 +376,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.18',
+    appVersion: 'web-1.19',
   });
   S.setConsent(true);
   S.flush();
@@ -458,7 +458,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.18',
+    appVersion: 'web-1.19',
     isVisible: () => visible,
   });
   S.setConsent(true);
@@ -520,7 +520,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.18',
+    appVersion: 'web-1.19',
     isVisible: () => visible,
   });
   S.setConsent(true);
@@ -575,12 +575,12 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     if (reset) {
       S.resetForTests({
         now: () => clock, storage, transport: (item) => sentArr.push(item),
-        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.18', isVisible: () => true,
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.19', isVisible: () => true,
       });
     } else {
       S.boot({
         now: () => clock, storage, transport: (item) => sentArr.push(item),
-        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.18', isVisible: () => true,
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.19', isVisible: () => true,
       });
     }
     return S;
