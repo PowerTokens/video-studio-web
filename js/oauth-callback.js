@@ -2,39 +2,49 @@
 (function () {
   'use strict';
   var O = window.VSOauth;
+  var I = window.VSI18n;
+  var lang = 'en';
+  try {
+    var saved = JSON.parse(window.localStorage.getItem('vsw.lang'));
+    if (I.has(saved)) lang = saved;
+  } catch (e) { /* Use English when the saved preference is unavailable. */ }
+  document.documentElement.lang = I.meta(lang).htmlLang || lang;
+
   var title = document.getElementById('title');
   var msg = document.getElementById('msg');
-  var errEl = document.getElementById('err');
   var back = document.getElementById('back');
-  var backLink = document.getElementById('back-link');
+  var backButton = document.getElementById('back-link');
+  title.textContent = I.t(lang, 'oauth_callback_returning');
+  msg.textContent = title.textContent;
+  backButton.textContent = I.t(lang, 'oauth_callback_return');
+  backButton.addEventListener('click', function () {
+    // Stay in this tab and restore the saved app tab when available.
+    var hash = O && O.consumeReturnHash();
+    window.location.replace(O ? O.homeUrl(hash || 'chat') : '../');
+  });
 
-  function showError(text) {
-    title.textContent = 'Sign-in failed';
-    msg.textContent = 'Could not finish PowerTokens login.';
-    errEl.hidden = false;
-    errEl.textContent = text || 'Unknown error';
+  function showError() {
+    document.getElementById('progress').hidden = true;
+    title.className = 'callback-failed';
+    title.textContent = I.t(lang, 'oauth_callback_failed');
+    document.title = title.textContent + ' · Video Studio';
+    msg.textContent = I.t(lang, 'oauth_callback_failure_message');
+    msg.hidden = false;
     back.hidden = false;
-    if (backLink && O) backLink.href = O.homeUrl('key');
   }
 
   if (!O) {
-    showError('OAuth module missing');
+    showError();
     return;
   }
-  // Default back link = Generate; showError() overrides to Key so users can see oauth-error.
-  if (backLink) backLink.href = O.homeUrl('generate');
 
   O.handleCallback(window.location.search).then(function (result) {
     if (!result || !result.ok) {
-      var detail = (result && (result.error_description || result.error)) || 'callback_failed';
-      showError(String(detail));
+      showError();
       return;
     }
-    var hash = O.consumeReturnHash() || 'generate';
-    title.textContent = 'Signed in';
-    msg.textContent = 'Redirecting back to Video Studio…';
+    var hash = O.consumeReturnHash() || 'chat';
+    msg.textContent = I.t(lang, 'oauth_callback_returning');
     window.location.replace(O.homeUrl(hash));
-  }, function () {
-    showError('network');
-  });
+  }, showError);
 })();

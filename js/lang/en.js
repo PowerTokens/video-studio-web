@@ -8,6 +8,11 @@ VSI18n.register('en', {
   htmlLang: 'en',      // <html lang>
   match: ['en']          // browser language prefixes that pick this language by default
 }, {
+  oauth_callback_returning: "Returning to Video Studio…",
+  oauth_callback_failed: "Sign-in failed",
+  oauth_callback_failure_message: "Could not finish PowerTokens login. Please return to Video Studio and try again.",
+  oauth_callback_return: "Return to Video Studio",
+
   chat_greeting_choices: "Hi! Tell me what you want to film and we’ll shape the shot together. Or pick a starting point:",
   chat_use_prompt: "Use this prompt",
   chat_change_scene: "Try another scene",

@@ -101,6 +101,23 @@
     try { root.sessionStorage.removeItem(k); } catch (e) { /* ignore */ }
   }
 
+  function clearPendingLogin() {
+    ssRemove(SS_STATE);
+    ssRemove(SS_VERIFIER);
+  }
+
+  function notifyPendingReturn(reason) {
+    try {
+      if (ssGet(SS_STATE) && ssGet(SS_VERIFIER) && !getAccessToken() && root.VSAnalytics) root.VSAnalytics.notifyLoginReturnUnsigned(reason);
+    } catch (e) { /* analytics fails open */ }
+  }
+  if (root.addEventListener) {
+    root.addEventListener('pageshow', function (event) { if (event.persisted) notifyPendingReturn('back'); });
+    root.addEventListener('load', function () {
+      if (!/oauth\/callback/.test(root.location.pathname || '')) notifyPendingReturn('reopen');
+    });
+  }
+
   function getProfile() {
     var s = store();
     if (!s) return null;
@@ -161,9 +178,9 @@
     return 'UNKNOWN';
   }
 
-  function notifyLoginStart() {
+  function notifyLoginStart(source) {
     try {
-      if (root.VSAnalytics && root.VSAnalytics.notifyLoginStart) root.VSAnalytics.notifyLoginStart();
+      if (root.VSAnalytics && root.VSAnalytics.notifyLoginStart) root.VSAnalytics.notifyLoginStart(source);
     } catch (e) { /* never break login */ }
   }
 
@@ -177,7 +194,7 @@
 
   function startLogin(opts) {
     opts = opts || {};
-    notifyLoginStart();
+    notifyLoginStart(opts.source);
     if (!root.crypto || !root.crypto.subtle) {
       notifyLoginFailed('pkce_unsupported');
       return Promise.reject(new Error('pkce_unsupported'));
@@ -304,6 +321,7 @@
     var err = params.get('error');
     if (err) {
       notifyLoginFailed(err);
+      clearPendingLogin();
       return Promise.resolve({
         ok: false,
         error: err,
@@ -313,16 +331,20 @@
     var code = params.get('code');
     var state = params.get('state');
     if (!code || !state) {
+      try { if (root.VSAnalytics) root.VSAnalytics.notifyLoginReturnUnsigned('missing_code'); } catch (e) {}
+      clearPendingLogin();
       return Promise.resolve({ ok: false, error: 'missing_code' });
     }
     var expected = ssGet(SS_STATE);
     var verifier = ssGet(SS_VERIFIER);
     if (!expected || state !== expected) {
       notifyLoginFailed('state_mismatch');
+      clearPendingLogin();
       return Promise.resolve({ ok: false, error: 'state_mismatch' });
     }
     if (!verifier) {
       notifyLoginFailed('missing_verifier');
+      clearPendingLogin();
       return Promise.resolve({ ok: false, error: 'missing_verifier' });
     }
     var uri = redirectUri();
@@ -394,6 +416,12 @@
     }, function () {
       notifyLoginFailed('network');
       return { ok: false, error: 'network' };
+    }).catch(function () {
+      notifyLoginFailed('network');
+      return { ok: false, error: 'network' };
+    }).then(function (result) {
+      clearPendingLogin();
+      return result;
     });
   }
 

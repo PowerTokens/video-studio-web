@@ -14,6 +14,7 @@
   'use strict';
 
   var EVENTS = {
+    example_click: true, prompt_edited: true, login_return_unsigned: true,
     app_open: true,
     login_success: true,
     generation_start: true,
@@ -43,6 +44,7 @@
   };
 
   var ALLOWED_PROPS = {
+    example_id: true, return_reason: true, device_class: true, os: true, browser: true, text_len_bucket: true, from_example: true, prompt_edited: true, prompt_matches_example: true, is_repeat: true, after_success: true, is_pwa: true, is_in_app_browser: true, quota_spent: true, quota_estimate: true,
     platform: true, app_version: true, session_id: true, install_id: true,
     surface: true, model: true, duration_ms: true, error_code: true,
     generation_id: true, requested_duration_s: true, key_applied: true,
@@ -110,7 +112,7 @@
   var SESSION_IDLE_MS = 30 * 60 * 1000;
   var LIB_NAME = 'video-studio-web-analytics';
   var LIB_VERSION = '1.0.0';
-  var APP_VERSION = 'web-1.17';
+  var APP_VERSION = 'web-1.18';
   var LS_STATE = 'vsw.analytics.state';
   var CONSENT_UNSET = 'unset';
   var CONSENT_GRANTED = 'granted';
@@ -198,7 +200,7 @@
       if (!Object.prototype.hasOwnProperty.call(src, key)) continue;
       if (FORBIDDEN[key] || !ALLOWED_PROPS[key]) continue;
       value = src[key];
-      if (/^(initial_)?utm_/.test(key)) {
+      if (key === 'example_id') { if (["shopping", "canyon", "seal", "locker"].indexOf(value) < 0) continue; } else if (key === 'return_reason') { if (["back", "reopen", "missing_code"].indexOf(value) < 0) continue; } else if (key === 'device_class') { if (["phone", "tablet", "desktop"].indexOf(value) < 0) continue; } else if (key === 'os') { if (["ios", "android", "macos", "windows", "linux", "other"].indexOf(value) < 0) continue; } else if (key === 'browser') { if (["safari", "chrome", "firefox", "edge", "other"].indexOf(value) < 0) continue; } else if (key === 'text_len_bucket') { if (["b0_20", "b21_50", "b51_100", "b101_200", "b201_plus"].indexOf(value) < 0) continue; } else if (key === 'from_example' || key === 'prompt_edited' || key === 'prompt_matches_example' || key === 'is_repeat' || key === 'after_success' || key === 'is_pwa' || key === 'is_in_app_browser') { if (typeof value !== 'boolean') continue; } else if (key === 'quota_spent' || key === 'quota_estimate') { if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 1000000) continue; } else if (/^(initial_)?utm_/.test(key)) {
         value = safeUtm(value);
         if (!value) continue;
       } else if (key === 'package_id') {
@@ -223,7 +225,7 @@
         if (!SAFE_INPUT_MODE[value]) continue;
       } else if (key === 'source') {
         value = String(value || '').trim().toLowerCase();
-        if (!(SAFE_BILLING_SOURCE[value] || SAFE_DOWNLOAD_SOURCE[value])) continue;
+        if (!(SAFE_BILLING_SOURCE[value] || SAFE_DOWNLOAD_SOURCE[value] || (event === 'login_start' && ['generate','billing','other'].indexOf(value) >= 0))) continue;
       } else if (key === 'requested_duration_s') {
         value = parseInt(value, 10);
         if (!isFinite(value) || value < 0 || value > 3600) continue;
@@ -249,6 +251,12 @@
       }
       clean[key] = value;
     }
+    var ua = String((root.navigator || {}).userAgent || '');
+    clean.device_class = /iPad|Tablet/i.test(ua) || (/Macintosh/.test(ua) && (root.navigator || {}).maxTouchPoints > 1) ? 'tablet' : /Mobi|iPhone/i.test(ua) ? 'phone' : 'desktop';
+    clean.os = /iPhone|iPad|iPod/.test(ua) || clean.device_class === 'tablet' && /Macintosh/.test(ua) ? 'ios' : /Android/i.test(ua) ? 'android' : /Windows/i.test(ua) ? 'windows' : /Mac/i.test(ua) ? 'macos' : /Linux/i.test(ua) ? 'linux' : 'other';
+    clean.browser = /Edg/i.test(ua) ? 'edge' : /Firefox|FxiOS/i.test(ua) ? 'firefox' : /Chrome|CriOS/i.test(ua) ? 'chrome' : /Safari/i.test(ua) ? 'safari' : 'other';
+    clean.is_pwa = isStandaloneDisplay();
+    clean.is_in_app_browser = /MicroMessenger|Instagram|FBAN|FBAV|TikTok|Bytedance|Line\/|Twitter/i.test(ua);
     clean.platform = PLATFORM;
     return clean;
   }
@@ -278,6 +286,7 @@
       state.account_distinct_id = '';
       state.login_success_token = saved.login_success_token || '';
       state.chat_seen = saved.chat_seen || {};
+      ['generation_started', 'chat_started', 'generation_succeeded', 'chat_succeeded'].forEach(function (key) { state[key] = Number(saved[key]) || 0; });
       state.pwa_standalone_session = saved.pwa_standalone_session || '';
       state.pwa_offer_session = saved.pwa_offer_session || '';
       state.pwa_accepted = !!saved.pwa_accepted;
@@ -418,6 +427,7 @@
   }
 
   function beginNewSession(t) {
+    state.generation_started = state.chat_started = state.generation_succeeded = state.chat_succeeded = 0;
     state.session_id = uuid();
     state.session_started_at = t;
     state.last_activity = t;
@@ -600,6 +610,9 @@
       try { captureAppOpen(); } finally { openingAppOpen = false; }
     }
     if (!acceptUnique(event, clean)) return false;
+    var family = event.indexOf('generation_') === 0 ? 'generation' : event.indexOf('chat_') === 0 ? 'chat' : '';
+    if (event === 'generation_start' || event === 'chat_submit') { clean.is_repeat = !!state[family + '_started']; clean.after_success = !!state[family + '_succeeded']; state[family + '_started'] = (state[family + '_started'] || 0) + 1; }
+    if (event === 'generation_success' || event === 'chat_success') state[family + '_succeeded'] = (state[family + '_succeeded'] || 0) + 1;
     clean.session_id = sessionId;
     clean.install_id = state.install_id;
     clean.app_version = APP_VERSION;
@@ -646,9 +659,50 @@
     return track('pwa_standalone_launch', {});
   }
 
+  var exampleCycles = {};
+  function notifyExampleClick(surface, id) {
+    if (['shopping','canyon','seal','locker'].indexOf(id) < 0) return;
+    exampleCycles[surface] = { id: id, edited: false };
+    track('example_click', { surface: surface, example_id: id });
+  }
+  function carryExampleCycle(from, to, text) {
+    var cycle = exampleCycles[from];
+    if (!cycle) { delete exampleCycles[to]; return; }
+    var changed = text != null && !promptContext(from, text).prompt_matches_example;
+    exampleCycles[to] = { id: cycle.id, edited: cycle.edited || !!changed };
+  }
+  function notifyPromptEdited(surface) {
+    var cycle = exampleCycles[surface];
+    if (!cycle || cycle.edited) return;
+    cycle.edited = true;
+    track('prompt_edited', { surface: surface, example_id: cycle.id });
+  }
+  function promptContext(surface, text) {
+    var cycle = exampleCycles[surface];
+    var n = String(text || '').length;
+    var result = { text_len_bucket: n <= 20 ? 'b0_20' : n <= 50 ? 'b21_50' : n <= 100 ? 'b51_100' : n <= 200 ? 'b101_200' : 'b201_plus' };
+    if (!cycle) return result;
+    result.from_example = true;
+    result.example_id = cycle.id;
+    result.prompt_edited = cycle.edited;
+    var normalize = function (v) { return String(v || '').trim().replace(/\s+/g, ' '); };
+    result.prompt_matches_example = false;
+    var i18n = root.VSI18n;
+    if (i18n && i18n.t) ['zh','en','es','pt','ja','ko'].forEach(function (lang) {
+      var key = (surface === 'chat' ? 'chat_example_' : 'example_') + cycle.id + '_prompt';
+      var value = i18n.t(lang, key);
+      var fallback = i18n.t(lang, 'example_' + cycle.id + '_prompt');
+      var alternate = i18n.t(lang, 'chat_example_' + cycle.id + '_prompt');
+      if (normalize(fallback) === normalize(text) || (alternate !== 'chat_example_' + cycle.id + '_prompt' && normalize(alternate) === normalize(text))) result.prompt_matches_example = true;
+      if (value && value !== key && normalize(value) === normalize(text)) result.prompt_matches_example = true;
+    });
+    return result;
+  }
+  var funnelContext = {};
   function notifyChatSubmit(chatId, opts) {
     opts = opts || {};
     var props = { chat_id: chatId, surface: 'chat' };
+    if (opts.prompt != null) Object.assign(props, promptContext('chat', opts.prompt));
     if (opts.model) props.model = opts.model;
     return track('chat_submit', props);
   }
@@ -681,8 +735,8 @@
     persist();
   }
 
-  function notifyLoginStart() {
-    return track('login_start', {});
+  function notifyLoginStart(source) {
+    return track('login_start', { source: source });
   }
 
   function notifyLoginFailed(opts) {
@@ -733,6 +787,9 @@
     if (opts.model) props.model = opts.model;
     if (opts.requestedDurationS != null) props.requested_duration_s = opts.requestedDurationS;
     if (opts.inputMode) props.input_mode = opts.inputMode;
+    if (opts.prompt != null) Object.assign(props, promptContext(props.surface, opts.prompt));
+    if (opts.quota_estimate != null) props.quota_estimate = opts.quota_estimate;
+    funnelContext[generationId] = { from_example: props.from_example, example_id: props.example_id };
     return track('generation_start', props);
   }
 
@@ -743,6 +800,8 @@
     if (opts.durationMs != null) props.duration_ms = opts.durationMs;
     if (opts.inputMode) props.input_mode = opts.inputMode;
     if (!ok) props.error_code = normalizeErrorCode(opts.errorCode);
+    if (ok && opts.quota_spent != null) props.quota_spent = opts.quota_spent;
+    Object.assign(props, funnelContext[generationId] || {});
     return track(ok ? 'generation_success' : 'generation_failed', props);
   }
 
@@ -976,6 +1035,9 @@
     notifyKeyVerified: notifyKeyVerified,
     notifyKeyVerifyFailed: notifyKeyVerifyFailed,
     notifyLanguageSet: notifyLanguageSet,
+    carryExampleCycle: carryExampleCycle,
+    notifyExampleClick: notifyExampleClick, notifyPromptEdited: notifyPromptEdited,
+    notifyLoginReturnUnsigned: function (reason) { return track('login_return_unsigned', { return_reason: reason }); },
     notifyGenerationStart: notifyGenerationStart,
     notifyGenerationFinish: notifyGenerationFinish,
     notifyVideoDownload: notifyVideoDownload,
@@ -996,6 +1058,8 @@
         account_distinct_id: '', login_success_token: '', chat_seen: {}, pwa_standalone_session: '',
     pwa_offer_session: '', pwa_accepted: false, active_ms: 0, active_started_at: 0,
     session_end_id: '', surfaces_seen: {} };
+      exampleCycles = {};
+      funnelContext = {};
       booted = false;
       flushing = false;
       flushTimer = null;

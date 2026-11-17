@@ -8,6 +8,11 @@ VSI18n.register('zh', {
   htmlLang: 'zh-CN',      // <html lang>
   match: ['zh']          // browser language prefixes that pick this language by default
 }, {
+  oauth_callback_returning: "正在返回 Video Studio…",
+  oauth_callback_failed: "登录失败",
+  oauth_callback_failure_message: "未能完成 PowerTokens 登录。请返回 Video Studio 后重试。",
+  oauth_callback_return: "返回 Video Studio",
+
   chat_greeting_choices: "你好！说说你想拍什么，我们一起把画面写清楚。也可以先选一个开头：",
   chat_use_prompt: "用这版提示词",
   chat_change_scene: "换个场景",

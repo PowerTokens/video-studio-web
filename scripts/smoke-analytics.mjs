@@ -223,7 +223,7 @@ assert.ok(thrower.A.pending().length >= 1);
     storage: sandbox.localStorage,
     transport: null,
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.17',
+    appVersion: 'web-1.18',
   });
   E.setConsent(true);
   E.flush();
@@ -376,7 +376,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.17',
+    appVersion: 'web-1.18',
   });
   S.setConsent(true);
   S.flush();
@@ -458,7 +458,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.17',
+    appVersion: 'web-1.18',
     isVisible: () => visible,
   });
   S.setConsent(true);
@@ -520,7 +520,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.17',
+    appVersion: 'web-1.18',
     isVisible: () => visible,
   });
   S.setConsent(true);
@@ -575,12 +575,12 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     if (reset) {
       S.resetForTests({
         now: () => clock, storage, transport: (item) => sentArr.push(item),
-        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.17', isVisible: () => true,
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.18', isVisible: () => true,
       });
     } else {
       S.boot({
         now: () => clock, storage, transport: (item) => sentArr.push(item),
-        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.17', isVisible: () => true,
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.18', isVisible: () => true,
       });
     }
     return S;
@@ -725,3 +725,80 @@ for (const event of ['payment_start','payment_checkout_opened','payment_failed',
   assert.ok(!('package_id' in bad)); assert.ok(!('channel' in bad)); assert.ok(!('utm_source' in bad));
 }
 console.log('UTM and payment event privacy passed.');
+
+for (const event of ['example_click', 'prompt_edited', 'login_return_unsigned']) {
+  const p = A.sanitize(event, {example_id:'seal', quota_spent:7, prompt:'secret', credits:8, balance:9, amount:2});
+  assert.equal(p.example_id, 'seal'); assert.equal(p.quota_spent, 7);
+  for (const key of ['prompt','credits','balance','amount']) assert.ok(!(key in p));
+  assert.ok(['phone','tablet','desktop'].includes(p.device_class));
+  assert.ok(['ios','android','macos','windows','linux','other'].includes(p.os));
+  assert.ok(['safari','chrome','firefox','edge','other'].includes(p.browser));
+}
+for (const source of ['header','account','chat','generate','billing','quota','credits_chip','dialog','other']) assert.equal(A.sanitize('login_start', {source}).source, source);
+for (const return_reason of ['back','reopen','missing_code']) assert.equal(A.sanitize('login_return_unsigned', {return_reason}).return_reason, return_reason);
+const invalid = A.sanitize('example_click', {example_id:'private', quota_spent:true, quota_estimate:1000001, prompt_edited:'text', return_reason:'bad'});
+for (const key of ['example_id','quota_spent','quota_estimate','prompt_edited','return_reason']) assert.ok(!(key in invalid));
+
+// Starts count only accepted unique events and reset with the analytics session.
+{
+  const {A: a, sent: events, advance} = load();
+  a.notifyExampleClick('chat', 'seal');
+  a.carryExampleCycle('chat', 'generate', 'a changed plan');
+  a.notifyGenerationStart('cycle-1', {prompt:'a changed plan'});
+  a.notifyGenerationStart('cycle-1');
+  a.notifyGenerationStart('cycle-2');
+  a.notifyGenerationFinish('cycle-1', true, {quota_spent:7});
+  a.notifyGenerationStart('cycle-3');
+  a.notifyChatSubmit('chat-1');
+  a.notifyChatFinish('chat-1', true);
+  a.notifyChatSubmit('chat-2');
+  const starts = events.filter(e=>e.event==='generation_start').map(e=>e.properties);
+  assert.deepEqual(starts.map(p=>[p.is_repeat,p.after_success]), [[false,false],[true,false],[true,true]]);
+  assert.equal(starts[0].from_example,true);
+  assert.equal(starts[0].example_id,'seal');
+  assert.equal(starts[0].prompt_edited,true);
+  assert.equal(events.filter(e=>e.event==='example_click').length,1);
+  assert.equal(events.filter(e=>e.event==='prompt_edited').length,0);
+  assert.equal(events.find(e=>e.event==='generation_success').properties.quota_spent,7);
+  const chats=events.filter(e=>e.event==='chat_submit');
+  assert.equal(chats[0].properties.is_repeat,false);
+  assert.equal(chats[1].properties.is_repeat,true);
+  assert.equal(chats[1].properties.after_success,true);
+  for (const [i,cost] of [undefined,NaN,Infinity,-1,1.5,1000001,'7',true,0,1000000].entries()) {
+    a.notifyGenerationFinish('cost-'+i,true,{quota_spent:cost});
+    const p=events.at(-1).properties;
+    assert.equal('quota_spent' in p, cost===0 || cost===1000000);
+    for (const key of ['prompt','credits','balance']) assert.ok(!(key in p));
+  }
+  a.notifyGenerationFinish('failed-cost',false,{quota_spent:7});
+  assert.ok(!('quota_spent' in events.at(-1).properties));
+  assert.ok(!('source' in a.sanitize('login_start',{source:'tasks'})));
+  advance(a.SESSION_IDLE_MS+1);
+  a.notifyGenerationStart('new-session');
+  assert.equal(events.at(-1).properties.is_repeat,false);
+  assert.equal(events.at(-1).properties.after_success,false);
+}
+
+// A terminal callback consumes PKCE state before a later main-page load.
+for (const search of ['', '?error=access_denied', '?code=x&state=wrong', '?code=x&state=expected']) {
+  const pending = {'vsw.oauth.state':'expected','vsw.oauth.code_verifier':'verifier'};
+  if (search==='?code=x&state=expected') delete pending['vsw.oauth.code_verifier'];
+  const events=[];
+  const handlers={};
+  const sandbox={URL,URLSearchParams,Promise,location:{href:'https://example.com/',pathname:'/',search:''},
+    sessionStorage:{getItem:k=>pending[k],setItem:(k,v)=>pending[k]=v,removeItem:k=>delete pending[k]},
+    addEventListener:(k,fn)=>handlers[k]=fn,
+    VSAnalytics:{notifyLoginFailed:()=>{},notifyLoginReturnUnsigned:r=>events.push(r)}};
+  sandbox.window=sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(root,'js/oauth.js'),'utf8'),sandbox);
+  await sandbox.VSOauth.handleCallback(search);
+  assert.equal(pending['vsw.oauth.state'],undefined);
+  assert.equal(pending['vsw.oauth.code_verifier'],undefined);
+  handlers.load();
+  assert.ok(!events.includes('reopen'));
+  pending['vsw.oauth.state']='new'; pending['vsw.oauth.code_verifier']='new';
+  handlers.load(); handlers.pageshow({persisted:true});
+  assert.ok(events.includes('reopen')); assert.ok(events.includes('back'));
+}
+console.log('Funnel wiring regressions passed.');

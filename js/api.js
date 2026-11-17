@@ -390,6 +390,7 @@
       if (!root.VSAnalytics || !rec) return;
       genStartedAt[rec.local_id] = Date.now();
       var startOpts = {
+        prompt: rec.prompt, quota_estimate: rec.cost,
         model: rec.model,
         surface: rec.compare_id ? 'compare' : 'generate',
         requestedDurationS: rec.duration
@@ -416,6 +417,7 @@
         durationMs: Math.max(0, Date.now() - started),
         errorCode: rec.error || rec.state
       };
+      if (ok && Number.isSafeInteger(rec.cost) && rec.cost >= 0 && rec.cost <= 1000000) finOpts.quota_spent = rec.cost;
       if (rec.has_image === true) finOpts.inputMode = 'i2v';
       else if (rec.has_image === false) finOpts.inputMode = 't2v';
       root.VSAnalytics.notifyGenerationFinish(rec.local_id, ok, finOpts);

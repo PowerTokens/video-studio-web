@@ -6,6 +6,11 @@ VSI18n.register('pt', {
   htmlLang: "pt",
   match: ["pt"]
 }, {
+  oauth_callback_returning: "Voltando ao Video Studio…",
+  oauth_callback_failed: "Falha ao entrar",
+  oauth_callback_failure_message: "Não foi possível concluir o login no PowerTokens. Volte ao Video Studio e tente novamente.",
+  oauth_callback_return: "Voltar ao Video Studio",
+
   chat_greeting_choices: "Olá! Conte o que quer filmar e vamos definir a cena. Ou escolha um ponto de partida:",
   chat_use_prompt: "Usar este prompt",
   chat_change_scene: "Outra cena",
