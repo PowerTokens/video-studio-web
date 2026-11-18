@@ -208,7 +208,7 @@ function makeDocument() {
   return { document, body, documentElement, select, i18nNodes, htmlNodes };
 }
 
-function runI18n(opts) {
+async function runI18n(opts) {
   const search = opts.search || '';
   const languages = opts.languages || ['en-US'];
   const language = opts.language || languages[0];
@@ -217,6 +217,7 @@ function runI18n(opts) {
   const dom = makeDocument();
   const sandbox = {
     window: {},
+    URL,
     document: dom.document,
     navigator: { languages, language, userAgent: MAC_UA, platform: 'MacIntel' },
     localStorage: {
@@ -243,9 +244,19 @@ function runI18n(opts) {
   sandbox.window.clearTimeout = clearTimeout;
   vm.createContext(sandbox);
   vm.runInContext(i18nSrc, sandbox);
-  for (const code of LANG_CODES) vm.runInContext(LANG_SRCS[code], sandbox);
+  const requests = [];
+  dom.document.currentScript = { src: 'https://example.com/video-studio-web/js/i18n.js' };
+  dom.document.head = { appendChild(script) {
+    requests.push(script.src);
+    const code = /lang\/(\w+)\.js/.exec(script.src)[1];
+    vm.runInContext(LANG_SRCS[code], sandbox);
+    script.onload();
+  } };
   vm.runInContext(downloadI18nSrc, sandbox);
+  await sleep(0);
+  assert.equal(requests.length, 1, "boot fetches only the chosen pack");
   return {
+    requests,
     I: sandbox.VSI18n,
     store,
     languageSet,
@@ -265,8 +276,9 @@ function textFor(result, key) {
 
 // All six language files register the new download keys.
 {
-  const probe = runI18n({ languages: ['en'] });
+  const probe = await runI18n({ languages: ['en'] });
   for (const code of LANG_CODES) {
+    await probe.I.load(code);
     assert.ok(probe.I.has(code), 'missing language: ' + code);
     for (const key of DL_KEYS) {
       assert.ok(
@@ -282,7 +294,7 @@ function textFor(result, key) {
 
 // Saved vsw.lang wins over the browser language; first detect does not notify.
 {
-  const saved = runI18n({
+  const saved = await runI18n({
     languages: ['zh-CN', 'en'],
     store: { 'vsw.lang': JSON.stringify('ja') },
   });
@@ -297,7 +309,7 @@ function textFor(result, key) {
 
 // Browser zh-CN picks zh when nothing is saved.
 {
-  const zh = runI18n({ languages: ['zh-CN', 'en'] });
+  const zh = await runI18n({ languages: ['zh-CN', 'en'] });
   assert.equal(zh.documentElement.lang, 'zh-CN');
   assert.equal(textFor(zh, 'dl_heading'), zh.I.t('zh', 'dl_heading'));
   assert.ok(textFor(zh, 'dl_mac_step_settings').includes('仍要打开'));
@@ -311,7 +323,7 @@ function textFor(result, key) {
 
 // Unknown browser language falls back to English.
 {
-  const unk = runI18n({ languages: ['xx-YY', 'qq'] });
+  const unk = await runI18n({ languages: ['xx-YY', 'qq'] });
   assert.equal(unk.documentElement.lang, 'en');
   assert.equal(textFor(unk, 'dl_heading'), unk.I.t('en', 'dl_heading'));
   assert.ok(textFor(unk, 'dl_mac_step_settings').includes('Open Anyway'));
@@ -319,7 +331,7 @@ function textFor(result, key) {
 
 // Invalid saved value is ignored; browser language is used instead.
 {
-  const invalid = runI18n({
+  const invalid = await runI18n({
     languages: ['ko-KR'],
     store: { 'vsw.lang': JSON.stringify('xx') },
   });
@@ -329,7 +341,7 @@ function textFor(result, key) {
 
 // ?mock=1 reads and writes vsw.mock.lang, not vsw.lang.
 {
-  const mock = runI18n({
+  const mock = await runI18n({
     search: '?mock=1',
     languages: ['en-US'],
     store: { 'vsw.mock.lang': JSON.stringify('es') },
@@ -339,7 +351,7 @@ function textFor(result, key) {
 }
 
 // Language switcher persists vsw.lang (JSON) and notifies only on a user change.
-const sw = runI18n({ languages: ['en-US'] });
+const sw = await runI18n({ languages: ['en-US'] });
 assert.equal(sw.documentElement.lang, 'en');
 assert.deepEqual(
   sw.select.options.map((o) => o.value).sort(),
@@ -352,12 +364,16 @@ assert.equal(sw.store['vsw.lang'], JSON.stringify('zh'));
 assert.equal(sw.documentElement.lang, 'zh-CN');
 assert.equal(textFor(sw, 'dl_heading'), sw.I.t('zh', 'dl_heading'));
 assert.deepEqual(sw.languageSet, ['zh']);
+assert.equal(sw.requests.length, 2);
+assert.match(sw.requests[1], /lang\/zh\.js\?v=/);
 
 // A same-language event must not notify again or rewrite storage with a different encoding.
 sw.select.value = 'zh';
 sw.select.dispatchEvent({ type: 'change' });
 await sleep(10);
 assert.deepEqual(sw.languageSet, ['zh']);
+assert.equal(sw.requests.length, 2);
+assert.match(sw.requests[1], /lang\/zh\.js\?v=/);
 assert.equal(sw.store['vsw.lang'], JSON.stringify('zh'));
 
 console.log('ok', organic.replaced);

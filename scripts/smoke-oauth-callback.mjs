@@ -29,24 +29,34 @@ async function run(lang, outcome, returnHash = 'tasks', missingModule = false) {
       getItem: (key) => pending[key] || null,
       removeItem: (key) => { delete pending[key]; },
     },
-    document: { documentElement: {}, getElementById: (id) => elements[id] },
+    document: {
+      currentScript: { src: 'https://example.com/video-studio-web/js/i18n.js' },
+      createElement: () => ({}),
+      head: { appendChild(script) {
+        assert.match(script.src, /^https:\/\/example.com\/video-studio-web\/js\/lang\/.*\?v=/);
+        vm.runInContext(read('js/lang/' + /lang\/(\w+\.js)/.exec(script.src)[1]), context);
+        script.onload();
+      } },
+      documentElement: {}, getElementById: (id) => elements[id]
+    },
     location: {
       href: 'https://example.com/video-studio-web/oauth/callback.html?error=access_denied',
       search: '?error=access_denied', replace: (url) => navigations.push(url),
     },
   });
   context.window = context;
-  for (const script of scripts.filter((s) => /i18n|lang\/|oauth\.js/.test(s))) {
+  for (const script of scripts.filter((s) => /i18n|lang\/|oauth\.js/.test(s.split('?')[0]))) {
     vm.runInContext(read(script.split('?')[0]), context);
   }
   if (missingModule) context.VSOauth = null;
   else context.VSOauth.handleCallback = () => outcome === 'reject'
     ? Promise.reject(new Error('network')) : Promise.resolve({ ok: outcome === 'success' });
   vm.runInContext(read('js/oauth-callback.js'), context);
+  await new Promise(setImmediate);
   const resolved = ['zh', 'en', 'es', 'pt', 'ja', 'ko'].includes(JSON.parse(lang || 'null')) ? JSON.parse(lang) : 'en';
   const t = (key) => context.VSI18n.t(resolved, key);
   assert.equal(context.document.documentElement.lang, context.VSI18n.meta(resolved).htmlLang);
-  if (!missingModule) {
+  if (!missingModule && outcome === 'success') {
     assert.equal(elements.title.textContent, t('oauth_callback_returning'));
     assert.equal(elements.msg.hidden, true);
     assert.equal(elements.progress.hidden, false);

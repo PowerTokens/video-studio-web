@@ -1,13 +1,14 @@
 /* Dedicated handler for /oauth/callback.html — keeps inline script out of CSP. */
-(function () {
+(async function () {
   'use strict';
   var O = window.VSOauth;
   var I = window.VSI18n;
-  var lang = 'en';
+  var lang = I.detectLanguage(window.navigator);
   try {
     var saved = JSON.parse(window.localStorage.getItem('vsw.lang'));
-    if (I.has(saved)) lang = saved;
-  } catch (e) { /* Use English when the saved preference is unavailable. */ }
+    if (I.known(saved)) lang = saved;
+  } catch (e) { /* Keep browser detection when storage is unavailable. */ }
+  try { lang = await I.load(lang); } catch (e) { /* Retain key fallback offline. */ }
   document.documentElement.lang = I.meta(lang).htmlLang || lang;
 
   var title = document.getElementById('title');

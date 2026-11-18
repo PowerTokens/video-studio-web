@@ -5,13 +5,53 @@
 (function (root) {
   'use strict';
   var STRINGS = {};
-  var META = {};
-  var ORDER = [];
+  var META = {
+    zh: { name: '中文', htmlLang: 'zh-CN', match: ['zh'], script: 'lang/zh.js?v=20261118-i18n' },
+    en: { name: 'English', htmlLang: 'en', match: ['en'], script: 'lang/en.js?v=20261118-i18n' },
+    es: { name: 'Español', htmlLang: 'es', match: ['es'], script: 'lang/es.js?v=20261118-i18n' },
+    pt: { name: 'Português', htmlLang: 'pt', match: ['pt'], script: 'lang/pt.js?v=20261118-i18n' },
+    ja: { name: '日本語', htmlLang: 'ja', match: ['ja'], script: 'lang/ja.js?v=20261118-i18n' },
+    ko: { name: '한국어', htmlLang: 'ko', match: ['ko'], script: 'lang/ko.js?v=20261118-i18n' }
+  };
+  var ORDER = Object.keys(META);
+  var pending = {};
+  // Capture while this regular script executes, before an injected pack becomes currentScript.
+  var base = root.document && root.document.currentScript && root.document.currentScript.src;
+
+  function known(code) { return Object.prototype.hasOwnProperty.call(META, code); }
+
+  function load(code) {
+    code = known(code) ? code : FALLBACK;
+    if (STRINGS[code]) return Promise.resolve(code);
+    if (pending[code]) return pending[code];
+    pending[code] = new Promise(function (resolve, reject) {
+      var script = root.document.createElement('script');
+      script.src = base ? new URL(META[code].script, base).href : 'js/' + META[code].script;
+      script.onload = function () {
+        if (STRINGS[code]) resolve(code);
+        else { delete pending[code]; reject(new Error('Language pack did not register: ' + code)); }
+      };
+      script.onerror = function () {
+        delete pending[code];
+        script.remove();
+        reject(new Error('Language pack failed: ' + code));
+      };
+      root.document.head.appendChild(script);
+    });
+    return pending[code];
+  }
+
+  // A failed selected pack can still render English. If both fail, callers retain HTML defaults.
+  function ensure(code) {
+    return load(code).catch(function (error) {
+      if (code === FALLBACK) throw error;
+      return load(FALLBACK);
+    });
+  }
   var FALLBACK = 'en';
 
   function register(code, meta, strings) {
-    if (!STRINGS[code]) ORDER.push(code);
-    META[code] = meta || { name: code, htmlLang: code, match: [code] };
+    if (!known(code)) return;
     STRINGS[code] = strings || {};
   }
 
@@ -25,7 +65,7 @@
     });
   }
 
-  /** Pick the first registered language that matches the browser's language list; else English. */
+  /** Pick the first catalog language that matches the browser's language list; else English. */
   function detectLanguage(nav) {
     var langs = (nav && (nav.languages && nav.languages.length ? nav.languages : [nav.language])) || [];
     for (var i = 0; i < langs.length; i++) {
@@ -37,7 +77,7 @@
         }
       }
     }
-    return STRINGS[FALLBACK] ? FALLBACK : ORDER[0];
+    return FALLBACK;
   }
 
   function t(lang, key) {
@@ -49,6 +89,8 @@
 
   root.VSI18n = {
     register: register,
+    known: known,
+    load: ensure,
     languages: function () { return ORDER.slice(); },
     meta: function (code) { return META[code]; },
     has: function (code) { return STRINGS.hasOwnProperty(code); },

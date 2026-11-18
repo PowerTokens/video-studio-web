@@ -264,14 +264,13 @@
       var queued = null;
       function queueLang() {
         var code = sel.value;
-        if (!I.has(code)) return;
+        if (!I.known(code)) return;
         if (queued && queued.code !== code && code === lang) return;
         if (!queued && code === lang) return;
         if (queued) clearTimeout(queued.timer);
         var timer = setTimeout(function () {
           queued = null;
           setLang(code, true);
-          if (sel.value !== lang) sel.value = lang;
         }, 0);
         queued = { code: code, timer: timer };
       }
@@ -282,9 +281,13 @@
     renderModelDetailsBtn();
   }
 
-  function setLang(code, persist) {
+  var langRequest = 0;
+  async function setLang(code, persist) {
+    var request = ++langRequest;
+    try { code = await I.load(code); } catch (error) { return; }
+    if (request !== langRequest) return;
     var prev = lang;
-    lang = I.has(code) ? code : 'en';
+    lang = I.known(code) ? code : 'en';
     if (persist) A.store.set('lang', lang);
     if (persist && lang && lang !== prev) {
       try {
@@ -852,6 +855,7 @@
       });
     });
     $('key-input').addEventListener('keydown', function (ev) {
+      if (ev.isComposing || ev.keyCode === 229) return;
       if (ev.key === 'Enter') {
         ev.preventDefault();
         $('key-save').click();
@@ -1947,12 +1951,13 @@
     balanceTimer = setTimeout(refreshBalance, 1500);
   }
 
-  function boot() {
+  async function boot() {
     try {
       if (!M || !A || !I) throw new Error('core modules missing');
       if (A.MOCK) show($('mock-banner'), true);
       var saved = A.store.get('lang', null);
-      lang = saved && I.has(saved) ? saved : I.detectLanguage(navigator);
+      lang = saved && I.known(saved) ? saved : I.detectLanguage(navigator);
+      lang = await I.load(lang);
       document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
         b.addEventListener('click', function () { setTab(b.getAttribute('data-tab'), true); });
       });
@@ -1970,7 +1975,7 @@
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') closeCSelect();
       });
-      setLang(lang, false);
+      await setLang(lang, false);
       if (window.VSChatPilot && window.VSChatPilot.init) {
         window.VSChatPilot.init({
           t: t,

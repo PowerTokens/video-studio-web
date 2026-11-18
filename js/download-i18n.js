@@ -54,9 +54,13 @@
     }
   }
 
-  function setLang(code, persist) {
+  var langRequest = 0;
+  async function setLang(code, persist) {
+    var request = ++langRequest;
+    try { code = await I.load(code); } catch (error) { return; }
+    if (request !== langRequest) return;
     var prev = lang;
-    lang = I.has(code) ? code : 'en';
+    lang = I.known(code) ? code : 'en';
     if (persist) writeSavedLang(lang);
     if (persist && lang && lang !== prev) {
       try {
@@ -87,14 +91,13 @@
     var queued = null;
     function queueLang() {
       var code = sel.value;
-      if (!I.has(code)) return;
+      if (!I.known(code)) return;
       if (queued && queued.code !== code && code === lang) return;
       if (!queued && code === lang) return;
       if (queued) clearTimeout(queued.timer);
       var timer = setTimeout(function () {
         queued = null;
         setLang(code, true);
-        if (sel.value !== lang) sel.value = lang;
       }, 0);
       queued = { code: code, timer: timer };
     }
@@ -102,13 +105,16 @@
     sel.addEventListener('input', queueLang);
   }
 
-  try {
-    if (!I) return;
-    var saved = readSavedLang();
-    lang = saved && I.has(saved) ? saved : I.detectLanguage(window.navigator || navigator);
-    buildSwitcher();
-    setLang(lang, false);
-  } finally {
-    ready();
+  async function boot() {
+    try {
+      if (!I) return;
+      var saved = readSavedLang();
+      lang = saved && I.known(saved) ? saved : I.detectLanguage(window.navigator || navigator);
+      await setLang(lang, false);
+      buildSwitcher();
+    } finally {
+      ready();
+    }
   }
+  boot();
 })();
