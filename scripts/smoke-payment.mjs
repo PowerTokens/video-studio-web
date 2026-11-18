@@ -22,7 +22,7 @@ assert.equal(P.validRedirect('https://gateway.powerwinpay.com/payment/mock'),tru
 console.log('Payment validation passed (no network).');
 const nodes = [];
 function element(tag) {
-  const n = {tag, children:[], value:'', open:false, appendChild(c){this.children.push(c); if(tag==='select' && !this.value)this.value=c.value;}, setAttribute(k,v){this[k]=String(v);}, addEventListener(){}, showModal(){this.open=true;}, close(){this.open=false;}, remove(){}};
+  const n = {tag, children:[], value:'', open:false, appendChild(c){this.children.push(c); if(tag==='select' && !this.value)this.value=c.value;}, setAttribute(k,v){this[k]=String(v);}, listeners:{}, addEventListener(k,f){this.listeners[k]=f;}, showModal(){this.open=true;}, close(){this.open=false; this.listeners.close?.();}, remove(){}};
   nodes.push(n); return n;
 }
 const requests=[]; let accessToken='mock-token'; let loggedIn=false, logged=0, profile={sub:'test',credits:100};
@@ -38,6 +38,7 @@ Object.assign(context, {
 P.show({lang:'en',login:()=>logged++,refresh(){}});assert.equal(logged,1);assert.equal(nodes.length,0);
 loggedIn=true;
 P.show({lang:'en',login(){},refresh(){}});
+assert.equal(context.VSAnalytics.pending().filter(x=>['payment_package_select','payment_channel_select'].includes(x.event)).length,0);
 assert.equal(nodes.filter(n=>n.tag==='select').length,0);
 for (const method of nodes.filter(n=>n.className==='payment-method')) {
   assert.equal(method.children[0].tag,'input');
@@ -81,9 +82,9 @@ for (const [id, amount] of [['22',20],['23',50]]) {
   pick(id).onclick();
   assert.equal(pick(id)['aria-pressed'],'true');
   assert.equal(nodes.find(n=>n.className==='payment-custom').hidden,true);
-  nodes.find(n=>n['data-channel']==='paypal').onchange();
+  nodes.find(n=>n['data-channel']==='paypal').onclick();
   assert.equal(nodes.find(n=>n['data-channel']==='paypal').checked,true);
-  nodes.find(n=>n['data-channel']==='limeng').onchange();
+  nodes.find(n=>n['data-channel']==='limeng').onclick();
   await nodes.find(n=>n.className==='payment-buy').onclick();
   assert.deepEqual(JSON.parse(requests.at(-1).opts.body),{amount,package_id:Number(id),payment_channel:'limeng'});
   await nodes.find(n=>n.className==='payment-check').onclick();
@@ -142,10 +143,14 @@ for (const mode of ['rejected','redirect','network']) {
   P.show({lang:'en',login(){},refresh(){}});
   context.fetch = async()=>{
     if (mode==='network') throw Error('private exception');
-    return {ok:mode!=='rejected',json:async()=>({code:200,data:{orderNo:'mock-order',redirectUrl:'https://untrusted.invalid'}})};
+    return {status:mode==='rejected'?400:200,ok:mode!=='rejected',json:async()=>({code:200,data:{orderNo:'mock-order',redirectUrl:'https://untrusted.invalid'}})};
   };
   await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
 }
+let failures = context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').map(x=>x.properties);
+assert.equal(failures[0].fail_stage,'response'); assert.equal(failures[0].http_status,400); assert.equal(failures[0].api_status,200); assert.equal(failures[0].error_code,'UNKNOWN');
+assert.equal(failures[1].fail_stage,'checkout'); assert.equal(failures[1].error_code,'VALIDATION'); assert.equal(failures[1].redirect_ok,false); assert.equal(failures[1].redirect_host,'unlisted'); assert.equal(failures[1].has_payment_ref,true);
+assert.equal(failures[2].fail_stage,'transport'); assert.equal(failures[2].error_code,'NETWORK'); assert.ok(!('http_status' in failures[2]));
 const queued = context.VSAnalytics.pending();
 const paymentEvents = queued.filter(item=>item.event.startsWith('payment_'));
 assert.equal(paymentEvents.filter(x=>x.event==='payment_start').length,11);
@@ -155,7 +160,7 @@ assert.equal(paymentEvents.filter(x=>x.event==='payment_failed').length,3);
 for (const item of queued) {
   assert.equal(item.properties.utm_source,'videostudio');
   assert.equal(item.properties.initial_utm_source,'videostudio');
-  for (const key of ['amount','credits','balance','orderNo','order_no','redirectUrl','token','url']) assert.ok(!(key in item.properties));
+  for (const key of ['amount','credits','balance','orderNo','order_no','redirectUrl','token','url','code','message']) assert.ok(!(key in item.properties));
 }
 // Even a throwing analytics integration must leave checkout functional.
 context.VSAnalytics.notify_payment_start = ()=>{throw Error('analytics unavailable');};
@@ -163,3 +168,40 @@ context.fetch = async()=>({ok:false,json:async()=>({code:400})});
 await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
 assert.equal(nodes.filter(n=>n.className==='payment-buy').at(-1).disabled,false);
 console.log('Mock payment success, rejection, invalid redirect, network failure and fail-open analytics passed; queued attribution verified.');
+
+for (const [http, api] of [[401,401],[403,403],[200,403]]) {
+  context.fetch=async()=>({ok:http===200,status:http,json:async()=>({code:api})});
+  await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
+  const p=context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').at(-1).properties;
+  assert.equal(p.error_code,'AUTH'); assert.equal(p.fail_stage,'response'); assert.equal(p.http_status,http); assert.equal(p.api_status,api);
+}
+const selections=queued.filter(x=>x.event==='payment_package_select').map(x=>x.properties);
+for (const [selection,id] of [['preset-5','33'],['preset-20','22'],['preset-50','23'],['custom','33']]) assert.ok(selections.some(p=>p.selection===selection && p.package_id===id));
+assert.ok(queued.some(x=>x.event==='payment_channel_select' && x.properties.channel==='paypal'));
+nodes.filter(n=>n.tag==='dialog').at(-1).close();
+assert.equal(context.VSAnalytics.pending().at(-1).properties.pending_checkout,false);
+P.show({lang:'en',login(){},refresh(){}});
+context.fetch=async url=>({ok:true,status:200,json:async()=>url.endsWith('/create')?{code:200,data:{orderNo:'private-order',redirectUrl:'https://powertokens.ai/test'}}:{code:200,data:{status:2}}});
+await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
+nodes.filter(n=>n.tag==='dialog').at(-1).close();
+assert.equal(context.VSAnalytics.pending().at(-1).properties.pending_checkout,true);
+const failedCount=context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').length;
+for(let i=0;i<2;i++) { await nodes.filter(n=>n.className==='payment-check').at(-1).onclick(); await new Promise(resolve=>setImmediate(resolve)); }
+assert.equal(context.VSAnalytics.pending().filter(x=>x.event==='payment_cancelled').length,1);
+assert.equal(context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').length,failedCount);
+console.log('Selection, closure, cancellation and diagnostic assertions passed.');
+
+for (const [key, bad] of Object.entries({fail_stage:'secret', http_status:600, api_status:'401', message_category:'raw', has_payment_ref:1, redirect_ok:'false', redirect_protocol:'ftp', redirect_host:'secret.example'})) {
+  assert.ok(!(key in context.VSAnalytics.sanitize('payment_failed',{[key]:bad})));
+  assert.ok(!(key in context.VSAnalytics.sanitize('payment_success',{[key]:true})));
+}
+for (const body of [null, [], {code:200,data:{} }]) {
+  context.fetch=async()=>({ok:true,status:200,json:async()=>body});
+  await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
+  const p=context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').at(-1).properties;
+  assert.equal(p.fail_stage,body?.data?'checkout':'response');
+}
+context.fetch=async()=>({ok:true,status:200,json:async()=>{throw Error('private JSON');}});
+await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
+assert.equal(context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').at(-1).properties.fail_stage,'response');
+for (const item of context.VSAnalytics.pending()) for (const key of ['amount','credits','balance','orderNo','order_no','redirectUrl','token','url','code','message']) assert.ok(!(key in item.properties));

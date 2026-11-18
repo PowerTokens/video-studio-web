@@ -35,6 +35,7 @@
     login_failed: true,
     logout: true,
     billing_click: true,
+    payment_package_select: true, payment_channel_select: true, payment_dialog_closed: true, payment_cancelled: true,
     payment_start: true, payment_checkout_opened: true, payment_failed: true, payment_success: true,
     desktop_download_click: true,
     surface_open: true,
@@ -50,7 +51,9 @@
     generation_id: true, requested_duration_s: true, key_applied: true,
     environment: true, test_run_id: true, chat_id: true,
     cta_kind: true, active_ms: true, source: true, language: true,
-    package_id: true, channel: true,
+    package_id: true, channel: true, selection: true, pending_checkout: true,
+    fail_stage: true, http_status: true, api_status: true, message_category: true,
+    has_payment_ref: true, redirect_ok: true, redirect_protocol: true, redirect_host: true,
     utm_source: true, utm_medium: true, utm_campaign: true, utm_content: true, utm_term: true,
     initial_utm_source: true, initial_utm_medium: true, initial_utm_campaign: true, initial_utm_content: true, initial_utm_term: true,
     input_mode: true
@@ -200,7 +203,18 @@
       if (!Object.prototype.hasOwnProperty.call(src, key)) continue;
       if (FORBIDDEN[key] || !ALLOWED_PROPS[key]) continue;
       value = src[key];
-      if (key === 'example_id') { if (["shopping", "canyon", "seal", "locker"].indexOf(value) < 0) continue; } else if (key === 'return_reason') { if (["back", "reopen", "missing_code"].indexOf(value) < 0) continue; } else if (key === 'device_class') { if (["phone", "tablet", "desktop"].indexOf(value) < 0) continue; } else if (key === 'os') { if (["ios", "android", "macos", "windows", "linux", "other"].indexOf(value) < 0) continue; } else if (key === 'browser') { if (["safari", "chrome", "firefox", "edge", "other"].indexOf(value) < 0) continue; } else if (key === 'text_len_bucket') { if (["b0_20", "b21_50", "b51_100", "b101_200", "b201_plus"].indexOf(value) < 0) continue; } else if (key === 'from_example' || key === 'prompt_edited' || key === 'prompt_matches_example' || key === 'is_repeat' || key === 'after_success' || key === 'is_pwa' || key === 'is_in_app_browser') { if (typeof value !== 'boolean') continue; } else if (key === 'quota_spent' || key === 'quota_estimate') { if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 1000000) continue; } else if (/^(initial_)?utm_/.test(key)) {
+      var diagnosticEnums = {fail_stage:['transport','response','checkout'], message_category:['absent','authentication','other-redacted'], redirect_protocol:['https','http','other','invalid'], redirect_host:['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai','unlisted','invalid']};
+      if (Object.prototype.hasOwnProperty.call(diagnosticEnums, key)) {
+        if (event !== 'payment_failed' || !diagnosticEnums[key].includes(value)) continue;
+      } else if (key === 'http_status' || key === 'api_status') {
+        if (event !== 'payment_failed' || !Number.isInteger(value) || value < (key === 'http_status' ? 100 : 0) || value > (key === 'http_status' ? 599 : 99999)) continue;
+      } else if (key === 'has_payment_ref' || key === 'redirect_ok') {
+        if (event !== 'payment_failed' || typeof value !== 'boolean') continue;
+      } else if (key === 'pending_checkout') {
+        if (event !== 'payment_dialog_closed' || typeof value !== 'boolean') continue;
+      } else if (key === 'selection') {
+        if (event !== 'payment_package_select' || !['preset-5','preset-20','preset-50','custom'].includes(value)) continue;
+      } else if (key === 'example_id') { if (["shopping", "canyon", "seal", "locker"].indexOf(value) < 0) continue; } else if (key === 'return_reason') { if (["back", "reopen", "missing_code"].indexOf(value) < 0) continue; } else if (key === 'device_class') { if (["phone", "tablet", "desktop"].indexOf(value) < 0) continue; } else if (key === 'os') { if (["ios", "android", "macos", "windows", "linux", "other"].indexOf(value) < 0) continue; } else if (key === 'browser') { if (["safari", "chrome", "firefox", "edge", "other"].indexOf(value) < 0) continue; } else if (key === 'text_len_bucket') { if (["b0_20", "b21_50", "b51_100", "b101_200", "b201_plus"].indexOf(value) < 0) continue; } else if (key === 'from_example' || key === 'prompt_edited' || key === 'prompt_matches_example' || key === 'is_repeat' || key === 'after_success' || key === 'is_pwa' || key === 'is_in_app_browser') { if (typeof value !== 'boolean') continue; } else if (key === 'quota_spent' || key === 'quota_estimate') { if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 1000000) continue; } else if (/^(initial_)?utm_/.test(key)) {
         value = safeUtm(value);
         if (!value) continue;
       } else if (key === 'package_id') {
@@ -1026,6 +1040,10 @@
     notifyLogout: notifyLogout,
     notifyLoginSuccess: notifyLoginSuccess,
     notifyBillingClick: notifyBillingClick,
+    notify_payment_package_select: function (props) { return track('payment_package_select', props); },
+    notify_payment_channel_select: function (props) { return track('payment_channel_select', props); },
+    notify_payment_dialog_closed: function (props) { return track('payment_dialog_closed', props); },
+    notify_payment_cancelled: function (props) { return track('payment_cancelled', props); },
     notify_payment_start: function (props) { return track('payment_start', props); },
     notify_payment_checkout_opened: function (props) { return track('payment_checkout_opened', props); },
     notify_payment_failed: function (props) { return track('payment_failed', props); },

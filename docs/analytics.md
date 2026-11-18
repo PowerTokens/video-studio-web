@@ -165,6 +165,10 @@ Payment uses the same names intended for desktop:
 
 | Event | Trigger | Properties |
 | --- | --- | --- |
+| `payment_package_select` | Explicit package card click only | `selection` (preset-5, preset-20, preset-50, custom), `package_id` |
+| `payment_channel_select` | Explicit payment method click only | `channel` (limeng, paypal) |
+| `payment_dialog_closed` | Native dialog close, including Escape and close control | boolean `pending_checkout` |
+| `payment_cancelled` | Poll/manual check sees official status 2; once per pending checkout | `package_id`, `channel` when known |
 | `payment_start` | Confirmed buy, immediately before create request | `package_id`, `channel`, `source=dialog` |
 | `payment_checkout_opened` | Successful create with accepted redirect and checkout handoff | `package_id`, `channel` |
 | `payment_failed` | Create rejection, network failure or invalid redirect before handoff | `package_id`, `channel`, normalized `error_code` |
@@ -173,7 +177,8 @@ Payment uses the same names intended for desktop:
 Live official package ids are 22/23 ($20/$50) plus custom 33 (amount_type 2, $5–$2000). Both the default fixed $5 UI preset and the separate Custom card use backend package 33; only the fixed $5 UI preset has the Recommended badge. Package 24 is not a current official package. Package ids are strings; the sanitizer also accepts historical package id 24. Channels are limeng/paypal.
 CHECKOUT normalizes to VALIDATION and PAYMENT to UNKNOWN. Payment helpers are
 `notify_payment_start`, `notify_payment_checkout_opened`, `notify_payment_failed`,
-and `notify_payment_success`; all analytics failures are ignored by checkout.
+`notify_payment_success`, `notify_payment_package_select`, `notify_payment_channel_select`,
+`notify_payment_dialog_closed`, and `notify_payment_cancelled`; all analytics failures are ignored by checkout.
 Safe package/channel context survives pending-payment restoration; old saved
 payments may omit it. The create API transport and body remain unchanged.
 No payment amounts, balances, credits, order identifiers, checkout URLs, account
@@ -196,3 +201,21 @@ or live order is created by these tests.
 `login_start` accepts header, account, chat, generate, billing, quota, credits_chip, dialog, other sources. `login_return_unsigned` accepts back, reopen, missing_code reasons. Web hooks pending PKCE on pageshow and reopen and emits missing_code from the callback. Desktop uses ephemeral loopback OAuth and emits missing_code when that callback lacks a code.
 
 Every event includes device_class and os enums. Web also includes browser, is_pwa, is_in_app_browser. No raw user-agent is captured. Desktop has no example chips. `payment_success` retains its existing notification and deduplication flow.
+
+Payment failure diagnostics are accepted only on `payment_failed`. Unknown values
+are omitted. `fail_stage` is transport (no usable response), response (HTTP,
+JSON/body, or business rejection), or checkout (missing payment reference or
+rejected redirect after successful create). `http_status` is an integer 100–599;
+`api_status` is an integer 0–99999 from the business status. `message_category`
+is absent, authentication, or other-redacted; server text is never captured.
+`has_payment_ref` and `redirect_ok` are strict booleans. `redirect_protocol` is
+https, http, other, or invalid. `redirect_host` is gateway.powerwinpay.com,
+powertokens.ai, www.powertokens.ai, unlisted, or invalid; arbitrary hosts are
+never captured. NETWORK identifies transport failures; AUTH identifies HTTP or
+business 401/403 or the authentication message category; VALIDATION identifies
+checkout validation failures; remaining create failures use UNKNOWN.
+Package selection maps UI keys preset-5/22/23/custom to
+preset-5/preset-20/preset-50/custom and package ids 33/22/23/33. Opening the
+dialog emits no selection events. Closing it reports whether checkout remains
+pending; opening checkout in another tab does not close the dialog. Status 2
+clears pending context and emits cancellation rather than a start failure.

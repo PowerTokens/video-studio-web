@@ -1,13 +1,13 @@
 (function (root) {
   'use strict';
   var active = null, busy = false, dialog;
-  function notify(event, context, errorCode) {
+  function notify(event, context, details) {
     try {
       var analytics = root.VSAnalytics;
       if (analytics && typeof analytics['notify_payment_' + event] === 'function') {
         var props = {package_id: context.package_id, channel: context.channel};
         if (event === 'start') props.source = 'dialog';
-        if (errorCode) props.error_code = errorCode;
+        Object.assign(props, details || {});
         analytics['notify_payment_' + event](props);
       }
     } catch (_) { /* Analytics must never interrupt payment. */ }
@@ -25,6 +25,14 @@
   function diagnostic(details) {
     if (root.console && root.console.info) root.console.info('[payment]', details);
   }
+  function failure(details) {
+    var error = Error('payment');
+    details.error_code = details.fail_stage === 'transport' ? 'NETWORK' :
+      details.http_status === 401 || details.http_status === 403 || details.api_status === 401 || details.api_status === 403 || details.message_category === 'authentication' ? 'AUTH' :
+      details.fail_stage === 'checkout' ? 'VALIDATION' : 'UNKNOWN';
+    error.paymentDiagnostics = details;
+    return error;
+  }
   function rawToken(token) { return typeof token === 'string' ? token.trim().replace(/^(?:Bearer\s+)+/i, '') : ''; }
   async function post(path, body, token) {
     var raw = rawToken(token), operation = path.split('/').pop();
@@ -34,15 +42,19 @@
     var r;
     try {
       r = await fetch('https://powertokens.ai/api' + path, {method: 'POST', credentials: 'omit', headers: {Authorization: 'Bearer ' + raw, 'Content-Type': 'application/json'}, body: JSON.stringify(body), signal: AbortSignal.timeout(15000)});
-    } catch (_) { diagnostic({stage:'transport', operation:operation, outcome:'network-cors-or-timeout'}); throw Error('request'); }
+    } catch (_) { diagnostic({stage:'transport', operation:operation, outcome:'network-cors-or-timeout'}); throw failure({fail_stage:'transport'}); }
+    var details = {fail_stage:'response'};
+    if (Number.isInteger(r.status) && r.status >= 100 && r.status <= 599) details.http_status = r.status;
     var data;
-    try { data = await r.json(); } catch (_) { diagnostic({stage:'response', operation:operation, httpStatus:r.status, outcome:'invalid-json'}); throw Error('request'); }
-    if (!data || typeof data !== 'object') { diagnostic({stage:'response', operation:operation, httpStatus:r.status, outcome:'invalid-body'}); throw Error('request'); }
+    try { data = await r.json(); } catch (_) { diagnostic({stage:'response', operation:operation, httpStatus:r.status, outcome:'invalid-json'}); throw failure(details); }
+    if (!data || typeof data !== 'object') { diagnostic({stage:'response', operation:operation, httpStatus:r.status, outcome:'invalid-body'}); throw failure(details); }
     var msg = data.msg || data.message;
+    details.message_category = typeof msg !== 'string' ? 'absent' : /token|unauthori|credential|登录|令牌/i.test(msg) ? 'authentication' : 'other-redacted';
+    if (Number.isInteger(data.code) && data.code >= 0 && data.code <= 99999) details.api_status = data.code;
     diagnostic({stage:'response', operation:operation, httpStatus:r.status, code:typeof data.code === 'number' ? data.code : 'missing-or-nonnumeric',
       messageCategory: typeof msg !== 'string' ? 'absent' : /token|unauthori|credential|登录|令牌/i.test(msg) ? 'authentication' : 'other-redacted'});
-    if (!r.ok || (data.code !== undefined && data.code !== 200)) throw Error('request');
-    return data;
+    if (!r.ok || (path === '/v1/payment/create' ? data.code !== 200 : data.code !== undefined && data.code !== 200)) throw failure(details);
+    return {body:data, diagnostics:details};
   }
   function show(options) {
     var O = root.VSOauth;
@@ -76,7 +88,7 @@
       el('span', card.custom ? c[2] : (card.credits || p.credits_amount).toLocaleString(), b).className = 'payment-credits';
       if (!card.custom) el('span', c[15], b);
       packageButtons.push({button:b, id:card.key});
-      b.onclick = function () { select.value = card.key; updateSelection(); };
+      b.onclick = function () { select.value = card.key; updateSelection(); notify('package_select', {package_id:card.packageId}, {selection:({'22':'preset-20','23':'preset-50'}[card.key] || card.key)}); };
     });
     var custom = el('label'); custom.className = 'payment-custom';
     el('span', c[2], custom);
@@ -111,7 +123,7 @@
       }
       b.appendChild(icon);
       el('span', c[3+i], b); methodButtons.push({button:radio, id:v});
-      radio.onchange = function () { channel.value = v; updateSelection(); };
+      radio.onclick = function () { channel.value = v; updateSelection(); notify('channel_select', {channel:v}); };
     });
     function updateSelection() {
       packageButtons.forEach(function (x) { x.button.setAttribute('aria-pressed', String(x.id === select.value)); });
@@ -132,8 +144,8 @@
       busy = true;
       try {
         var status;
-        try { var data = await post('/finance/get-order-info', {order_no:active.order},token); status = (data.data || data).status; } catch (_) { /* userinfo fallback */ }
-        if (status === 2) { active = null; remember(); message.textContent = c[10]; buy.disabled = false; return; }
+        try { var data = await post('/finance/get-order-info', {order_no:active.order},token); status = (data.body.data || data.body).status; } catch (_) { /* userinfo fallback */ }
+        if (status === 2) { notify('cancelled', active); active = null; remember(); message.textContent = c[10]; buy.disabled = false; return; }
         var info = await O.refreshProfile(); options.refresh();
         if (status === 1 || (typeof active.baseline === 'number' && typeof info.credits === 'number' && info.credits > active.baseline)) {
           notify('success', active);
@@ -154,13 +166,13 @@
       var funnel = {package_id: body.package_id, channel: body.payment_channel};
       notify('start', funnel);
       try {
-        var result = await post('/v1/payment/create', body, token), data = result.data || {};
+        var response = await post('/v1/payment/create', body, token), result = response.body, data = result.data || {};
         var passed = validRedirect(data.redirectUrl), redirectShape = {stage:'redirect', protocol:'invalid', hostname:'invalid', passed:passed};
         // Only known hosts are logged: an untrusted hostname could itself contain secrets.
         try { var redirect = new URL(data.redirectUrl); redirectShape.protocol = ['https:', 'http:'].includes(redirect.protocol) ? redirect.protocol : 'other'; redirectShape.hostname = ['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai'].includes(redirect.hostname) ? redirect.hostname : 'unlisted'; } catch (_) {}
         diagnostic(redirectShape);
         diagnostic({stage:'checkout', hasOrderNumber:!!data.orderNo, acceptedCode:result.code === 200});
-        if (result.code !== 200 || !data.orderNo || !passed) throw Error('checkout');
+        if (!data.orderNo || !passed) throw failure(Object.assign({}, response.diagnostics, {fail_stage:'checkout', has_payment_ref:!!data.orderNo, redirect_ok:passed, redirect_protocol:redirectShape.protocol.replace(':',''), redirect_host:redirectShape.hostname}));
         active = {token: token, order: data.orderNo, baseline: (O.getProfile() || {}).credits, package_id:body.package_id, channel:body.payment_channel};
         remember();
         message.textContent = c[6];
@@ -168,10 +180,10 @@
         if (checkout) checkout.location.replace(data.redirectUrl);
         notify('checkout_opened', funnel);
         timer = setTimeout(check, 2500);
-      } catch (error) { notify('failed', funnel, error.message === 'checkout' ? 'VALIDATION' : 'UNKNOWN'); if (checkout) checkout.close(); message.textContent = c[11]; buy.disabled = false; }
+      } catch (error) { notify('failed', funnel, error.paymentDiagnostics || {error_code:'UNKNOWN'}); if (checkout) checkout.close(); message.textContent = c[11]; buy.disabled = false; }
       finally { busy = false; }
     };
-    dialog.addEventListener('close', function () { clearTimeout(timer); dialog.remove(); });
+    dialog.addEventListener('close', function () { notify('dialog_closed', {}, {pending_checkout:!!active}); clearTimeout(timer); dialog.remove(); });
     document.body.appendChild(dialog); dialog.showModal();
     if (active) check();
   }
