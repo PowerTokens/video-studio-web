@@ -210,7 +210,7 @@ rejected redirect after successful create). `http_status` is an integer 100–59
 is absent, authentication, or other-redacted; server text is never captured.
 `has_payment_ref` and `redirect_ok` are strict booleans. `redirect_protocol` is
 https, http, other, or invalid. `redirect_host` is gateway.powerwinpay.com,
-powertokens.ai, www.powertokens.ai, unlisted, or invalid; arbitrary hosts are
+powertokens.ai, www.powertokens.ai, www.paypal.com, paypal.com, unlisted, or invalid; arbitrary hosts are
 never captured. NETWORK identifies transport failures; AUTH identifies HTTP or
 business 401/403 or the authentication message category; VALIDATION identifies
 checkout validation failures; remaining create failures use UNKNOWN.

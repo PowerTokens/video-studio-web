@@ -203,7 +203,7 @@
       if (!Object.prototype.hasOwnProperty.call(src, key)) continue;
       if (FORBIDDEN[key] || !ALLOWED_PROPS[key]) continue;
       value = src[key];
-      var diagnosticEnums = {fail_stage:['transport','response','checkout'], message_category:['absent','authentication','other-redacted'], redirect_protocol:['https','http','other','invalid'], redirect_host:['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai','unlisted','invalid']};
+      var diagnosticEnums = {fail_stage:['transport','response','checkout'], message_category:['absent','authentication','other-redacted'], redirect_protocol:['https','http','other','invalid'], redirect_host:['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai','www.paypal.com','paypal.com','unlisted','invalid']};
       if (Object.prototype.hasOwnProperty.call(diagnosticEnums, key)) {
         if (event !== 'payment_failed' || !diagnosticEnums[key].includes(value)) continue;
       } else if (key === 'http_status' || key === 'api_status') {

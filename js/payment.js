@@ -12,8 +12,9 @@
       }
     } catch (_) { /* Analytics must never interrupt payment. */ }
   }
+  var redirectHosts = ['gateway.powerwinpay.com', 'powertokens.ai', 'www.powertokens.ai', 'www.paypal.com', 'paypal.com'];
   function validRedirect(url) {
-    try { var u = new URL(url); return u.protocol === 'https:' && !u.username && !u.password && (!u.port || u.port === '443') && ['gateway.powerwinpay.com', 'powertokens.ai', 'www.powertokens.ai'].includes(u.hostname); } catch (_) { return false; }
+    try { var u = new URL(url); return u.protocol === 'https:' && !u.username && !u.password && (!u.port || u.port === '443') && redirectHosts.includes(u.hostname); } catch (_) { return false; }
   }
   function payload(id, amount, channel) {
     var p = root.VSPaymentPackages.find(function (p) { return p.id === Number(id); });
@@ -169,7 +170,7 @@
         var response = await post('/v1/payment/create', body, token), result = response.body, data = result.data || {};
         var passed = validRedirect(data.redirectUrl), redirectShape = {stage:'redirect', protocol:'invalid', hostname:'invalid', passed:passed};
         // Only known hosts are logged: an untrusted hostname could itself contain secrets.
-        try { var redirect = new URL(data.redirectUrl); redirectShape.protocol = ['https:', 'http:'].includes(redirect.protocol) ? redirect.protocol : 'other'; redirectShape.hostname = ['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai'].includes(redirect.hostname) ? redirect.hostname : 'unlisted'; } catch (_) {}
+        try { var redirect = new URL(data.redirectUrl); redirectShape.protocol = ['https:', 'http:'].includes(redirect.protocol) ? redirect.protocol : 'other'; redirectShape.hostname = redirectHosts.includes(redirect.hostname) ? redirect.hostname : 'unlisted'; } catch (_) {}
         diagnostic(redirectShape);
         diagnostic({stage:'checkout', hasOrderNumber:!!data.orderNo, acceptedCode:result.code === 200});
         if (!data.orderNo || !passed) throw failure(Object.assign({}, response.diagnostics, {fail_stage:'checkout', has_payment_ref:!!data.orderNo, redirect_ok:passed, redirect_protocol:redirectShape.protocol.replace(':',''), redirect_host:redirectShape.hostname}));

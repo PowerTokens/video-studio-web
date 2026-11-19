@@ -205,3 +205,34 @@ context.fetch=async()=>({ok:true,status:200,json:async()=>{throw Error('private 
 await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
 assert.equal(context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').at(-1).properties.fail_stage,'response');
 for (const item of context.VSAnalytics.pending()) for (const key of ['amount','credits','balance','orderNo','order_no','redirectUrl','token','url','code','message']) assert.ok(!(key in item.properties));
+
+// Exact PayPal hosts retain the redirect security rules and diagnostic categories.
+P.show({lang:'en',login(){},refresh(){}});
+for (const host of ['www.paypal.com', 'paypal.com']) {
+  for (const port of ['', ':443']) assert.equal(P.validRedirect(`https://${host}${port}/synthetic-checkout`), true);
+  for (const url of [`https://${host}.evil.test`, `http://${host}/test`, `https://x@${host}/test`, `https://x:y@${host}/test`, `https://${host}:444/test`]) assert.equal(P.validRedirect(url), false);
+  let openedHost, closed=false;
+  context.window.open=()=>({location:{replace:url=>{openedHost=new URL(url).hostname;}},close(){closed=true;}});
+  context.fetch=async()=>({ok:true,status:200,json:async()=>({code:200,data:{orderNo:'synthetic',redirectUrl:`https://${host}/synthetic-checkout`}})});
+  await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
+  assert.equal(openedHost,host);
+  assert.equal(closed,false);
+  assert.equal(context.VSAnalytics.pending().at(-1).event,'payment_checkout_opened');
+  context.fetch=async()=>({ok:true,status:200,json:async()=>({code:200,data:{status:1}})});
+  await nodes.filter(n=>n.className==='payment-check').at(-1).onclick();
+  await new Promise(resolve=>setImmediate(resolve));
+  context.fetch=async()=>({ok:true,status:200,json:async()=>({code:200,data:{redirectUrl:`https://${host}/synthetic-checkout`}})});
+  await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
+  const props=context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').at(-1).properties;
+  assert.equal(props.redirect_host,host);
+  assert.equal(props.redirect_ok,true);
+  assert.equal(diagnostics.filter(x=>x.details.stage==='redirect').at(-1).details.hostname,host);
+}
+for (const host of ['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai','www.paypal.com','paypal.com','unlisted','invalid']) {
+  assert.equal(context.VSAnalytics.sanitize('payment_failed',{redirect_host:host}).redirect_host,host);
+}
+for (const host of ['sandbox.paypal.com','www.sandbox.paypal.com','evil.test']) {
+  assert.equal(P.validRedirect(`https://${host}/test`),false);
+  assert.ok(!('redirect_host' in context.VSAnalytics.sanitize('payment_failed',{redirect_host:host})));
+}
+console.log('PayPal host validation, diagnostics and analytics sanitization passed (mock network).');
