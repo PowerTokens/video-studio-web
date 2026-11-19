@@ -87,6 +87,7 @@ const document = {
 const context = {
   console,
   URLSearchParams,
+  setTimeout: function (fn) { return setImmediate(fn); },
   location: { search: '' },
   document,
   navigator: { language: 'zh-CN', languages: ['zh-CN'] }
@@ -438,3 +439,41 @@ for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) {
   assert.equal(api.demoteReadyIfNeeded(earlyReady, quoted).ready, false);
 }
 console.log('Six-language planning interview and premature plan safeguards passed');
+
+// Exercise the real send -> response guard -> rendered card lifecycle.
+loggedIn = true;
+apiKey = 'offline-test-key';
+context.VSApi = {
+  apiChatStream() {
+    return Promise.resolve({ code: 200, content: JSON.stringify(earlyReady) });
+  }
+};
+async function sendInterviewTurn(text) {
+  els['chat-input'].value = text;
+  els['chat-send'].click();
+  await new Promise(resolve => setImmediate(resolve));
+}
+for (const ending of ['yes', '给我方案']) {
+  pilot.startFromGenerate('My private initial draft');
+  await sendInterviewTurn('A chef slices salmon in a kitchen');
+  assert.equal(findClass(els['chat-thread'], 'chat-plan-inline'), null, 'premature plan stays blocked');
+  assert.match(api.systemPrompt(), /unconfirmed raw material/);
+  await sendInterviewTurn(ending);
+  assert.ok(findClass(els['chat-thread'], 'chat-plan-inline'), 'confirmation or explicit request shows a plan');
+  assert.doesNotMatch(api.systemPrompt(), /unconfirmed raw material|My private initial draft/);
+  for (const revision of ['改成晚上', 'make it at night']) {
+    const before = [];
+    eachNode(els['chat-thread'], n => { if (n.className === 'chat-plan-inline') before.push(n); });
+    await sendInterviewTurn(revision);
+    const after = [];
+    eachNode(els['chat-thread'], n => { if (n.className === 'chat-plan-inline') after.push(n); });
+    assert.equal(after.length, before.length + 1, 'revision shows a new card without another confirmation');
+  }
+}
+pilot.startFromGenerate('Fresh draft');
+assert.match(api.systemPrompt(), /unconfirmed raw material/);
+await sendInterviewTurn('A chef slices salmon in a kitchen');
+assert.equal(findClass(els['chat-thread'], 'chat-plan-inline'), null, 'new interview requires confirmation again');
+pilot.resetConversation();
+assert.equal(api.demoteReadyIfNeeded(earlyReady, 'make it at night').ready, false, 'regular Chat guard is unchanged');
+console.log('Planning interview completion and follow-up revisions passed');
