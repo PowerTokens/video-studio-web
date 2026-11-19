@@ -2064,7 +2064,7 @@
       renderOauthAccount();
       maybeHandleOauthQuery();
       if (window.VSAnalytics && window.VSAnalytics.boot) {
-        window.VSAnalytics.boot({ appVersion: 'web-1.19' });
+        window.VSAnalytics.boot({ appVersion: 'web-1.20' });
       }
       setInterval(tick, 1000);
     } catch (err) {
