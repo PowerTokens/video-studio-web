@@ -1427,8 +1427,11 @@
     $('gen-ai-plan').addEventListener('click', function () {
       aiPlanEntry = true;
       try { sessionStorage.setItem('vsw.aiPlanEntry', '1'); } catch (e) { /* storage unavailable */ }
-      if (window.VSAnalytics) window.VSAnalytics.track('ai_plan_click', { source: 'generate', from_example: !!previewPresetId && $('gen-prompt').value === examplePrompt(previewPresetId) });
-      window.VSChatPilot.startFromGenerate($('gen-prompt').value);
+      var draft = $('gen-prompt').value.trim();
+      var normalizeExample = function (value) { return String(value || '').trim().replace(/\s+/g, ' '); };
+      var fromExample = !!previewPresetId && normalizeExample(draft) === normalizeExample(examplePrompt(previewPresetId));
+      if (window.VSAnalytics) window.VSAnalytics.track('ai_plan_click', { source: 'generate', from_example: fromExample });
+      window.VSChatPilot.startFromGenerate(fromExample ? '' : draft);
     });
     Object.keys(aiPlanFields).forEach(function (field) {
       var node = $(aiPlanFields[field]);

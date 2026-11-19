@@ -11,8 +11,17 @@
     var viewport = window.visualViewport;
     var banner = document.querySelector('.pwa-install-banner');
     var bannerSpace = banner && !banner.hidden && window.matchMedia('(min-width: 641px)').matches ? banner.getBoundingClientRect().height + (parseFloat(window.getComputedStyle(banner).bottom) || 0) : 0;
+    var visibleBottom = viewport ? viewport.height + viewport.offsetTop : window.innerHeight;
+    // A standalone window can extend into the OS work-area reserved for a dock/taskbar.
+    // Screen coordinates and viewport sizes are both CSS pixels. Ignore unavailable metrics.
+    var screen = window.screen;
+    if (window.matchMedia('(min-width: 641px)').matches && screen && screen.availHeight > 0 && window.outerHeight >= window.innerHeight) {
+      var contentTop = window.screenY + window.outerHeight - window.innerHeight;
+      var workBottom = screen.availTop + screen.availHeight - contentTop;
+      if (workBottom > 0) visibleBottom = Math.min(visibleBottom, workBottom);
+    }
     if (shell && shell.getBoundingClientRect().height) {
-      page.style.setProperty('--chat-room-height', Math.max(180, (window.matchMedia('(max-width: 640px)').matches ? window.innerHeight : (viewport ? viewport.height + viewport.offsetTop : window.innerHeight)) - shell.getBoundingClientRect().top - bannerSpace) + 'px');
+      page.style.setProperty('--chat-room-height', Math.max(0, visibleBottom - shell.getBoundingClientRect().top - bannerSpace - (window.matchMedia('(min-width: 641px)').matches ? 16 : 0)) + 'px');
     }
     var height = dock.getBoundingClientRect().height;
     if (height) page.style.setProperty('--chat-dock-height', height + 'px');
@@ -40,6 +49,8 @@
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden'] });
   }
   window.addEventListener('resize', update);
+  window.addEventListener('focus', update);
+  window.addEventListener('pageshow', update);
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', update);
     window.visualViewport.addEventListener('scroll', update);

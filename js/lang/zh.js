@@ -8,6 +8,9 @@ VSI18n.register('zh', {
   htmlLang: 'zh-CN',      // <html lang>
   match: ['zh']          // browser language prefixes that pick this language by default
 }, {
+  chat_interview_draft: "这是你的草稿，我们一起把它完善。",
+  chat_interview_refine: "这份草稿里，你最想完善或调整什么？",
+  chat_interview_start: "你想拍什么主体？画面发生在哪里？",
   ai_plan_button: "不会写？让 AI 帮我构思",
   ai_plan_notice: "AI 已帮你填好，请确认后再生成",
   oauth_callback_returning: "正在返回 Video Studio…",

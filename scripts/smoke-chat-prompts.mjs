@@ -87,6 +87,7 @@ const document = {
 const context = {
   console,
   URLSearchParams,
+  setTimeout: function (fn) { return setImmediate(fn); },
   location: { search: '' },
   document,
   navigator: { language: 'zh-CN', languages: ['zh-CN'] }
@@ -416,8 +417,63 @@ pilot.resetConversation();
 loggedIn = false;
 const beforeBridgeLogin = loginCalls.length;
 pilot.startFromGenerate('A quiet street at sunrise');
-assert.equal(els['chat-input'].value, 'A quiet street at sunrise');
-assert.equal(loginCalls.length, beforeBridgeLogin + 1);
+assert.equal(els['chat-input'].value, '');
+assert.ok(walkText(els['chat-thread']).includes('A quiet street at sunrise'));
+assert.ok(walkText(els['chat-thread']).includes(I.t('en', 'chat_interview_refine')));
+assert.equal(findClass(els['chat-thread'], 'chat-plan-inline'), null);
+assert.equal(loginCalls.length, beforeBridgeLogin);
 pilot.startFromGenerate('');
-assert.equal(loginCalls.length, beforeBridgeLogin + 1);
+assert.equal(loginCalls.length, beforeBridgeLogin);
 console.log('Bridge login gate and empty prompt passed');
+
+for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) {
+  lang = code;
+  pilot.startFromGenerate('');
+  assert.ok(walkText(els['chat-thread']).includes(I.t(code, 'chat_interview_start')));
+  assert.ok(!walkText(els['chat-thread']).includes('A quiet street'));
+  pilot.startFromGenerate('My edited scene');
+  assert.ok(walkText(els['chat-thread']).includes(I.t(code, 'chat_interview_refine')));
+  assert.match(api.systemPrompt(), /unconfirmed raw material/);
+  assert.ok(api.systemPrompt().includes('My edited scene'));
+  assert.equal(api.demoteReadyIfNeeded(earlyReady, 'yes').ready, false);
+  assert.equal(api.demoteReadyIfNeeded(earlyReady, quoted).ready, false);
+}
+console.log('Six-language planning interview and premature plan safeguards passed');
+
+// Exercise the real send -> response guard -> rendered card lifecycle.
+loggedIn = true;
+apiKey = 'offline-test-key';
+context.VSApi = {
+  apiChatStream() {
+    return Promise.resolve({ code: 200, content: JSON.stringify(earlyReady) });
+  }
+};
+async function sendInterviewTurn(text) {
+  els['chat-input'].value = text;
+  els['chat-send'].click();
+  await new Promise(resolve => setImmediate(resolve));
+}
+for (const ending of ['yes', '给我方案']) {
+  pilot.startFromGenerate('My private initial draft');
+  await sendInterviewTurn('A chef slices salmon in a kitchen');
+  assert.equal(findClass(els['chat-thread'], 'chat-plan-inline'), null, 'premature plan stays blocked');
+  assert.match(api.systemPrompt(), /unconfirmed raw material/);
+  await sendInterviewTurn(ending);
+  assert.ok(findClass(els['chat-thread'], 'chat-plan-inline'), 'confirmation or explicit request shows a plan');
+  assert.doesNotMatch(api.systemPrompt(), /unconfirmed raw material|My private initial draft/);
+  for (const revision of ['改成晚上', 'make it at night']) {
+    const before = [];
+    eachNode(els['chat-thread'], n => { if (n.className === 'chat-plan-inline') before.push(n); });
+    await sendInterviewTurn(revision);
+    const after = [];
+    eachNode(els['chat-thread'], n => { if (n.className === 'chat-plan-inline') after.push(n); });
+    assert.equal(after.length, before.length + 1, 'revision shows a new card without another confirmation');
+  }
+}
+pilot.startFromGenerate('Fresh draft');
+assert.match(api.systemPrompt(), /unconfirmed raw material/);
+await sendInterviewTurn('A chef slices salmon in a kitchen');
+assert.equal(findClass(els['chat-thread'], 'chat-plan-inline'), null, 'new interview requires confirmation again');
+pilot.resetConversation();
+assert.equal(api.demoteReadyIfNeeded(earlyReady, 'make it at night').ready, false, 'regular Chat guard is unchanged');
+console.log('Planning interview completion and follow-up revisions passed');

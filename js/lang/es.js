@@ -6,6 +6,9 @@ VSI18n.register('es', {
   htmlLang: "es",
   match: ["es"]
 }, {
+  chat_interview_draft: "Este es tu borrador. Podemos darle forma juntos.",
+  chat_interview_refine: "¿Qué te gustaría desarrollar o cambiar en este borrador?",
+  chat_interview_start: "¿Qué te gustaría filmar y dónde ocurre la escena?",
   ai_plan_button: "¿No sabes qué escribir? La IA te ayuda",
   ai_plan_notice: "La IA completó el plan. Revisa los campos resaltados antes de generar.",
   oauth_callback_returning: "Volviendo a Video Studio…",
