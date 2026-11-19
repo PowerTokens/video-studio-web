@@ -223,7 +223,7 @@ assert.ok(thrower.A.pending().length >= 1);
     storage: sandbox.localStorage,
     transport: null,
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.19',
+    appVersion: 'web-1.20',
   });
   E.setConsent(true);
   E.flush();
@@ -381,7 +381,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.19',
+    appVersion: 'web-1.20',
   });
   S.setConsent(true);
   S.flush();
@@ -463,7 +463,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.19',
+    appVersion: 'web-1.20',
     isVisible: () => visible,
   });
   S.setConsent(true);
@@ -525,7 +525,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.19',
+    appVersion: 'web-1.20',
     isVisible: () => visible,
   });
   S.setConsent(true);
@@ -580,12 +580,12 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     if (reset) {
       S.resetForTests({
         now: () => clock, storage, transport: (item) => sentArr.push(item),
-        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.19', isVisible: () => true,
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.20', isVisible: () => true,
       });
     } else {
       S.boot({
         now: () => clock, storage, transport: (item) => sentArr.push(item),
-        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.19', isVisible: () => true,
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.20', isVisible: () => true,
       });
     }
     return S;
@@ -807,3 +807,12 @@ for (const search of ['', '?error=access_denied', '?code=x&state=wrong', '?code=
   assert.ok(events.includes('reopen')); assert.ok(events.includes('back'));
 }
 console.log('Funnel wiring regressions passed.');
+
+for (const event of ['ai_plan_click', 'ai_plan_applied']) {
+  assert.equal(A.sanitize(event, {source: event === 'ai_plan_click' ? 'generate' : 'ai_plan', surface:'generate', prompt:'private', url:'https://private'}).prompt, undefined);
+  assert.equal(A.sanitize(event, {source:'ai_plan'}).source, 'ai_plan');
+}
+for (const event of ['generation_start', 'generation_success', 'generation_failed']) {
+  assert.equal(A.sanitize(event, {source:'ai_plan'}).source, 'ai_plan');
+  assert.equal(A.sanitize(event, {source:'secret prompt'}).source, undefined);
+}

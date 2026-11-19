@@ -8,6 +8,8 @@ VSI18n.register('ja', {
   htmlLang: "ja",
   match: ["ja"]
 }, {
+  ai_plan_button: "何を書こう？AIと一緒に考える",
+  ai_plan_notice: "AIが入力しました。ハイライトされた項目を確認してから生成してください。",
   oauth_callback_returning: "Video Studio に戻っています…",
   oauth_callback_failed: "ログインに失敗しました",
   oauth_callback_failure_message: "PowerTokens へのログインを完了できませんでした。Video Studio に戻って、もう一度お試しください。",

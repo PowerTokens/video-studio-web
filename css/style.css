@@ -1434,3 +1434,9 @@ dialog.payment-picker:focus, dialog.payment-picker:focus-visible { outline:none;
 .payment-links a { color:#5f7388; font-size:13px; overflow-wrap:anywhere; }
 
 .payment-picker button:focus-visible { outline:3px solid #419f92; outline-offset:2px; }
+
+.ai-plan-action { display: flex; justify-content: flex-end; margin: 0 0 10px; }
+.ai-plan-action .btn { color: var(--accent, #0f766e); white-space: normal; text-align: left; }
+.ai-plan-notice { padding: 12px 14px; border: 1px solid #5aafa3; border-radius: 10px; background: rgba(45, 160, 143, .10); color: inherit; font-size: 14px; }
+.ai-plan-filled, .cselect.ai-plan-filled .cselect-trigger { border-color: #369e90 !important; background-color: rgba(45, 160, 143, .10) !important; box-shadow: 0 0 0 2px rgba(45, 160, 143, .18); }
+@media (max-width: 600px) { .ai-plan-action { justify-content: flex-start; } }

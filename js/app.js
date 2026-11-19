@@ -1291,6 +1291,8 @@
   function applyExample(id, target, btn, opts) {
     opts = opts || {};
     if (btn && btn.classList.contains('active')) return;
+    clearAiPlanReview();
+    aiPlanSource = false;
     var prompt = examplePrompt(id);
     $('gen-prompt').value = prompt;
     gen.prompt = prompt;
@@ -1366,9 +1368,26 @@
   }
 
 
+  var aiPlanFields = { prompt: 'gen-prompt', model: 'gen-model', duration: 'gen-duration', resolution: 'gen-res', ratio: 'gen-ratio' };
+  var aiPlanSource = false;
+  var aiPlanEntry = false;
+  try { aiPlanEntry = sessionStorage.getItem('vsw.aiPlanEntry') === '1'; } catch (e) { /* storage unavailable */ }
+
+  function clearAiPlanReview(field) {
+    Object.keys(aiPlanFields).forEach(function (key) {
+      if (field && field !== key) return;
+      var node = $(aiPlanFields[key]);
+      node.classList.remove('ai-plan-filled');
+      if (node._cselect) node._cselect.classList.remove('ai-plan-filled');
+    });
+    if (!field) $('ai-plan-notice').hidden = true;
+  }
+
   /** Prefill classic Generate from a chat-pilot plan card (MVP: human still clicks Generate). */
   function fillGenerateFromPlan(plan) {
     if (!plan || !plan.prompt) return;
+    var before = Object.assign({}, gen);
+    clearAiPlanReview();
     var promptEl = $('gen-prompt');
     if (promptEl) promptEl.value = plan.prompt;
     gen.prompt = plan.prompt;
@@ -1393,9 +1412,39 @@
     renderGenParams();
     renderResults();
     showPromptStart(promptEl);
+    aiPlanSource = aiPlanEntry;
+    Object.keys(aiPlanFields).forEach(function (field) {
+      if (before[field] === gen[field]) return;
+      var node = $(aiPlanFields[field]);
+      node.classList.add('ai-plan-filled');
+      if (node._cselect) node._cselect.classList.add('ai-plan-filled');
+    });
+    $('ai-plan-notice').hidden = false;
+    if (window.VSAnalytics) window.VSAnalytics.track('ai_plan_applied', { source: aiPlanEntry ? 'ai_plan' : 'chat', surface: 'generate' });
   }
 
   function bindGen() {
+    $('gen-ai-plan').addEventListener('click', function () {
+      aiPlanEntry = true;
+      try { sessionStorage.setItem('vsw.aiPlanEntry', '1'); } catch (e) { /* storage unavailable */ }
+      if (window.VSAnalytics) window.VSAnalytics.track('ai_plan_click', { source: 'generate', from_example: !!previewPresetId && $('gen-prompt').value === examplePrompt(previewPresetId) });
+      window.VSChatPilot.startFromGenerate($('gen-prompt').value);
+    });
+    Object.keys(aiPlanFields).forEach(function (field) {
+      var node = $(aiPlanFields[field]);
+      var replacingPrompt = false;
+      node.addEventListener('beforeinput', function () {
+        replacingPrompt = field === 'prompt' && node.selectionStart === 0 && node.selectionEnd === node.value.length;
+      });
+      node.addEventListener('input', function (event) {
+        clearAiPlanReview(field);
+        if (field === 'prompt' && (!node.value.trim() || replacingPrompt || (event.inputType === 'insertText' && event.data === node.value))) {
+          aiPlanSource = false;
+          clearAiPlanReview();
+        }
+      });
+      node.addEventListener('change', function () { clearAiPlanReview(field); });
+    });
     var prompt = $('gen-prompt');
     prompt.value = gen.prompt;
     fitGenPrompt(prompt);
@@ -1505,6 +1554,7 @@
 
   var genBusy = false;
   function submitGen() {
+    clearAiPlanReview();
     if (genBusy) return;
     var errBox = $('gen-error');
     show(errBox, false);
@@ -1542,7 +1592,7 @@
     btn.disabled = true;
     btn.textContent = t('generating_btn');
     btn.setAttribute('data-i18n', 'generating_btn');
-    var plan = { model: gen.model, prompt: prompt, duration: gen.duration, resolution: gen.resolution, ratio: gen.ratio, cost: cost, has_image: !!media.length };
+    var plan = { model: gen.model, prompt: prompt, duration: gen.duration, resolution: gen.resolution, ratio: gen.ratio, cost: cost, has_image: !!media.length, source: aiPlanSource ? 'ai_plan' : undefined };
     A.store.set('last_single', null);
     var first = true;
     A.submit(plan, built, key, function (info) {
@@ -2014,7 +2064,7 @@
       renderOauthAccount();
       maybeHandleOauthQuery();
       if (window.VSAnalytics && window.VSAnalytics.boot) {
-        window.VSAnalytics.boot({ appVersion: 'web-1.19' });
+        window.VSAnalytics.boot({ appVersion: 'web-1.20' });
       }
       setInterval(tick, 1000);
     } catch (err) {

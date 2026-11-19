@@ -391,6 +391,7 @@
       genStartedAt[rec.local_id] = Date.now();
       var startOpts = {
         prompt: rec.prompt, quota_estimate: rec.cost,
+        source: rec.source,
         model: rec.model,
         surface: rec.compare_id ? 'compare' : 'generate',
         requestedDurationS: rec.duration
@@ -412,6 +413,7 @@
       if (!ok && !fail[rec.state]) return;
       var started = genStartedAt[rec.local_id] || rec.created || Date.now();
       var finOpts = {
+        source: rec.source,
         model: rec.model,
         surface: rec.compare_id ? 'compare' : 'generate',
         durationMs: Math.max(0, Date.now() - started),
@@ -454,6 +456,7 @@
       ratio: plan.ratio,
       cost: plan.cost,
       has_image: !!plan.has_image,
+      source: plan.source === 'ai_plan' ? 'ai_plan' : undefined,
       compare_id: plan.compare_id || '',
       created: Date.now(),
       updated: Date.now(),

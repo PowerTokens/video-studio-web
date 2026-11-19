@@ -67,7 +67,7 @@
     try {
       var A = window.VSAnalytics;
       if (A && typeof A.boot === 'function') {
-        A.boot({ appVersion: 'web-1.19', page: 'download' });
+        A.boot({ appVersion: 'web-1.20', page: 'download' });
         if (A.consentState && A.consentState() === A.CONSENT_GRANTED) {
           if (A.notifyDesktopDownloadClick) A.notifyDesktopDownloadClick('redirect');
           if (A.flush) A.flush({ unload: true });

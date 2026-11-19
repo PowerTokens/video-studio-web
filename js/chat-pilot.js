@@ -1352,6 +1352,7 @@
     var bucket = text.length < 40 ? 'short' : (text.length < 120 ? 'mid' : 'long');
     track('chat_user_message', { len_bucket: bucket });
     input.value = '';
+    saveBridgeDraft();
     appendBubble('user', text);
     hideExamples();
     messages.push({ role: 'user', content: text });
@@ -1504,6 +1505,8 @@
     if (send) send.addEventListener('click', onSend);
     var input = $('chat-input');
     if (input) {
+      try { input.value = sessionStorage.getItem('vsw.chat.bridgeDraft') || input.value; } catch (e) { /* storage unavailable */ }
+      input.addEventListener('input', saveBridgeDraft);
       input.addEventListener('input', function () { if (root.VSAnalytics) root.VSAnalytics.notifyPromptEdited('chat'); });
       input.addEventListener('keydown', function (e) {
         if (e.isComposing || e.keyCode === 229) return;
@@ -1541,6 +1544,20 @@
     if (isEnabled()) resetConversation();
   }
 
+  function startFromGenerate(prompt) {
+    if (deps.gotoChat) deps.gotoChat();
+    var input = $('chat-input');
+    if (!input) return;
+    input.value = String(prompt || '');
+    saveBridgeDraft();
+    input.focus();
+    if (input.value.trim() && !messages.length && !busy) onSend();
+  }
+
+  function saveBridgeDraft() {
+    try { sessionStorage.setItem('vsw.chat.bridgeDraft', $('chat-input').value); } catch (e) { /* storage unavailable */ }
+  }
+
   function onShow() {
     if (!isEnabled()) return;
     if (!sessionStarted) {
@@ -1561,6 +1578,7 @@
     refreshUi: refreshUi,
     init: init,
     onShow: onShow,
+    startFromGenerate: startFromGenerate,
     track: track,
     parseAssistantPayload: parseAssistantPayload,
     clampPlan: clampPlan,
