@@ -16,13 +16,13 @@ function node(id) {
   return nodes[id] ||= { value:'', hidden:true, listeners:{}, focus(){this.focused=true;}, classList:{add(v){classes.add(v);},remove(v){classes.delete(v);},contains(v){return classes.has(v);}}, addEventListener(k,fn){(this.listeners[k] ||= []).push(fn);} };
 }
 let sends=0, tab='generate';
-const ctx = { $:node, deps:{gotoChat(){tab='chat';}}, messages:[], busy:false, onSend(){sends++;}, saveBridgeDraft(){}, gen:{prompt:'old',model:'m',duration:5,resolution:'720p',ratio:'16:9'}, window:{}, sessionStorage:{getItem(){return null;}}, M:{MODELS:{m:{}},getModel(){return {};},snapParams(m,d,r,a){return {duration:d,resolution:r,ratio:a,changes:[]};}}, saveGen(){},setExampleActive(){},renderGenParams(){},renderResults(){},showPromptStart(){},selectGenModel(id){ctx.gen.model=id;} };
+const ctx = { $:node, deps:{gotoChat(){tab='chat';}}, messages:[], busy:false, resetConversation(){ctx.messages=[];}, hideExamples(){}, appendBubble(){}, t(k){return k;}, onSend(){sends++;}, saveBridgeDraft(){}, gen:{prompt:'old',model:'m',duration:5,resolution:'720p',ratio:'16:9'}, window:{}, sessionStorage:{getItem(){return null;}}, M:{MODELS:{m:{}},getModel(){return {};},snapParams(m,d,r,a){return {duration:d,resolution:r,ratio:a,changes:[]};}}, saveGen(){},setExampleActive(){},renderGenParams(){},renderResults(){},showPromptStart(){},selectGenModel(id){ctx.gen.model=id;} };
 vm.createContext(ctx);
 vm.runInContext(chat.slice(chat.indexOf('  function startFromGenerate('),chat.indexOf('  function saveBridgeDraft(')),ctx);
 ctx.startFromGenerate('preset prompt');
-assert.equal(tab,'chat'); assert.equal(node('chat-input').value,'preset prompt'); assert.equal(sends,1); assert.ok(node('chat-input').focused);
-ctx.startFromGenerate(''); assert.equal(sends,1);
-ctx.messages.push({role:'user'}); ctx.startFromGenerate('another'); assert.equal(sends,1); assert.equal(node('chat-input').value,'another');
+assert.equal(tab,'chat'); assert.equal(node('chat-input').value,''); assert.equal(ctx.planningDraft,'preset prompt'); assert.equal(ctx.planningInterview,true); assert.equal(sends,0); assert.ok(node('chat-input').focused);
+ctx.startFromGenerate(''); assert.equal(sends,0);
+ctx.messages.push({role:'user'}); ctx.startFromGenerate('another'); assert.equal(sends,0); assert.equal(node('chat-input').value,''); assert.equal(ctx.planningDraft,'another');
 vm.runInContext(app.slice(app.indexOf('  var aiPlanFields ='),app.indexOf('  function bindGen()')),ctx);
 ctx.fillGenerateFromPlan({prompt:'AI filled',duration:10});
 assert.ok(node('gen-prompt').classList.contains('ai-plan-filled'));

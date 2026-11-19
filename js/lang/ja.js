@@ -8,6 +8,9 @@ VSI18n.register('ja', {
   htmlLang: "ja",
   match: ["ja"]
 }, {
+  chat_interview_draft: "こちらが下書きです。一緒に内容を整えていきましょう。",
+  chat_interview_refine: "この下書きで、具体化したい点や変えたい点はありますか？",
+  chat_interview_start: "何を撮りたいですか？場所はどこをイメージしていますか？",
   ai_plan_button: "何を書こう？AIと一緒に考える",
   ai_plan_notice: "AIが入力しました。ハイライトされた項目を確認してから生成してください。",
   oauth_callback_returning: "Video Studio に戻っています…",

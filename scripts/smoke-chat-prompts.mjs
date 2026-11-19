@@ -416,8 +416,25 @@ pilot.resetConversation();
 loggedIn = false;
 const beforeBridgeLogin = loginCalls.length;
 pilot.startFromGenerate('A quiet street at sunrise');
-assert.equal(els['chat-input'].value, 'A quiet street at sunrise');
-assert.equal(loginCalls.length, beforeBridgeLogin + 1);
+assert.equal(els['chat-input'].value, '');
+assert.ok(walkText(els['chat-thread']).includes('A quiet street at sunrise'));
+assert.ok(walkText(els['chat-thread']).includes(I.t('en', 'chat_interview_refine')));
+assert.equal(findClass(els['chat-thread'], 'chat-plan-inline'), null);
+assert.equal(loginCalls.length, beforeBridgeLogin);
 pilot.startFromGenerate('');
-assert.equal(loginCalls.length, beforeBridgeLogin + 1);
+assert.equal(loginCalls.length, beforeBridgeLogin);
 console.log('Bridge login gate and empty prompt passed');
+
+for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) {
+  lang = code;
+  pilot.startFromGenerate('');
+  assert.ok(walkText(els['chat-thread']).includes(I.t(code, 'chat_interview_start')));
+  assert.ok(!walkText(els['chat-thread']).includes('A quiet street'));
+  pilot.startFromGenerate('My edited scene');
+  assert.ok(walkText(els['chat-thread']).includes(I.t(code, 'chat_interview_refine')));
+  assert.match(api.systemPrompt(), /unconfirmed raw material/);
+  assert.ok(api.systemPrompt().includes('My edited scene'));
+  assert.equal(api.demoteReadyIfNeeded(earlyReady, 'yes').ready, false);
+  assert.equal(api.demoteReadyIfNeeded(earlyReady, quoted).ready, false);
+}
+console.log('Six-language planning interview and premature plan safeguards passed');

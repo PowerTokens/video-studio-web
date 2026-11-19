@@ -8,6 +8,9 @@ VSI18n.register('ko', {
   htmlLang: "ko",
   match: ["ko"]
 }, {
+  chat_interview_draft: "작성하신 초안이에요. 함께 구체화해 볼게요.",
+  chat_interview_refine: "이 초안에서 더 구체화하거나 바꾸고 싶은 부분은 무엇인가요?",
+  chat_interview_start: "무엇을 촬영하고 싶으세요? 배경은 어디인가요?",
   ai_plan_button: "어떻게 쓸까요? AI와 함께 구상하기",
   ai_plan_notice: "AI가 입력했어요. 강조된 항목을 확인한 뒤 생성하세요.",
   oauth_callback_returning: "Video Studio로 돌아가는 중…",

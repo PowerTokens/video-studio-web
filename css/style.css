@@ -1337,7 +1337,7 @@ body.pilot-chat-on .page:has(#panel-chat:not([hidden])) { padding-bottom: 0; --c
 .chat-bubble--user { border-radius: 16px; border-bottom-right-radius: 4px; padding: 12px 16px; }
 .chat-avatar { width: 30px; height: 30px; }
 .chat-dock {
-  position: relative; bottom: auto; margin: 0; padding: 12px 0 max(14px, env(safe-area-inset-bottom));
+  flex: none; position: relative; bottom: auto; margin: 0; padding: 12px 0 max(14px, env(safe-area-inset-bottom));
   background: var(--page); border-top: 1px solid var(--line);
 }
 .chat-composer {
@@ -1358,13 +1358,13 @@ body.pilot-chat-on .page:has(#panel-chat:not([hidden])) { padding-bottom: 0; --c
 .chat-status { font-size: 12px; margin-left: 38px; }
 @media (max-width: 640px) {
   body.pilot-chat-on .page:has(#panel-chat:not([hidden])) { padding-bottom: 0; }
-  .chat-shell { padding-bottom: calc(var(--chat-dock-height, 132px) + var(--chat-bottom-clearance) + var(--chat-viewport-inset, 0px)); }
+  .chat-shell { padding-bottom: var(--chat-bottom-clearance); }
   .chat-top { padding-bottom: 10px; }
   .chat-scroll { padding-top: 14px; }
-  .chat-dock { position: fixed; left: 0; right: 0; padding: 10px 12px max(12px, env(safe-area-inset-bottom)); bottom: calc(var(--chat-bottom-clearance) + var(--chat-viewport-inset, 0px)); }
+  .chat-dock { position: relative; left: auto; right: auto; padding: 10px 12px max(12px, env(safe-area-inset-bottom)); bottom: auto; }
 }
+body.pwa-banner-on .chat-dock { bottom: auto; }
 @media (min-width: 641px) {
-  body.pwa-banner-on .chat-dock { bottom: auto; }
   body.pilot-chat-on.pwa-banner-on .page:has(#panel-chat:not([hidden])) { padding-bottom: var(--chat-banner-height, 100px); }
 }
 

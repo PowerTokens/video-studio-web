@@ -8,6 +8,9 @@ VSI18n.register('en', {
   htmlLang: 'en',      // <html lang>
   match: ['en']          // browser language prefixes that pick this language by default
 }, {
+  chat_interview_draft: "Here’s your draft. We can shape it together.",
+  chat_interview_refine: "What would you most like to develop or change in this draft?",
+  chat_interview_start: "What would you like to film, and where does it take place?",
   ai_plan_button: "Can't write it? Let AI help me plan",
   ai_plan_notice: "AI plan ready — review the highlighted fields before generating.",
   oauth_callback_returning: "Returning to Video Studio…",
