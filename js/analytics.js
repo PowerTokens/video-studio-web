@@ -7,8 +7,9 @@
  * strings are never accepted. Fail open; bounded queue when
  * a destination exists. Analytics is default on. This MVP
  * uses a random install UUID as distinct_id and does not link accounts.
- * The ingest host may still see the client IP; $geoip_disable and
- * $process_person_profile=false are set, and we do not claim IP anonymity.
+ * Country is enriched server-side; a project transformation drops non-country
+ * GeoIP fields. $ip is omitted and $process_person_profile=false is set.
+ * The ingest host may still see the client IP; we do not claim IP anonymity.
  */
 (function (root) {
   'use strict';
@@ -856,7 +857,8 @@
     // The ingest host still sees the TCP/TLS client IP; $ip is omitted.
     props.$lib = LIB_NAME;
     props.$lib_version = LIB_VERSION;
-    props.$geoip_disable = true;
+    delete props.$ip;
+    delete props.$geoip_disable;
     props.$process_person_profile = false;
     var body = JSON.stringify({
       api_key: cfg.projectKey,

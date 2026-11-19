@@ -33,10 +33,19 @@ scripts.
 
 Per [Controlling data collection](https://posthog.com/docs/privacy/data-collection):
 
-- Events set `$process_person_profile: false` and `$geoip_disable: true`.
-- `$ip` is omitted. The ingest host still sees the browser IP. Enable
-  **Discard client IP data** in the PostHog project if IPs must not be stored.
-- This client does **not** claim IP anonymity.
+- Every event sets `$process_person_profile: false`.
+- Events omit `$geoip_disable` so the existing GeoIP transformation
+  (`template-geoip`, execution order 1) can enrich country server-side.
+- A separate Filter Properties project transformation after enrichment will keep
+  only `$geoip_country_code` and `$geoip_country_name` (and their
+  `$initial_geoip_country_*` counterparts if they appear). City, subdivision,
+  coordinates, postal code, timezone, and continent are not kept.
+- `$ip` is omitted; the client never sends a client-generated IP or coordinates.
+  **Discard client IP data** (`anonymize_ips`) is already enabled in the project.
+  Ingest still sees the request IP in transit; this client does **not** claim IP
+  anonymity.
+- Historical events cannot be backfilled with country. Only events captured
+  after this change ships will have country.
 
 ## Default-on policy (2026-11-12)
 

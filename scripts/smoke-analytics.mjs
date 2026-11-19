@@ -297,17 +297,22 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
   B.resetForTests({
     now: () => 1_700_000_000_000,
     storage: sandbox.localStorage,
-    setTimeout: (fn) => { fn(); return 0; },
+    setTimeout: () => 0,
     appVersion: 'web-1.15',
   });
   B.setConsent(true);
+  const queued = B.pending()[0];
+  assert.ok(queued);
+  queued.properties.$ip = 'synthetic-ip-marker';
+  queued.properties.$geoip_disable = true;
   B.flush();
   assert.ok(posts.length >= 1);
   const body = posts[0].body;
   assert.equal(posts[0].url, 'https://us.i.posthog.com/i/v0/e/');
   assert.equal(body.event, 'app_open');
+  assert.ok(!JSON.stringify(body).includes('synthetic-ip-marker'));
   assert.strictEqual(body.properties.$process_person_profile, false);
-  assert.strictEqual(body.properties.$geoip_disable, true);
+  assert.ok(!Object.prototype.hasOwnProperty.call(body.properties, '$geoip_disable'));
   assert.ok(!Object.prototype.hasOwnProperty.call(body.properties, '$ip'));
 }
 
