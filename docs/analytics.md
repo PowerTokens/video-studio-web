@@ -232,3 +232,13 @@ pending; opening checkout in another tab does not close the dialog. Status 2
 clears pending context and emits cancellation rather than a start failure.
 
 Generate submissions from the AI planning bridge carry `source=ai_plan` through start, success and failure, including resumed task records. Light edits preserve attribution. Applying a preset, clearing the prompt or replacing the entire prompt clears attribution. Field highlights persist until that field is edited. Generate, presets and whole-prompt replacement dismiss the review notice.
+
+### Web payment outcome recovery (2026-11-20)
+
+Payment polling lives outside the billing dialog. A minimal pending reference in sessionStorage includes an absolute five-minute deadline; load, pageshow, visibility return and reopening billing resume it. Closing the dialog does not cancel polling. Terminal outcomes clear pending state before notification, so repeated checks emit once. Expired legacy records without a deadline are discarded rather than extended indefinitely.
+
+Official paid status emits success even if profile refresh fails. Credits can support success only when official status cannot be read and both comparison values are finite numbers. An official pending status cannot be overridden by credits. No order reference, checkout URL, amount or credits enter analytics. Consent and transport behavior are unchanged; missing events do not establish zero successful payments.
+
+Contract checked against the public [official billing frontend](https://powertokens.ai/billing): its [API module](https://powertokens.ai/_next/static/chunks/49ec20af22da258a.js) uses POST `/finance/get-order-info` and numeric envelope success code 200; its [billing caller](https://powertokens.ai/_next/static/chunks/a7c6502a076586cc.js) passes `{order_no}`, recognizes status 1 as paid and status 2 as terminal failure. These assets were inspected without credentials or live order requests.
+
+Offline validation: `node scripts/smoke-payment-outcomes.mjs`, `node scripts/smoke-payment.mjs`, `node scripts/smoke-analytics.mjs`, `node scripts/smoke-api-client.mjs`. The outcome smoke covers closed-dialog paid/cancelled, repeated return events, reload recovery, expiry, failed profile refresh, status precedence and both events reaching analytics transport without private fields.

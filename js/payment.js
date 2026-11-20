@@ -1,6 +1,6 @@
 (function (root) {
   'use strict';
-  var active = null, busy = false, dialog;
+  var active = null, busy = false, dialog, timer, update = function () {};
   function notify(event, context, details) {
     try {
       var analytics = root.VSAnalytics;
@@ -57,15 +57,77 @@
     if (!r.ok || (path === '/v1/payment/create' ? data.code !== 200 : data.code !== undefined && data.code !== 200)) throw failure(details);
     return {body:data, diagnostics:details};
   }
+  // Only the minimal pending reference is stored; never the raw API response or token.
+  function remember() {
+    try {
+      if (active) sessionStorage.setItem('vs-payment', JSON.stringify({owner:active.owner, order:active.order,
+        baseline:active.baseline, package_id:active.package_id, channel:active.channel, deadline:active.deadline}));
+      else sessionStorage.removeItem('vs-payment');
+    } catch (_) {}
+  }
+  function restore() {
+    var O = root.VSOauth;
+    if (!O || !O.isLoggedIn()) return;
+    var token = O.getAccessToken(), profile = O.getProfile() || {}, owner = profile.sub || profile.email;
+    if (active && active.token !== token) active = null;
+    if (!active && owner) {
+      try {
+        var saved = JSON.parse(sessionStorage.getItem('vs-payment'));
+        if (saved && saved.owner === owner && saved.order && Number.isFinite(saved.deadline) && saved.deadline > Date.now()) {
+          active = Object.assign({}, saved, {token:token});
+        } else if (saved) sessionStorage.removeItem('vs-payment');
+      } catch (_) {}
+    }
+  }
+  async function check() {
+    restore();
+    var pending = active, O = root.VSOauth;
+    if (!pending || busy || !O || !O.isLoggedIn() || O.getAccessToken() !== pending.token) return;
+    clearTimeout(timer);
+    if (Date.now() >= pending.deadline) { active = null; remember(); update(); return; }
+    busy = true;
+    try {
+      var status;
+      try {
+        var response = await post('/finance/get-order-info', {order_no:pending.order}, pending.token);
+        var value = (response.body.data || response.body).status;
+        if ([0, 1, 2, '0', '1', '2'].includes(value)) status = Number(value);
+      } catch (_) { /* Profile fallback only when official status cannot be read. */ }
+      if (active !== pending || !O.isLoggedIn() || O.getAccessToken() !== pending.token) return;
+      var outcome = status === 1 ? 'success' : status === 2 ? 'cancelled' : null;
+      if (!outcome && status === undefined) {
+        try {
+          var info = await O.refreshProfile();
+          if (Number.isFinite(pending.baseline) && info && Number.isFinite(info.credits) && info.credits > pending.baseline) outcome = 'success';
+        } catch (_) {}
+      }
+      if (active !== pending || !O.isLoggedIn() || O.getAccessToken() !== pending.token) return;
+      if (outcome) {
+        active = null; remember();
+        notify(outcome, pending);
+        if (outcome === 'success') { try { await O.refreshProfile(); } catch (_) {} }
+        update(outcome);
+      }
+    } catch (_) { /* Network and UI failures must not stop bounded polling. */ }
+    finally {
+      busy = false;
+      if (active === pending && Date.now() < pending.deadline) timer = setTimeout(check, 4000);
+    }
+  }
+  function resume() { check(); }
+  if (root.addEventListener) {
+    root.addEventListener('pageshow', resume);
+    if (root.document && root.document.addEventListener) root.document.addEventListener('visibilitychange', function () {
+      if (!root.document.hidden) resume();
+    });
+    root.addEventListener('load', resume);
+  }
   function show(options) {
     var O = root.VSOauth;
     if (!O.isLoggedIn()) { options.login(); return; }
     if (dialog && dialog.open) return;
     var token = O.getAccessToken(), c = root.VSPaymentCopy[options.lang] || root.VSPaymentCopy.en;
-    var owner = (O.getProfile() || {}).sub || (O.getProfile() || {}).email;
-    if (active && active.token !== token) active = null;
-    if (!active && owner) { try { var saved = JSON.parse(sessionStorage.getItem('vs-payment')); if (saved && saved.owner === owner) active = {token:token, order:saved.order, baseline:saved.baseline, package_id:saved.package_id, channel:saved.channel}; } catch (_) {} }
-    function remember() { try { if (active && owner) sessionStorage.setItem('vs-payment', JSON.stringify({owner:owner, order:active.order, baseline:active.baseline, package_id:active.package_id, channel:active.channel})); else sessionStorage.removeItem('vs-payment'); } catch (_) {} }
+    restore();
     dialog = document.createElement('dialog'); dialog.className = 'payment-picker';
     function el(tag, text, parent) { var n = document.createElement(tag); if (text) n.textContent = text; (parent || dialog).appendChild(n); return n; }
     el('h2', 'Video Studio · ' + c[0]);
@@ -138,24 +200,12 @@
     var links = el('div'); links.className = 'payment-links';
     var history = el('a', c[13], links); history.href = 'https://powertokens.ai/billing'; history.target = '_blank'; history.rel = 'noopener';
     var feedback = el('a', c[14] + ': service@powertokens.ai', links); feedback.href = 'mailto:service@powertokens.ai';
-    var timer, deadline = Date.now() + 300000;
     function current() { return O.isLoggedIn() && O.getAccessToken() === token; }
-    async function check() {
-      if (!active || busy || !current()) return;
-      busy = true;
-      try {
-        var status;
-        try { var data = await post('/finance/get-order-info', {order_no:active.order},token); status = (data.body.data || data.body).status; } catch (_) { /* userinfo fallback */ }
-        if (status === 2) { notify('cancelled', active); active = null; remember(); message.textContent = c[10]; buy.disabled = false; return; }
-        var info = await O.refreshProfile(); options.refresh();
-        if (status === 1 || (typeof active.baseline === 'number' && typeof info.credits === 'number' && info.credits > active.baseline)) {
-          notify('success', active);
-          active = null; remember(); message.textContent = c[9]; buy.disabled = false; return;
-        }
-      } catch (_) { /* network blips are silent */ }
-      finally { busy = false; }
-      if (active && dialog.open && Date.now() < deadline) timer = setTimeout(check, 4000);
-    }
+    update = function (outcome) {
+      if (outcome) message.textContent = outcome === 'success' ? c[9] : c[10];
+      buy.disabled = !!active;
+      if (outcome === 'success') options.refresh();
+    };
     manual.onclick = function () { clearTimeout(timer); check(); };
     buy.onclick = async function () {
       if (busy || active || !current()) return;
@@ -174,7 +224,7 @@
         diagnostic(redirectShape);
         diagnostic({stage:'checkout', hasOrderNumber:!!data.orderNo, acceptedCode:result.code === 200});
         if (!data.orderNo || !passed) throw failure(Object.assign({}, response.diagnostics, {fail_stage:'checkout', has_payment_ref:!!data.orderNo, redirect_ok:passed, redirect_protocol:redirectShape.protocol.replace(':',''), redirect_host:redirectShape.hostname}));
-        active = {token: token, order: data.orderNo, baseline: (O.getProfile() || {}).credits, package_id:body.package_id, channel:body.payment_channel};
+        active = {owner:(O.getProfile() || {}).sub || (O.getProfile() || {}).email, token: token, order: data.orderNo, baseline: (O.getProfile() || {}).credits, package_id:body.package_id, channel:body.payment_channel, deadline:Date.now() + 300000};
         remember();
         message.textContent = c[6];
         var link = el('a', c[5]); link.href = data.redirectUrl; link.target = '_blank'; link.rel = 'noopener';
@@ -184,7 +234,7 @@
       } catch (error) { notify('failed', funnel, error.paymentDiagnostics || {error_code:'UNKNOWN'}); if (checkout) checkout.close(); message.textContent = c[11]; buy.disabled = false; }
       finally { busy = false; }
     };
-    dialog.addEventListener('close', function () { notify('dialog_closed', {}, {pending_checkout:!!active}); clearTimeout(timer); dialog.remove(); });
+    dialog.addEventListener('close', function () { notify('dialog_closed', {}, {pending_checkout:!!active}); dialog.remove(); });
     document.body.appendChild(dialog); dialog.showModal();
     if (active) check();
   }
