@@ -110,7 +110,7 @@
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, timeoutMs || 30000) : null;
     var init = {
       method: method,
-      headers: { Authorization: 'Bearer ' + key, Accept: 'application/json' },
+      headers: { Authorization: 'Bearer ' + key, Accept: 'application/json', 'X-Client': 'videostudio' },
       credentials: 'omit',
       cache: 'no-store',
       referrerPolicy: 'no-referrer'
@@ -154,6 +154,7 @@
       headers: {
         Authorization: 'Bearer ' + key,
         Accept: 'text/event-stream, application/json',
+        'X-Client': 'videostudio',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(bodyObj),
