@@ -135,9 +135,9 @@
     var select = {value: 'preset-5'}, channel = {value: 'limeng'};
     var cards = el('div'); cards.className = 'payment-packages';
     var packageButtons = [];
-    // UI keys are distinct from official package ids: both $5 and Custom use 33.
+    // UI keys are distinct from official package ids.
     var uiCards = [
-      {key:'preset-5', packageId:33, amount:5, credits:5000, recommended:true},
+      {key:'preset-5', packageId:35, amount:5, credits:5000, recommended:true},
       {key:'22', packageId:22},
       {key:'23', packageId:23},
       {key:'custom', packageId:33, custom:true}

@@ -185,7 +185,7 @@ Payment uses the same names intended for desktop:
 | `payment_failed` | Create rejection, network failure or invalid redirect before handoff | `package_id`, `channel`, normalized `error_code` |
 | `payment_success` | Existing polling detects paid status or its profile-refresh completion fallback | `package_id`, `channel` when known |
 
-Live official package ids are 22/23 ($20/$50) plus custom 33 (amount_type 2, $5–$2000). Both the default fixed $5 UI preset and the separate Custom card use backend package 33; only the fixed $5 UI preset has the Recommended badge. Package 24 is not a current official package. Package ids are strings; the sanitizer also accepts historical package id 24. Channels are limeng/paypal.
+Live official package ids are 35/22/23 (fixed $5/$20/$50) plus custom 33 (amount_type 2, $5–$2000). The default fixed $5 UI preset uses package 35; only this card has the Recommended badge. Package 24 is not a current official package. Package ids are strings; the sanitizer also accepts historical package id 24. Channels are limeng/paypal.
 CHECKOUT normalizes to VALIDATION and PAYMENT to UNKNOWN. Payment helpers are
 `notify_payment_start`, `notify_payment_checkout_opened`, `notify_payment_failed`,
 `notify_payment_success`, `notify_payment_package_select`, `notify_payment_channel_select`,
@@ -226,7 +226,7 @@ never captured. NETWORK identifies transport failures; AUTH identifies HTTP or
 business 401/403 or the authentication message category; VALIDATION identifies
 checkout validation failures; remaining create failures use UNKNOWN.
 Package selection maps UI keys preset-5/22/23/custom to
-preset-5/preset-20/preset-50/custom and package ids 33/22/23/33. Opening the
+preset-5/preset-20/preset-50/custom and package ids 35/22/23/33. Opening the
 dialog emits no selection events. Closing it reports whether checkout remains
 pending; opening checkout in another tab does not close the dialog. Status 2
 clears pending context and emits cancellation rather than a start failure.

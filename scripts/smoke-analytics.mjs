@@ -726,6 +726,7 @@ for (const event of ['payment_start','payment_checkout_opened','payment_failed',
   assert.equal(p.package_id,'22'); assert.equal(p.channel,'paypal');
   assert.equal(p.error_code,'VALIDATION');
   for (const key of ['orderNo','order_no','url','href','amount','credits','redirectUrl']) assert.ok(!(key in p));
+  for (const id of [22,23,24,33,35]) assert.equal(A.sanitize(event,{package_id:id}).package_id,String(id));
   const bad = A.sanitize(event,{package_id:99,channel:'other',utm_source:'bad/value'});
   assert.ok(!('package_id' in bad)); assert.ok(!('channel' in bad)); assert.ok(!('utm_source' in bad));
 }

@@ -222,7 +222,7 @@
         if (!value) continue;
       } else if (key === 'package_id') {
         value = String(value);
-        if (!/^(22|23|24|33)$/.test(value)) continue;
+        if (!/^(22|23|24|33|35)$/.test(value)) continue;
       } else if (key === 'channel') {
         if (value !== 'limeng' && value !== 'paypal') continue;
       } else if (key === 'error_code') value = normalizeErrorCode(value);

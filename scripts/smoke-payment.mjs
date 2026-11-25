@@ -11,7 +11,7 @@ const events = [];
 context.VSAnalytics.boot({transport:item=>events.push(item),setTimeout:()=>0});
 const P = context.VSPayment;
 assert.equal(JSON.stringify(P.payload(22,1,'limeng')),JSON.stringify({amount:20,package_id:22,payment_channel:'limeng'}));
-for (const [id, amount] of [[22,20],[23,50]]) assert.equal(P.payload(id,1,'paypal').amount,amount);
+for (const [id, amount] of [[35,5],[22,20],[23,50]]) assert.equal(P.payload(id,1,'paypal').amount,amount);
 assert.throws(()=>P.payload(24,200,'limeng'));
 assert.equal(P.payload(33,5,'limeng').amount,5);
 assert.equal(P.payload(33,2000,'paypal').amount,2000);
@@ -52,7 +52,9 @@ assert.equal(nodes.filter(n=>n.className==='payment-card' && n['aria-pressed']==
 assert.equal(pick('preset-5').children.find(n=>n.className==='payment-price').textContent,'$5');
 assert.equal(pick('preset-5').children.find(n=>n.className==='payment-credits').textContent,(5000).toLocaleString());
 for (const key of ['preset-5','22','23','custom']) assert.equal(pick(key).children.filter(n=>n.className==='payment-badge').length,key==='preset-5'?1:0);
-assert.deepEqual(Array.from(context.VSPaymentPackages,p=>p.id).sort(),[22,23,33]);
+assert.deepEqual(Array.from(context.VSPaymentPackages,p=>p.id).sort(),[22,23,33,35]);
+assert.equal(context.VSPaymentPackages.find(p=>p.id===35).amount_type,1);
+assert.equal(context.VSPaymentPackages.find(p=>p.id===35).is_recommended,1);
 assert.equal(context.VSPaymentPackages.find(p=>p.id===33).amount_type,2);
 assert.equal(context.VSPaymentPackages.find(p=>p.id===22).is_recommended,0);
 assert.equal(nodes.find(n=>n.className==='payment-custom').hidden,true);
@@ -66,7 +68,7 @@ assert.equal(requests[0].url,'https://powertokens.ai/api/v1/payment/create');
 assert.equal(requests[0].opts.credentials,'omit');
 assert.deepEqual(Object.keys(requests[0].opts.headers).sort(),['Authorization','Content-Type']);
 assert.equal(requests[0].opts.headers.Authorization,'Bearer mock-token');
-assert.deepEqual(JSON.parse(requests[0].opts.body),{amount:5,package_id:33,payment_channel:'limeng'});
+assert.deepEqual(JSON.parse(requests[0].opts.body),{amount:5,package_id:35,payment_channel:'limeng'});
 await nodes.find(n=>n.textContent==='copy7').onclick();
 // Manual handler starts an async check; flush its mocked network promises.
 await new Promise(resolve=>setImmediate(resolve));
@@ -111,7 +113,7 @@ assert.equal(custom.hidden,true);
 assert.equal(pick('custom')['aria-pressed'],'false');
 assert.equal(pick('preset-5')['aria-pressed'],'true');
 await nodes.find(n=>n.className==='payment-buy').onclick();
-assert.deepEqual(JSON.parse(requests.at(-1).opts.body),{amount:5,package_id:33,payment_channel:'limeng'});
+assert.deepEqual(JSON.parse(requests.at(-1).opts.body),{amount:5,package_id:35,payment_channel:'limeng'});
 await nodes.find(n=>n.className==='payment-check').onclick();
 await new Promise(resolve=>setImmediate(resolve));
 
@@ -122,7 +124,7 @@ P.show({lang:'en',login(){},refresh(){}});
 assert.equal(nodes.filter(n=>n['data-selection']==='preset-5').at(-1)['aria-pressed'],'true');
 await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
 assert.equal(requests.at(-1).url,'https://powertokens.ai/api/v1/payment/create');
-assert.deepEqual(JSON.parse(requests.at(-1).opts.body),{amount:5,package_id:33,payment_channel:'limeng'});
+assert.deepEqual(JSON.parse(requests.at(-1).opts.body),{amount:5,package_id:35,payment_channel:'limeng'});
 assert.equal(requests.at(-1).opts.headers.Authorization,'Bearer mock-token');
 console.log('Embedded OAuth Bearer prefix normalization passed (mock network).');
 
@@ -176,7 +178,7 @@ for (const [http, api] of [[401,401],[403,403],[200,403]]) {
   assert.equal(p.error_code,'AUTH'); assert.equal(p.fail_stage,'response'); assert.equal(p.http_status,http); assert.equal(p.api_status,api);
 }
 const selections=queued.filter(x=>x.event==='payment_package_select').map(x=>x.properties);
-for (const [selection,id] of [['preset-5','33'],['preset-20','22'],['preset-50','23'],['custom','33']]) assert.ok(selections.some(p=>p.selection===selection && p.package_id===id));
+for (const [selection,id] of [['preset-5','35'],['preset-20','22'],['preset-50','23'],['custom','33']]) assert.ok(selections.some(p=>p.selection===selection && p.package_id===id));
 assert.ok(queued.some(x=>x.event==='payment_channel_select' && x.properties.channel==='paypal'));
 nodes.filter(n=>n.tag==='dialog').at(-1).close();
 assert.equal(context.VSAnalytics.pending().at(-1).properties.pending_checkout,false);
