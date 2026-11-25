@@ -247,8 +247,8 @@ assert.equal(mount.querySelector('[data-soft-credits]'), null);
 const appSrc = readFileSync(join(rootDir, 'js/app.js'), 'utf8');
 assert.match(appSrc, /function syncGenerateAvailability\(creditsNeeded\)/);
 assert.match(appSrc, /creditsNeeded > oc/);
-assert.match(appSrc, /t\('credits_insufficient_tip', localeNum\(creditsNeeded\), localeNum\(oc\)\)/);
-assert.match(appSrc, /errBox\.textContent = t\('credits_insufficient'\)/);
+assert.match(appSrc, /t\('credits_insufficient_tip', localeNum\(oc\), localeNum\(creditsNeeded\)\)/);
+assert.doesNotMatch(appSrc, /errBox\.textContent = t\('credits_insufficient'\)/);
 assert.equal(appSrc.includes('planCardShowsVideoCreditSoft'), false);
 
 const html = readFileSync(join(rootDir, 'index.html'), 'utf8');

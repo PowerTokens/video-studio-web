@@ -503,6 +503,20 @@
     });
   }
 
+  function refreshProfile() {
+    var token = getAccessToken();
+    if (!token) return Promise.resolve(false);
+    return fetchUserinfo(token).then(function (result) {
+      // Do not revive a session that expired or was replaced during the request.
+      if (!result.ok || getAccessToken() !== token) return false;
+      var profile = getProfile();
+      if (!profile) return false;
+      profile.credits = typeof result.body.credits === 'number' ? result.body.credits : null;
+      store().set(PROFILE_KEY, profile);
+      return true;
+    });
+  }
+
   function isLoggedIn() {
     return !!(getProfile() && getAccessToken());
   }
@@ -525,6 +539,7 @@
     logout: logout,
     revoke: revoke,
     getProfile: getProfile,
+    refreshProfile: refreshProfile,
     getAccessToken: getAccessToken,
     clearSession: clearSession,
     isLoggedIn: isLoggedIn,

@@ -14,14 +14,14 @@
 <link rel="icon" type="image/png" href="assets/logo-88.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" sizes="180x180">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="css/style.css?v=20261125-1.21">
-<link rel="preload" href="js/i18n.js?v=20261118-ime-i18n" as="script">
+<link rel="stylesheet" href="css/style.css?v=20261125-credit">
+<link rel="preload" href="js/i18n.js?v=20261125-credit" as="script">
 <link rel="preload" href="js/models.js?v=20261112-gen" as="script">
 <link rel="preload" href="js/api.js?v=20261125-1.21" as="script">
 <link rel="preload" href="js/utm.js?v=20261104-LoginGate" as="script">
-<link rel="preload" href="js/oauth.js?v=20261106-DefaultChat" as="script">
+<link rel="preload" href="js/oauth.js?v=20261125-credit" as="script">
 <link rel="preload" href="js/chat-pilot.js?v=20261125-1.21" as="script">
-<link rel="preload" href="js/app.js?v=20261125-1.21" as="script">
+<link rel="preload" href="js/app.js?v=20261125-credit" as="script">
 </head>
 <body>
 <noscript><div class="mock-banner">本页需要启用 JavaScript 才能生成视频。Please enable JavaScript.</div></noscript>
@@ -186,13 +186,13 @@
           <p id="gen-cost" class="muted small cost"></p>
 
           <p id="gen-error" class="error" hidden></p>
-          <p class="muted small" data-i18n="cloud_note">提交后不会自动重复提交；刷新或关闭页面，任务仍在云端继续，可在「任务记录 / 恢复」里找回。</p>
         </section>
       </div>
 
       <div class="col-right">
         <div class="col-right-stack">
-          <aside id="gen-insufficient" class="gen-insufficient" hidden role="status"><strong data-i18n="credits_insufficient">积分不足 · 去充值</strong><p id="gen-insufficient-body"></p><p id="gen-insufficient-suggest"></p><button type="button" id="gen-insufficient-topup" class="btn" data-i18n="credits_insufficient">积分不足 · 去充值</button></aside>
+          <aside id="gen-insufficient" class="gen-insufficient" hidden role="status"><strong data-i18n="credits_insufficient">积分不足</strong><p id="gen-insufficient-body"></p><p id="gen-insufficient-suggest" class="gen-insufficient-suggest"></p><button type="button" id="gen-insufficient-topup" class="btn btn-accent" data-i18n="topup_btn">去充值</button></aside>
+          <aside id="gen-signin" class="gen-insufficient" hidden role="status"><strong data-i18n="oauth_login">登录 PowerTokens</strong><p data-i18n="oauth_credits_expired"></p><button type="button" id="gen-signin-button" class="btn btn-accent" data-i18n="oauth_login">登录 PowerTokens</button></aside>
           <div class="gen-sticky-bar" id="gen-sticky-bar">
             <div class="gen-sticky-inner">
               <div class="actions gen-primary-actions">
@@ -387,19 +387,19 @@
   </div>
 </div>
 
-<script src="js/i18n.js?v=20261118-ime-i18n"></script>
+<script src="js/i18n.js?v=20261125-credit"></script>
 <!-- Language packs are loaded on demand by the catalog in i18n.js. -->
 <script src="js/analytics-config.js?v=20261125-1.21"></script>
 <script src="js/analytics.js?v=20261125-1.21"></script>
 <script src="js/models.js?v=20261112-gen"></script>
 <script src="js/api.js?v=20261125-1.21"></script>
 <script src="js/utm.js?v=20261104-LoginGate"></script>
-<script src="js/oauth.js?v=20261112-1.17"></script>
+<script src="js/oauth.js?v=20261125-credit"></script>
   <script src="js/payment-packages.js?v=20261113-packages2"></script>
   <script src="js/payment-copy.js?v=20261113-pay"></script>
   <script src="js/payment.js?v=20261120-outcomes"></script>
 <script src="js/chat-pilot.js?v=20261125-1.21"></script>
-<script src="js/app.js?v=20261125-1.21"></script>
+<script src="js/app.js?v=20261125-credit"></script>
 <script src="js/pwa-install.js?v=20261112-cta"></script>
 <script src="js/chat-layout.js?v=20261112-chat2"></script>
 </body>

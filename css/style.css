@@ -765,9 +765,12 @@ select option, select optgroup {
   .gen-primary-actions { width: 100%; }
   .gen-primary-actions .btn { width: 100%; min-width: 0; }
 }
-.gen-insufficient { padding: 16px; margin: 12px 0; border: 1px solid #d8b579; border-radius: 12px; background: #fff8eb; color: #513d20; width: 100%; box-sizing: border-box; line-height: 1.6; }
-.gen-insufficient p { margin: 8px 0; }
-.gen-insufficient .btn { min-height: 44px; white-space: normal; }
+.gen-insufficient { padding: 14px 16px; margin: 12px 0; border: 1px solid #d8b579; border-radius: 12px; background: #fff8eb; color: #513d20; width: 100%; box-sizing: border-box; line-height: 1.55; }
+.gen-insufficient strong { display: block; font-size: 14.5px; margin-bottom: 4px; }
+.gen-insufficient p { margin: 6px 0; font-size: 13.5px; }
+.gen-insufficient .gen-insufficient-suggest { font-weight: 600; color: #3f2e15; margin-top: 8px; }
+.gen-insufficient .btn { display: block; min-height: 40px; margin: 10px auto 0; white-space: normal; }
+.task-credit-gate { margin: 2px 0 0; }
 .prompt-clear { min-height: 44px; margin: 0; flex: 0 0 auto; }
 
 .ff-card-details > summary {

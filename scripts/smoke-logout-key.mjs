@@ -38,7 +38,7 @@ for (const fallback of [false, true]) for (const manual of ['none', 'before', 'a
   if (manual === 'none') {
     // Execute the real Generate handler through its missing-key early return.
     const app = read('app.js');
-    const start = app.indexOf('  function submitGen() {');
+    const start = app.indexOf('  async function submitGen() {');
     const end = app.indexOf('\n  function ', start + 1);
     let prompted = false;
     c.A = api; c.genBusy = false; c.clearAiPlanReview = () => {};

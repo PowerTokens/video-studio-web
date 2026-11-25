@@ -6,12 +6,12 @@
   'use strict';
   var STRINGS = {};
   var META = {
-    zh: { name: '中文', htmlLang: 'zh-CN', match: ['zh'], script: 'lang/zh.js?v=20261118-i18n' },
-    en: { name: 'English', htmlLang: 'en', match: ['en'], script: 'lang/en.js?v=20261118-i18n' },
-    es: { name: 'Español', htmlLang: 'es', match: ['es'], script: 'lang/es.js?v=20261118-i18n' },
-    pt: { name: 'Português', htmlLang: 'pt', match: ['pt'], script: 'lang/pt.js?v=20261118-i18n' },
-    ja: { name: '日本語', htmlLang: 'ja', match: ['ja'], script: 'lang/ja.js?v=20261118-i18n' },
-    ko: { name: '한국어', htmlLang: 'ko', match: ['ko'], script: 'lang/ko.js?v=20261118-i18n' }
+    zh: { name: '中文', htmlLang: 'zh-CN', match: ['zh'], script: 'lang/zh.js?v=20261125-credit' },
+    en: { name: 'English', htmlLang: 'en', match: ['en'], script: 'lang/en.js?v=20261125-credit' },
+    es: { name: 'Español', htmlLang: 'es', match: ['es'], script: 'lang/es.js?v=20261125-credit' },
+    pt: { name: 'Português', htmlLang: 'pt', match: ['pt'], script: 'lang/pt.js?v=20261125-credit' },
+    ja: { name: '日本語', htmlLang: 'ja', match: ['ja'], script: 'lang/ja.js?v=20261125-credit' },
+    ko: { name: '한국어', htmlLang: 'ko', match: ['ko'], script: 'lang/ko.js?v=20261125-credit' }
   };
   var ORDER = Object.keys(META);
   var pending = {};
