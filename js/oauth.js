@@ -379,7 +379,7 @@
           try {
             if (root.VSApi && root.VSApi.parseKey && root.VSApi.saveKey) {
               var cleaned = root.VSApi.parseKey(apiKey);
-              root.VSApi.saveKey(cleaned);
+              root.VSApi.saveKey(cleaned, 'oauth');
               root.VSApi.store.remove('key_block');
               root.VSApi.store.set('key_saved_at', Date.now());
               keyApplied = true;
@@ -391,6 +391,11 @@
                 var keys = rawKeys ? JSON.parse(rawKeys) : [];
                 if (!Array.isArray(keys)) keys = [];
                 var k = String(apiKey).replace(/^(?:Bearer\s+)/i, '').trim();
+                var active = JSON.parse(root.localStorage.getItem(PREFIX + 'key') || 'null');
+                if (active && keys.indexOf(active) < 0) keys.push(active);
+                var issued = JSON.parse(root.localStorage.getItem(PREFIX + 'login_only_keys') || '[]');
+                if (k && keys.indexOf(k) < 0 && issued.indexOf(k) < 0) issued.push(k);
+                root.localStorage.setItem(PREFIX + 'login_only_keys', JSON.stringify(issued));
                 if (keys.indexOf(k) < 0) keys.push(k);
                 root.localStorage.setItem(PREFIX + 'keys', JSON.stringify(keys));
                 root.localStorage.setItem(PREFIX + 'key', JSON.stringify(k));
@@ -432,6 +437,20 @@
       var t = s.get(TOKEN_KEY, null);
       if (t && t.access_token) token = t.access_token;
     }
+    // Deactivate locally before the network revoke completes. Untagged legacy
+    // keys are preserved because they cannot safely be distinguished from pastes.
+    if (s) {
+      var issued = s.get('login_only_keys', []);
+      var keys = s.get('keys', []).filter(function (k) { return issued.indexOf(k) < 0; });
+      var active = s.get('key', '');
+      s.set('keys', keys);
+      if (issued.indexOf(active) >= 0) {
+        if (keys.length) s.set('key', keys[0]);
+        else s.remove('key');
+      }
+      s.remove('login_only_keys');
+    }
+    clearSession();
     return revoke(token).then(function () {
       clearSession();
       return { ok: true };

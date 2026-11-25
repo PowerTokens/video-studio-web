@@ -34,7 +34,7 @@ That page exchanges `code` + PKCE verifier, writes the session + API key into `l
 4. Complete login/consent on powertokens.ai; browser returns to `oauth/callback.html`.
 5. Expect redirect back to the tab you left (bare URL / Chat if you started from the landing page; `#generate` if you started from Generate; Key only if login was started from the Key tab). Header shows name + credits; key pool has an active masked key.
 6. Generate a short clip to confirm the applied key works.
-7. **退出登录** / **Sign out** → revoke called; account chip clears; key can remain in pool (remove manually if desired).
+7. **退出登录** / **Sign out** → revoke called; account chip clears; login-only keys are removed from the pool; pasted keys remain.
 8. Negative: deny consent or break state → callback shows error + link back.
 
 Do not invent prices or model ids in this flow. Never log the userinfo `key`.

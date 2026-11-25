@@ -65,9 +65,17 @@
   }
   function listKeys() { return migrateKeyPool().keys.slice(); }
   function getKey() { return migrateKeyPool().active; }
-  function saveKey(k) {
+  function saveKey(k, source) {
     var pool = migrateKeyPool();
     var keys = pool.keys.slice();
+    var issued = store.get('login_only_keys', []);
+    if (source === 'oauth') {
+      // Existing untagged keys may be pasted; never guess their provenance.
+      if (keys.indexOf(k) < 0 && issued.indexOf(k) < 0) issued.push(k);
+    } else {
+      issued = issued.filter(function (x) { return x !== k; });
+    }
+    store.set('login_only_keys', issued);
     if (keys.indexOf(k) < 0) keys.push(k);
     store.set('keys', keys);
     store.set('key', k);
@@ -76,10 +84,12 @@
   function forgetKey(k) {
     var pool = migrateKeyPool();
     if (!k) {
+      store.remove('login_only_keys');
       store.remove('keys');
       store.remove('key');
       return;
     }
+    store.set('login_only_keys', store.get('login_only_keys', []).filter(function (x) { return x !== k; }));
     var keys = pool.keys.filter(function (x) { return x !== k; });
     store.set('keys', keys);
     if (pool.active === k) {

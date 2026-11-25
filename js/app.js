@@ -738,7 +738,7 @@
     } catch (eLo) { /* ignore */ }
     O.logout().then(function () {
       setOauthBusy(false);
-      // Keep API keys in the pool; only clear OAuth session / display credits from profile.
+      // Logout removes login-only keys; pasted keys remain available.
       if (typeof oauthCredits() !== 'number') balance = null;
       renderOauthAccount();
       renderCredits();

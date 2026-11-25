@@ -42,7 +42,7 @@ Video Studio Web can sign in with PowerTokens OAuth 2.0 (Authorization Code + PK
 - **redirect_uri (whitelist this exact string):**
   `https://powertokens.github.io/video-studio-web/oauth/callback.html`
 
-After userinfo, the default account `key` is saved into the same local key pool as a manual paste; the header shows name + credits. Sign-out calls `/oauth/revoke` and clears the OAuth session (keys already in the pool stay until you remove them).
+After userinfo, the default account `key` is saved into the same local key pool as a manual paste; the header shows name + credits. Sign-out calls `/oauth/revoke` and clears the OAuth session and removes login-only keys from the local pool; keys you pasted remain.
 
 There is no green “paste a Key” banner for new users — Sign in in the header is the main path. Manual API Key paste remains under **Account → Advanced** (collapsed).
 
