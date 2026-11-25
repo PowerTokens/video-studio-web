@@ -397,6 +397,7 @@
         plan: null
       })
     });
+    persistConversation();
     track('chat_local_clarify', { reason: reason || 'nonsense' });
   }
 
@@ -809,6 +810,7 @@
     opts = opts || {};
     if (!plan) return;
     lastPlan = plan;
+    persistConversation();
     var thread = $('chat-thread');
     var row = thread && thread.children[thread.children.length - 1];
     var bubble = row && row.querySelector('.chat-bubble--assistant');
@@ -882,6 +884,7 @@
 
   function setBusy(on) {
     busy = !!on;
+    if (!busy) persistConversation();
     var send = $('chat-send');
     var input = $('chat-input');
     if (send) send.disabled = busy;
@@ -1399,6 +1402,7 @@
     planningDraft = '';
     planningInterviewCompleted = false;
     messages = [];
+    if (window.VSApi && window.VSApi.store) window.VSApi.store.remove('chat.history');
     lastPlan = null;
     lastTextModel = FLASH_MODEL;
     sessionStarted = false;
@@ -1565,12 +1569,36 @@
     }
   }
 
+  function persistConversation() {
+    if (!window.VSApi || !window.VSApi.store) return;
+    var kept = messages.filter(function (m) { return m && /^(user|assistant)$/.test(m.role) && typeof m.content === 'string'; }).slice(-80).map(function (m) { return {role:m.role, content:m.content.slice(0, 20000)}; });
+    while (JSON.stringify(kept).length > 240000) kept.shift();
+    window.VSApi.store.set('chat.history', {messages:kept, lastPlan:lastPlan, planningInterview:planningInterview, planningDraft:planningDraft.slice(0, 20000), planningInterviewCompleted:planningInterviewCompleted});
+  }
+  function restoreConversation() {
+    var state = window.VSApi && window.VSApi.store && window.VSApi.store.get('chat.history', null);
+    if (!state || !Array.isArray(state.messages) || !state.messages.length) return false;
+    messages = state.messages.slice(-80).filter(function (m) { return m && /^(user|assistant)$/.test(m.role) && typeof m.content === 'string'; });
+    planningInterview = !!state.planningInterview;
+    planningDraft = String(state.planningDraft || '');
+    planningInterviewCompleted = !!state.planningInterviewCompleted;
+    var thread = $('chat-thread'); if (thread) thread.innerHTML = '';
+    messages.forEach(function (m) {
+      var parsed = m.role === 'assistant' ? parseAssistantPayload(m.content) : null;
+      appendBubble(m.role, parsed ? parsed.assistant_message || m.content : m.content);
+      if (parsed && parsed.ready && parsed.plan) renderPlanCard(parsed.plan);
+    });
+    if (!lastPlan && state.lastPlan) renderPlanCard(state.lastPlan);
+    return true;
+  }
+  if (window.addEventListener) window.addEventListener('pagehide', persistConversation);
+
   function init(options) {
     deps = options || {};
     syncFlagFromQuery();
     applyChrome();
     bindUi();
-    if (isEnabled()) resetConversation();
+    if (isEnabled() && !restoreConversation()) resetConversation();
   }
 
   function startFromGenerate(prompt) {

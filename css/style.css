@@ -770,17 +770,10 @@ select option, select optgroup {
   .gen-primary-actions { width: 100%; }
   .gen-primary-actions .btn { width: 100%; min-width: 0; }
 }
-.gen-insufficient {
-  cursor: pointer;
-  text-align: left;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font: inherit;
-  display: block;
-  margin: 4px 0 10px;
-}
-.gen-insufficient:hover { text-decoration: underline; }
+.gen-insufficient { padding: 16px; margin: 12px 0; border: 1px solid #d8b579; border-radius: 12px; background: #fff8eb; color: #513d20; width: 100%; box-sizing: border-box; line-height: 1.6; }
+.gen-insufficient p { margin: 8px 0; }
+.gen-insufficient .btn { min-height: 44px; white-space: normal; }
+.prompt-clear { min-height: 44px; margin: 0 0 8px; }
 
 .ff-card-details > summary {
   list-style: none;

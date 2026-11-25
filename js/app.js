@@ -504,7 +504,7 @@
     return n.toLocaleString(I.meta(lang) ? I.meta(lang).htmlLang : undefined);
   }
   function oauthCredits() {
-    if (!O || !O.getProfile) return null;
+    if (!O || !O.getProfile || !O.isLoggedIn || !O.isLoggedIn()) return null;
     var p = O.getProfile();
     return p && typeof p.credits === 'number' && isFinite(p.credits) ? p.credits : null;
   }
@@ -779,10 +779,10 @@
     }
   });
 
-  function openInAppPayment(source) {
+  function openInAppPayment(source, suggested) {
     notifyBillingClick(source);
     if (window.VSPayment && typeof window.VSPayment.show === 'function') {
-      window.VSPayment.show({lang: lang, login: function () { startOauthLogin('billing'); }, refresh: renderCredits});
+      window.VSPayment.show({lang: lang, login: function () { startOauthLogin('billing'); }, suggestedAmount: suggested, refresh: function () { renderCredits(); renderGenCost(); }});
     }
   }
 
@@ -933,7 +933,12 @@
   }
 
   // ---------------- generate form ----------------
-  var gen = A.store.get('gen_form', null) || {};
+  var savedGenForm = A.store.get('gen_form', null);
+  var allowDefaultPreset = savedGenForm === null;
+  var gen = savedGenForm || {};
+  var intended = A.store.get('intended_generate', null);
+  if (intended && Date.now() - intended.at < 2 * 60 * 60 * 1000) gen = intended.form || gen;
+  else A.store.remove('intended_generate');
   gen = {
     model: M.MODELS[gen.model] ? gen.model : M.DEFAULT_MODEL_ID,
     duration: gen.duration || 5,
@@ -945,7 +950,9 @@
   var genImage = null; // {dataUrl, bytes}
   var openDetails = {};
 
-  function saveGen() { A.store.set('gen_form', gen); }
+  function saveGen() { savedGenForm = gen; A.store.set('gen_form', gen); if (A.store.get('intended_generate', null)) rememberIntendedGenerate(); }
+  function rememberIntendedGenerate() { A.store.set('intended_generate', {at: Date.now(), form: gen}); }
+  var suggestedPackage = 5;
 
   // Desktop layout: 模型 combobox, one-line summary + 详情 link, full description and links on demand.
   function renderGenModels() {
@@ -1117,7 +1124,11 @@
     }
     if (hint) {
       show(hint, !!insuff);
-      if (insuff) hint.textContent = t('credits_insufficient');
+      if (insuff) {
+        suggestedPackage = creditsNeeded - oc <= 5000 ? 5 : creditsNeeded - oc <= 20000 ? 20 : 50;
+        $('gen-insufficient-body').textContent = t('credits_insufficient_tip', localeNum(creditsNeeded), localeNum(oc));
+        $('gen-insufficient-suggest').textContent = t('credits_insufficient_suggest', suggestedPackage, localeNum(suggestedPackage * 1000));
+      }
     }
   }
 
@@ -1187,7 +1198,7 @@
       b.setAttribute('data-target', 'gen');
       if (family) b.setAttribute('data-family', family);
       b.setAttribute('aria-pressed', 'false');
-      b.addEventListener('click', function () { if (window.VSAnalytics) window.VSAnalytics.notifyExampleClick('generate', id); applyExample(id, 'gen', b); });
+      b.addEventListener('click', function () { applyExample(id, 'gen', b); });
       box.appendChild(b);
     });
     // Keep Generate chip selected across i18n re-renders.
@@ -1301,7 +1312,8 @@
   }
   function applyExample(id, target, btn, opts) {
     opts = opts || {};
-    if (btn && btn.classList.contains('active')) return;
+    if (btn && btn.classList.contains('active')) { clearGenPrompt(); return; }
+    if (window.VSAnalytics) window.VSAnalytics.notifyExampleClick('generate', id);
     clearAiPlanReview();
     aiPlanSource = false;
     var prompt = examplePrompt(id);
@@ -1319,6 +1331,15 @@
     // Match duration / ratio / resolution to the preset; leave the current model (default Seedance 2.0 Mini) alone.
     applyExampleSpecs(id, target);
     if (!opts.skipScroll) scrollPreviewIntoView();
+  }
+
+  function clearGenPrompt() {
+    allowDefaultPreset = false;
+    $('gen-prompt').value = ''; gen.prompt = ''; saveGen();
+    previewPresetId = null; setExampleActive('gen', null);
+    $('gen-preset-preview').hidden = true;
+    clearAiPlanReview(); aiPlanSource = false; fitGenPrompt($('gen-prompt'));
+    if (window.VSAnalytics) window.VSAnalytics.notifyPromptEdited('generate');
   }
 
   function showPresetPreview(box, id) {
@@ -1359,6 +1380,8 @@
   function maybeDefaultGenPreset() {
     var p = (gen.prompt || '').trim();
     if (!p) {
+      if (!allowDefaultPreset) return;
+      allowDefaultPreset = false;
       var id = EXAMPLE_IDS[0];
       var btn = document.querySelector('#gen-example-chips .example-chip[data-example="' + id + '"]');
       if (btn) applyExample(id, 'gen', btn, { skipScroll: true });
@@ -1460,6 +1483,7 @@
       node.addEventListener('change', function () { clearAiPlanReview(field); });
     });
     var prompt = $('gen-prompt');
+    $('gen-prompt-clear').addEventListener('click', clearGenPrompt);
     prompt.value = gen.prompt;
     fitGenPrompt(prompt);
     prompt.addEventListener('input', function () { if (window.VSAnalytics) window.VSAnalytics.notifyPromptEdited('generate'); gen.prompt = prompt.value; saveGen(); fitGenPrompt(prompt); });
@@ -1483,10 +1507,11 @@
     syncStopVisibility();
     var insuff = $('gen-insufficient');
     if (insuff) {
-      insuff.addEventListener('click', function (e) {
+      $('gen-insufficient-topup').addEventListener('click', function (e) {
         e.preventDefault();
         focusBillingChip();
-        openInAppPayment('quota');
+        rememberIntendedGenerate();
+        openInAppPayment('quota', suggestedPackage);
       });
     }
 
@@ -1600,7 +1625,9 @@
     } catch (e) {
       errBox.textContent = errorText(e.code); show(errBox, true); return;
     }
-    var cost = M.estimateCost(gen.duration, gen.resolution, gen.model).total;
+    var cost = null;
+    try { cost = M.estimateCost(gen.duration, gen.resolution, gen.model).total; } catch (ignoreFinalCost) { /* estimate unavailable */ }
+    A.store.remove('intended_generate');
     genBusy = true;
     var btn = $('gen-submit');
     btn.disabled = true;
