@@ -18,7 +18,7 @@ vm.runInContext(fn('maybeDefaultGenPreset'),ctx);
 let applied=0;ctx.applyExample=()=>applied++;ctx.gen={prompt:''};ctx.allowDefaultPreset=false;ctx.maybeDefaultGenPreset();assert.equal(applied,0);ctx.allowDefaultPreset=true;ctx.maybeDefaultGenPreset();assert.equal(applied,1);
 for(const lang of ['zh','en','es','pt','ja','ko']) {
  const pack={};vm.runInNewContext(readFileSync('js/lang/'+lang+'.js','utf8'),{VSI18n:{register:(l,m,v)=>Object.assign(pack,v)}});
- for(const key of ['credits_insufficient','credits_insufficient_tip','credits_insufficient_suggest','prompt_clear'])assert.doesNotMatch(pack[key],/官网|official site|sitio oficial|site oficial|公式サイト|공식 사이트/i);
+ for(const key of ['oauth_login','oauth_credits_expired','credits_insufficient','credits_insufficient_tip','credits_insufficient_suggest','prompt_clear'])assert.doesNotMatch(pack[key],/官网|official site|sitio oficial|site oficial|公式サイト|공식 사이트/i);
  assert.equal((pack.credits_insufficient_tip.match(/%s/g)||[]).length,2);
 }
 console.log('generate credit gate, raised/unknown credits, Clear, deselect, persisted-empty/default and copy passed');
@@ -54,11 +54,17 @@ assert.match(chatFn('renderPlanCard'),/track\('chat_plan_ready', \{surface: 'cha
 assert.match(chatSrc,/track\('chat_need_login_show', \{ source: source \|\| 'send' \}\)/);
 // Exercise the production preflight with fake storage and no network.
 const submitSource=src.slice(src.indexOf('  async function submitGen() {'),src.indexOf('\n  function ',src.indexOf('  async function submitGen() {')+1));
-let refreshed=0, remembered=0;
+let refreshed=0, remembered=0, videoPosts=0;
 const disk2={oauth_token:{expires_at:1}};
-const pre=vm.createContext({genBusy:false,clearAiPlanReview(){},$:node,show:(n,on)=>n.hidden=!on,A:{getKey:()=> 'fake-key',store:{get:(k,d)=>disk2[k]??d}},O:{refreshProfile:async()=>{refreshed++;}},oauthCredits:()=>null,renderCredits(){},rememberIntendedGenerate(){remembered++;},t:k=>k});
+const pre=vm.createContext({genBusy:false,clearAiPlanReview(){},$:node,show:(n,on)=>n.hidden=!on,A:{submit:async()=>{videoPosts++;throw Error('Unexpected POST /v1/videos');},getKey:()=> 'fake-key',store:{get:(k,d)=>disk2[k]??d}},O:{refreshProfile:async()=>{refreshed++;}},oauthCredits:()=>null,renderCredits(){},rememberIntendedGenerate(){remembered++;},t:k=>k});
 vm.runInContext(fn('needsOauthCredits')+submitSource,pre);
-await pre.submitGen();assert.equal(refreshed,1);assert.equal(remembered,1);assert.equal(node('gen-error').textContent,'oauth_credits_expired');
+await pre.submitGen();assert.equal(refreshed,1);assert.equal(remembered,1);assert.equal(node('gen-signin').hidden,false);assert.equal(node('gen-insufficient').hidden,true);assert.equal(node('gen-error').hidden,true);assert.equal(videoPosts,0);
+const html=readFileSync('index.html','utf8');
+assert.match(html, /id="gen-signin" class="gen-insufficient" hidden role="status"><strong data-i18n="oauth_login"[\s\S]*?<p data-i18n="oauth_credits_expired"><\/p><button type="button" id="gen-signin-button" class="btn btn-accent" data-i18n="oauth_login"/);
+assert.match(src, /\$\('gen-signin-button'\)\.addEventListener\('click', function \(\) \{ startOauthLogin\('generate'\); \}\)/);
+let signInClick, loginSource;vm.runInNewContext(src.match(/    \$\('gen-signin-button'\)\.addEventListener\('click', function \(\) \{ startOauthLogin\('generate'\); \}\);/)[0],{$:()=>({addEventListener:(event,cb)=>{signInClick=cb;}}),startOauthLogin:source=>{loginSource=source;}});signInClick();assert.equal(loginSource,'generate');
+node('gen-signin').hidden=false;have=1000;ctx.syncGenerateAvailability(500);assert.equal(node('gen-signin').hidden,true);
+pre.balance=null;pre.localeNum=String;pre.renderGenCost=()=>{};pre.oauthCredits=()=>1000;vm.runInContext(fn('renderCredits'),pre);node('gen-signin').hidden=false;pre.renderCredits();assert.equal(node('gen-signin').hidden,true);
 delete disk2.oauth_token;assert.equal(pre.needsOauthCredits(),false);
 disk2.login_only_keys=['fake-key'];assert.equal(pre.needsOauthCredits(),true);
 assert.doesNotMatch(submitSource,/errBox.textContent = t\('credits_insufficient'\)/);

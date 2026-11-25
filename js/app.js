@@ -517,8 +517,7 @@
     $('billing-chip-text').textContent = txt;
     $('billing-chip').title = t('credits_btn');
     renderGenCost();
-    var err = $('gen-error');
-    if (typeof oc === 'number' && err && err.textContent === t('oauth_credits_expired')) show(err, false);
+    if (typeof oc === 'number') show($('gen-signin'), false);
   }
   function refreshBalance() {
     var oc = oauthCredits();
@@ -1111,6 +1110,7 @@
     var btn = $('gen-submit');
     var hint = $('gen-insufficient');
     var oc = oauthCredits();
+    if (typeof oc === 'number') show($('gen-signin'), false);
     var insuff = typeof creditsNeeded === 'number' && typeof oc === 'number' && creditsNeeded > oc;
     if (btn && !genBusy) {
       btn.disabled = !!insuff;
@@ -1501,6 +1501,7 @@
       if (id && A.isPolling(id)) A.stopPolling(id);
     });
     syncStopVisibility();
+    $('gen-signin-button').addEventListener('click', function () { startOauthLogin('generate'); });
     var insuff = $('gen-insufficient');
     if (insuff && $('gen-insufficient-topup')) {
       $('gen-insufficient-topup').addEventListener('click', function (e) {
@@ -1611,8 +1612,8 @@
       renderCredits();
       if (oauthCredits() === null) {
         rememberIntendedGenerate();
-        errBox.textContent = t('oauth_credits_expired');
-        show(errBox, true);
+        show($('gen-insufficient'), false);
+        show($('gen-signin'), true);
         return;
       }
     }
