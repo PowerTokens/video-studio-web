@@ -15,6 +15,7 @@
   'use strict';
 
   var EVENTS = {
+    payment_reconfirm_shown: true, payment_reconfirm_continue: true,
     example_click: true, prompt_edited: true, login_return_unsigned: true,
     ai_plan_click: true, ai_plan_applied: true,
     app_open: true,
@@ -47,6 +48,7 @@
   };
 
   var ALLOWED_PROPS = {
+    reason: true,
     example_id: true, return_reason: true, device_class: true, os: true, browser: true, text_len_bucket: true, from_example: true, prompt_edited: true, prompt_matches_example: true, is_repeat: true, after_success: true, is_pwa: true, is_in_app_browser: true, quota_spent: true, quota_estimate: true,
     platform: true, app_version: true, session_id: true, install_id: true,
     surface: true, model: true, duration_ms: true, error_code: true, auth_reason: true,
@@ -205,6 +207,7 @@
       if (!Object.prototype.hasOwnProperty.call(src, key)) continue;
       if (FORBIDDEN[key] || !ALLOWED_PROPS[key]) continue;
       value = src[key];
+      if (key === 'reason' && !(event === 'payment_reconfirm_shown' && ['resume', 'signin'].includes(value))) continue;
       if (key === 'auth_reason' && (event !== 'login_failed' || !['state_mismatch', 'missing_verifier', 'missing_code', 'token_exchange_failed', 'userinfo_failed', 'invalid_grant', 'invalid_request', 'unauthorized_client', 'pkce_unsupported', 'access_denied', 'network', 'timeout', 'unavailable'].includes(value))) continue;
       var diagnosticEnums = {fail_stage:['transport','response','checkout'], message_category:['absent','authentication','other-redacted'], redirect_protocol:['https','http','other','invalid'], redirect_host:['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai','www.paypal.com','paypal.com','unlisted','invalid']};
       if (Object.prototype.hasOwnProperty.call(diagnosticEnums, key)) {

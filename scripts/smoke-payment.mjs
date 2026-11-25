@@ -35,7 +35,8 @@ Object.assign(context, {
   sessionStorage:{getItem:()=>null,setItem(){},removeItem(){}},
   fetch:async(url,opts)=>{requests.push({url,opts});return {ok:true,json:async()=>url.endsWith('/v1/payment/create')?{code:200,data:{orderNo:'mock-order',redirectUrl:'https://powertokens.ai/test'}}:{code:200,data:{status:1}}};}
 });
-P.show({lang:'en',login:()=>logged++,refresh(){}});assert.equal(logged,1);assert.equal(nodes.length,0);
+P.show({lang:'en',login:()=>logged++,refresh(){}});assert.equal(logged,0);assert.ok(nodes.length);
+nodes.find(n=>n.tag==='dialog').close(); nodes.length=0;
 loggedIn=true;
 P.show({lang:'en',login(){},refresh(){}});
 assert.equal(context.VSAnalytics.pending().filter(x=>['payment_package_select','payment_channel_select'].includes(x.event)).length,0);
@@ -238,3 +239,23 @@ for (const host of ['sandbox.paypal.com','www.sandbox.paypal.com','evil.test']) 
   assert.ok(!('redirect_host' in context.VSAnalytics.sanitize('payment_failed',{redirect_host:host})));
 }
 console.log('PayPal host validation, diagnostics and analytics sanitization passed (mock network).');
+// Reconfirm hooks: existing profile versus signed out, then validated continuation.
+for (const returning of [true,false]) {
+  nodes.filter(n=>n.tag==='dialog').at(-1).open=false;
+  loggedIn=false; profile=returning?{}:null;
+  const captured=[];const original=context.VSAnalytics.track;
+  context.VSAnalytics.track=(event,props)=>{captured.push({event,...props});return original(event,props);};
+  P.show({lang:'en',login:()=>logged++,refresh(){}});
+  await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
+  assert.equal(captured.at(-1).event,'payment_reconfirm_shown');
+  assert.equal(captured.at(-1).reason,returning?'resume':'signin');
+  const before=logged;
+  nodes.filter(n=>n.className==='payment-confirm').at(-1).onclick();
+  assert.equal(logged,before+1);
+  assert.equal(captured.at(-1).event,'payment_reconfirm_continue');
+  context.VSAnalytics.track=()=>{throw Error('offline');};
+  nodes.filter(n=>n.className==='payment-confirm').at(-1).onclick();
+  assert.equal(logged,before+2);
+  context.VSAnalytics.track=original;
+}
+console.log('Reconfirm reasons, continuation and fail-open passed');

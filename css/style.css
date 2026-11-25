@@ -1442,3 +1442,6 @@ dialog.payment-picker:focus, dialog.payment-picker:focus-visible { outline:none;
 @media (max-width: 600px) { .ai-plan-action { justify-content: flex-start; } }
 
 .chat-login-confirm { display:block; margin-top:12px; min-height:44px; padding:10px 18px; white-space:normal; }
+.payment-auth-notice:not([hidden]) { display:block; padding:14px; margin:24px 0 12px; border:1px solid #b9dcd5; border-radius:10px; background:#eaf6f2; color:#234c45; line-height:1.5; }
+.payment-auth-notice p { margin:0 0 12px; }
+.payment-picker .payment-confirm { width:100%; min-height:44px; padding:12px; border:0; border-radius:8px; background:#267d70; color:white; font:inherit; white-space:normal; cursor:pointer; }

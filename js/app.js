@@ -504,7 +504,7 @@
     return n.toLocaleString(I.meta(lang) ? I.meta(lang).htmlLang : undefined);
   }
   function oauthCredits() {
-    if (!O || !O.getProfile) return null;
+    if (!O || !O.getProfile || !O.isLoggedIn()) return null;
     var p = O.getProfile();
     return p && typeof p.credits === 'number' && isFinite(p.credits) ? p.credits : null;
   }
@@ -519,13 +519,11 @@
   }
   function refreshBalance() {
     var oc = oauthCredits();
-    if (typeof oc === 'number') balance = oc;
     if (!A.balanceEnabled()) { renderCredits(); return; }
     var key = A.getKey();
     if (!key) { if (typeof oc !== 'number') balance = null; renderCredits(); return; }
     A.fetchBalance(key).then(function (v) {
       if (typeof v === 'number') balance = v;
-      else if (typeof oc === 'number') balance = oc;
       renderCredits();
       renderKeyState();
     });
@@ -628,13 +626,7 @@
     var panelLogout = $('oauth-logout-btn');
     var status = $('oauth-status');
     var profile = O && O.getProfile ? O.getProfile() : null;
-    var loggedIn = !!(profile && O && O.getAccessToken && O.getAccessToken());
-    if (!loggedIn && profile && O && !O.getAccessToken()) {
-      // Token expired: keep profile credits for display but treat as logged out for revoke UI.
-      loggedIn = false;
-    }
-    // Soft login: profile present counts as signed-in for UI even if token near expiry.
-    var signed = !!profile;
+    var signed = !!(O && O.isLoggedIn && O.isLoggedIn());
     if (box) show(box, signed);
     if (loginBtn) show(loginBtn, !signed);
     if (panelLogin) show(panelLogin, !signed);
@@ -753,7 +745,7 @@
     if (errEl) { errEl.textContent = msg; show(errEl, true); }
     else toast(msg);
     var profile = O && O.getProfile ? O.getProfile() : null;
-    if (!profile) {
+    if (!O || !O.isLoggedIn()) {
       var target = errEl || $('gen-error') || $('oauth-error');
       if (target) {
         target.textContent = t('generate_need_login');
@@ -836,8 +828,6 @@
         toast(msg);
         return false;
       }
-      var oc = oauthCredits();
-      if (typeof oc === 'number') balance = oc;
       renderOauthAccount();
       renderCredits();
       renderKeyState();
@@ -1965,7 +1955,17 @@
   }
 
   // ---------------- boot ----------------
+  var lastAuthState;
+  function syncAuthValidity() {
+    var signed = !!(O && O.isLoggedIn && O.isLoggedIn());
+    if (signed === lastAuthState) return;
+    lastAuthState = signed;
+    renderKeyState(); renderCredits();
+  }
+  window.addEventListener('pageshow', syncAuthValidity);
+  document.addEventListener('visibilitychange', syncAuthValidity);
   function tick() {
+    syncAuthValidity();
     document.querySelectorAll('[data-elapsed]').forEach(function (n) {
       var rec = A.getTask(n.getAttribute('data-elapsed'));
       if (rec) n.textContent = t('elapsed', elapsedText(rec));
@@ -2080,6 +2080,7 @@
       if (window.VSAnalytics && window.VSAnalytics.boot) {
         window.VSAnalytics.boot({ appVersion: 'web-1.20' });
       }
+      if (window.VSPayment) window.VSPayment.resumeIntent({lang:lang, login:function () { startOauthLogin('billing'); }, refresh:renderCredits});
       setInterval(tick, 1000);
     } catch (err) {
       try { if (window.console && console.error) console.error('Video Studio boot failed', err); } catch (e) { /* ignore */ }
