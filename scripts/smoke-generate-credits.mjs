@@ -8,7 +8,7 @@ const node=id=>{if(!nodes.has(id))nodes.set(id,{value:'',hidden:false,disabled:f
 let have=1, events=0, saved=null;
 const ctx=vm.createContext({$:node,genBusy:false,oauthCredits:()=>have,show:(n,on)=>n.hidden=!on,t:(k,...a)=>k+' '+a.join(' '),localeNum:String,suggestedPackage:5,gen:{prompt:'x'.repeat(10000)},savedGenForm:null,allowDefaultPreset:true,previewPresetId:'shopping',aiPlanSource:false,window:{VSAnalytics:{notifyPromptEdited(){},notifyExampleClick(){events++;}}},saveGen(){saved=JSON.parse(JSON.stringify(ctx.gen));},setExampleActive(){ctx.active=false;},clearAiPlanReview(){},fitGenPrompt(){}});
 vm.runInContext(fn('syncGenerateAvailability'),ctx);
-ctx.syncGenerateAvailability(500);assert.equal(node('gen-submit').disabled,true);assert.equal(node('gen-insufficient').hidden,false);assert.match(node('gen-insufficient-body').textContent,/500 1/);
+ctx.syncGenerateAvailability(500);assert.equal(node('gen-submit').disabled,true);assert.equal(node('gen-insufficient').hidden,false);assert.match(node('gen-insufficient-body').textContent,/1 500/);
 have=1000;ctx.syncGenerateAvailability(500);assert.equal(node('gen-submit').disabled,false);assert.equal(node('gen-insufficient').hidden,true);assert.equal(events,0);
 have=null;ctx.syncGenerateAvailability(500);assert.equal(node('gen-submit').disabled,false);ctx.syncGenerateAvailability(null);assert.equal(node('gen-submit').disabled,false);
 vm.runInContext(fn('clearGenPrompt'),ctx);node('gen-prompt').value=ctx.gen.prompt;ctx.clearGenPrompt();assert.equal(saved.prompt,'');assert.equal(node('gen-preset-preview').hidden,true);assert.equal(ctx.allowDefaultPreset,false);
@@ -52,3 +52,29 @@ assert.match(chatSrc,/track\('prompt_clear', \{surface: 'chat', reason: 'button'
 for (const source of ['tab','generate_banner','panel_show']) assert.ok(chatSrc.includes("track('chat_entry_click', { source: '"+source+"' })"));
 assert.match(chatFn('renderPlanCard'),/track\('chat_plan_ready', \{surface: 'chat'\}\)/);
 assert.match(chatSrc,/track\('chat_need_login_show', \{ source: source \|\| 'send' \}\)/);
+// Exercise the production preflight with fake storage and no network.
+const submitSource=src.slice(src.indexOf('  async function submitGen() {'),src.indexOf('\n  function ',src.indexOf('  async function submitGen() {')+1));
+let refreshed=0, remembered=0;
+const disk2={oauth_token:{expires_at:1}};
+const pre=vm.createContext({genBusy:false,clearAiPlanReview(){},$:node,show:(n,on)=>n.hidden=!on,A:{getKey:()=> 'fake-key',store:{get:(k,d)=>disk2[k]??d}},O:{refreshProfile:async()=>{refreshed++;}},oauthCredits:()=>null,renderCredits(){},rememberIntendedGenerate(){remembered++;},t:k=>k});
+vm.runInContext(fn('needsOauthCredits')+submitSource,pre);
+await pre.submitGen();assert.equal(refreshed,1);assert.equal(remembered,1);assert.equal(node('gen-error').textContent,'oauth_credits_expired');
+delete disk2.oauth_token;assert.equal(pre.needsOauthCredits(),false);
+disk2.login_only_keys=['fake-key'];assert.equal(pre.needsOauthCredits(),true);
+assert.doesNotMatch(submitSource,/errBox.textContent = t\('credits_insufficient'\)/);
+assert.match(fn('renderCredits'),/renderGenCost\(\)/);
+assert.match(fn('recordError'),/if \(e === 'QUOTA'\) return t\('err_quota'\);/);
+let localeKeys;
+for(const lang of ['zh','en','es','ja','ko','pt']){
+ let pack;vm.runInNewContext(readFileSync('js/lang/'+lang+'.js','utf8'),{VSI18n:{register:(l,m,v)=>pack=v}});
+ const keys=Object.keys(pack).sort();if(localeKeys)assert.deepEqual(keys,localeKeys);else localeKeys=keys;
+ assert.doesNotMatch(pack.cost_estimate,/\$|%s.*%s/);
+ if(lang==='zh')assert.equal(pack.credits_insufficient,'积分不足');
+ if(lang==='en')assert.equal(pack.credits_insufficient,'Insufficient credits');
+}
+console.log('OAuth unknown-credit preflight, pasted-key eligibility, refresh rendering and locale parity passed');
+
+let redraws=0;
+const refresh=vm.createContext({A:{balanceEnabled:()=>false},O:{isLoggedIn:()=>true,refreshProfile:async()=>{redraws++;}},oauthCredits:()=>1,renderCredits:()=>redraws++});
+vm.runInContext(fn('refreshBalance'),refresh);refresh.refreshBalance();await Promise.resolve();await Promise.resolve();assert.equal(redraws,3);
+console.log('Disabled key balance endpoint refreshes sanctioned OAuth profile and redraws credits');

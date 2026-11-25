@@ -516,10 +516,19 @@
       : t('credits_btn');
     $('billing-chip-text').textContent = txt;
     $('billing-chip').title = t('credits_btn');
+    renderGenCost();
+    var err = $('gen-error');
+    if (typeof oc === 'number' && err && err.textContent === t('oauth_credits_expired')) show(err, false);
   }
   function refreshBalance() {
     var oc = oauthCredits();
-    if (!A.balanceEnabled()) { renderCredits(); return; }
+    if (!A.balanceEnabled()) {
+      renderCredits();
+      if (O && O.refreshProfile && O.isLoggedIn()) {
+        O.refreshProfile().then(renderCredits, function () { renderCredits(); });
+      }
+      return;
+    }
     var key = A.getKey();
     if (!key) { if (typeof oc !== 'number') balance = null; renderCredits(); return; }
     A.fetchBalance(key).then(function (v) {
@@ -1088,12 +1097,7 @@
     try {
       var c = M.estimateCost(gen.duration, gen.resolution, gen.model);
       var credits = M.estimateCreditsFromUsd(c.total);
-      var costText = t(
-        'cost_estimate',
-        localeNum(credits),
-        money(c.total),
-        money(c.perSecond)
-      );
+      var costText = t('cost_estimate', localeNum(credits));
       costEl.textContent = costText;
       syncGenerateAvailability(credits);
     } catch (e) {
@@ -1118,7 +1122,7 @@
       if (insuff) {
         suggestedPackage = creditsNeeded - oc <= 5000 ? 5 : creditsNeeded - oc <= 20000 ? 20 : 50;
         if (newlyVisible) { try { if (window.VSAnalytics) window.VSAnalytics.track('credit_gate_shown', {surface: 'generate', selection: 'preset-' + suggestedPackage}); } catch (_) {} }
-        $('gen-insufficient-body').textContent = t('credits_insufficient_tip', localeNum(creditsNeeded), localeNum(oc));
+        $('gen-insufficient-body').textContent = t('credits_insufficient_tip', localeNum(oc), localeNum(creditsNeeded));
         $('gen-insufficient-suggest').textContent = t('credits_insufficient_suggest', suggestedPackage, localeNum(suggestedPackage * 1000));
       }
     }
@@ -1498,7 +1502,7 @@
     });
     syncStopVisibility();
     var insuff = $('gen-insufficient');
-    if (insuff) {
+    if (insuff && $('gen-insufficient-topup')) {
       $('gen-insufficient-topup').addEventListener('click', function (e) {
         e.preventDefault();
         focusBillingChip();
@@ -1584,21 +1588,42 @@
   }
 
   var genBusy = false;
-  function submitGen() {
+  function needsOauthCredits() {
+    return !!(A.store.get('oauth_token', null) || A.store.get('oauth_profile', null) ||
+      A.store.get('login_only_keys', []).indexOf(A.getKey()) >= 0);
+  }
+
+  async function submitGen() {
     clearAiPlanReview();
     if (genBusy) return;
     var errBox = $('gen-error');
     show(errBox, false);
     var key = A.getKey();
     if (!key) { promptForKeyOrLogin(errBox); return; }
+    if (needsOauthCredits() && oauthCredits() === null) {
+      genBusy = true;
+      try {
+        if (O && O.refreshProfile) await O.refreshProfile();
+      } catch (_) { /* A failed profile refresh requires explicit sign-in. */ }
+      genBusy = false;
+      key = A.getKey();
+      if (!key) { promptForKeyOrLogin(errBox); return; }
+      renderCredits();
+      if (oauthCredits() === null) {
+        rememberIntendedGenerate();
+        errBox.textContent = t('oauth_credits_expired');
+        show(errBox, true);
+        return;
+      }
+    }
     try {
       var preCost = M.estimateCost(gen.duration, gen.resolution, gen.model);
       var need = M.estimateCreditsFromUsd(preCost.total);
       var have = oauthCredits();
       if (typeof need === 'number' && typeof have === 'number' && need > have) {
         try { if (window.VSAnalytics) window.VSAnalytics.track('credit_gate_blocked', {surface: 'generate'}); } catch (_) {}
-        errBox.textContent = t('credits_insufficient');
-        show(errBox, true);
+        rememberIntendedGenerate();
+        renderGenCost();
         focusBillingChip();
         return;
       }
@@ -1664,7 +1689,7 @@
     var detail = rec.error_detail ? ' — ' + rec.error_detail : '';
     if (!e) return '';
     if (e === 'AUTH') return t('err_auth') + detail;
-    if (e === 'QUOTA') return t('err_quota') + detail;
+    if (e === 'QUOTA') return t('err_quota');
     if (e === 'NOT_ALLOWED') return t('err_not_allowed') + detail;
     if (e === 'RATE_LIMIT' || e === 'PARAM') return 'HTTP ' + rec.http + detail;
     if (e === 'uncertain') return t('err_uncertain', rec.http ? 'HTTP ' + rec.http : t('err_network')) + (rec.error_detail ? ' (' + rec.error_detail + ')' : '');
@@ -1731,7 +1756,7 @@
     if (rec.duration) parts.push(t('param_seconds', rec.duration));
     if (rec.resolution) parts.push(resLabel(rec.resolution));
     if (rec.ratio) parts.push(ratioLabel(rec.ratio));
-    if (rec.cost !== null && rec.cost !== undefined && rec.cost !== '') parts.push(t('compare_plan_cost', localeNum(M.estimateCreditsFromUsd(rec.cost)), money(rec.cost)));
+    if (rec.cost !== null && rec.cost !== undefined && rec.cost !== '') parts.push(t('task_cost_credits', localeNum(M.estimateCreditsFromUsd(rec.cost))));
     if (parts.length) card.appendChild(el('div', 'task-params', parts.join(' · ')));
     if (opts.showPrompt && rec.prompt) card.appendChild(el('div', 'task-prompt', rec.prompt));
 
@@ -1750,15 +1775,34 @@
       card.appendChild(meta);
     }
 
-    var err = recordError(rec);
-    if (err) card.appendChild(el('p', 'task-error', err));
     if (isBalanceError(rec)) {
-      var top = el('a', 'btn btn-accent btn-small topup', t('topup_btn'));
-      top.href = buildBillingOutbound(t('billing_url'), (window.VSUtm && window.VSUtm.CONTENT && window.VSUtm.CONTENT.billing) || 'web.billing');
-      top.target = '_blank';
-      top.rel = 'noopener';
-      top.addEventListener('click', function () { notifyBillingClick('quota'); });
-      card.appendChild(top);
+      var balGate = el('div', 'gen-insufficient task-credit-gate');
+      balGate.appendChild(el('strong', '', t('credits_insufficient')));
+      var costCredits = (rec.cost !== null && rec.cost !== undefined && rec.cost !== '') ? M.estimateCreditsFromUsd(rec.cost) : null;
+      var balCredits = oauthCredits();
+      var pkg = 5;
+      if (typeof costCredits === 'number' && typeof balCredits === 'number') {
+        pkg = costCredits - balCredits <= 5000 ? 5 : costCredits - balCredits <= 20000 ? 20 : 50;
+        balGate.appendChild(el('p', '', t('credits_insufficient_tip', localeNum(balCredits), localeNum(costCredits))));
+        balGate.appendChild(el('p', 'gen-insufficient-suggest', t('credits_insufficient_suggest', pkg, localeNum(pkg * 1000))));
+      } else if (typeof costCredits === 'number') {
+        balGate.appendChild(el('p', '', t('credits_insufficient_unknown_bal', localeNum(costCredits))));
+        balGate.appendChild(el('p', 'gen-insufficient-suggest', t('credits_insufficient_suggest', pkg, localeNum(pkg * 1000))));
+      } else {
+        balGate.appendChild(el('p', '', t('err_quota')));
+      }
+      var top = el('button', 'btn btn-accent topup', t('topup_btn'));
+      top.type = 'button';
+      top.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        notifyBillingClick('quota');
+        openInAppPayment('quota_tip', pkg);
+      });
+      balGate.appendChild(top);
+      card.appendChild(balGate);
+    } else {
+      var err = recordError(rec);
+      if (err) card.appendChild(el('p', 'task-error', err));
     }
     if (rec.state === 'stopped') card.appendChild(el('p', 'muted small', t('stopped_note')));
 
