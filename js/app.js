@@ -2108,7 +2108,7 @@
       renderOauthAccount();
       maybeHandleOauthQuery();
       if (window.VSAnalytics && window.VSAnalytics.boot) {
-        window.VSAnalytics.boot({ appVersion: 'web-1.20' });
+        window.VSAnalytics.boot({ appVersion: 'web-1.21' });
       }
       if (window.VSPayment) window.VSPayment.resumeIntent({lang:lang, login:function () { startOauthLogin('billing'); }, refresh:renderCredits});
       setInterval(tick, 1000);

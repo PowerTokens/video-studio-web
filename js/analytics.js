@@ -120,7 +120,7 @@
   var SESSION_IDLE_MS = 30 * 60 * 1000;
   var LIB_NAME = 'video-studio-web-analytics';
   var LIB_VERSION = '1.0.0';
-  var APP_VERSION = 'web-1.20';
+  var APP_VERSION = 'web-1.21';
   var LS_STATE = 'vsw.analytics.state';
   var CONSENT_UNSET = 'unset';
   var CONSENT_GRANTED = 'granted';
