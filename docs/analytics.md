@@ -247,5 +247,11 @@ Offline validation: `node scripts/smoke-payment-outcomes.mjs`, `node scripts/smo
 
 - `payment_reconfirm_shown`: `reason=resume`.
 - `payment_reconfirm_continue`: .
+- `credit_gate_shown`: `surface=generate`, `selection=preset-5`.
+- `credit_gate_blocked`: `surface=generate`.
+- `prompt_clear`: `surface=chat`, `reason=button`.
+- `chat_entry_click`: `source=generate_banner`.
+- `chat_plan_ready`: `surface=chat`.
+- `chat_need_login_show`: `source=send`.
 
-Reconfirm shown reasons: resume for an existing profile, signin otherwise. Continue carries no event-specific properties and fires immediately before login after validation. No profile data is captured. Both hooks fail open.
+Reconfirm shown reasons: resume for an existing profile, signin otherwise. Continue carries no event-specific properties and fires immediately before login after validation. No profile data is captured. Generate gate visibility is captured once per hidden-to-visible transition; selection is optional and limited to preset-5 / preset-20 / preset-50. Blocked is emitted only on an attempted submit shortfall. Clear uses surface generate or chat, reason button or (Generate only) example_deselect, and does not emit prompt_edited. Chat entry sources: generate_banner, tab, panel_show; AI-plan entry remains ai_plan_click. Plan readiness carries no content. Login gate source: send. Billing accepts generate_tip and quota_tip; task cards retain quota. Suggested preselection emits no package selection. All hooks fail open.

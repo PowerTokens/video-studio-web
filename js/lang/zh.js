@@ -8,6 +8,11 @@ VSI18n.register('zh', {
   htmlLang: 'zh-CN',      // <html lang>
   match: ['zh']          // browser language prefixes that pick this language by default
 }, {
+  credits_insufficient: "积分不足 · 去充值",
+  credits_insufficient_tip: "按本地价目（约 1000 积分 = $1）估算，本次约需 %s 积分，当前约 %s。这是估算，实际以账单为准。提示词会保留；充值后请再点一次生成，不会自动开始。",
+  credits_insufficient_suggest: "建议选择 $%s 套餐（约 %s 积分）",
+  prompt_clear: "清空",
+
   chat_interview_draft: "这是你的草稿，我们一起把它完善。",
   chat_interview_refine: "这份草稿里，你最想完善或调整什么？",
   chat_interview_start: "你想拍什么主体？画面发生在哪里？",
@@ -199,7 +204,6 @@ VSI18n.register('zh', {
   list_sep: '、',
   credits_btn: '积分充值',
   credits_balance: '积分 %s · 充值',
-  credits_insufficient: '积分不足 · 去充值',
   billing_url: 'https://powertokens.ai/zh-Hans/billing',
   topup_btn: '去充值 ↗',
   spend_line: '本设备已提交约 $%s（%d 个任务）——按估算扣费，不加收。',

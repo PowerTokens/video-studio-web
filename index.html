@@ -120,9 +120,14 @@
             <div class="example-chips" id="gen-example-chips" role="group" aria-label="Examples"></div>
           </div>
           <div id="gen-preview-mobile"><section id="gen-preset-preview" class="card" hidden></section></div>
-          <div class="ai-plan-action"><button type="button" id="gen-ai-plan" class="btn btn-small" data-i18n="ai_plan_button">不会写？让 AI 帮我构思</button></div>
           <p id="ai-plan-notice" class="ai-plan-notice" role="status" hidden data-i18n="ai_plan_notice"></p>
-          <textarea id="gen-prompt" rows="10" data-i18n-ph="prompt_placeholder" placeholder="例如：清晨的海边咖啡馆，镜头缓缓推近一杯拿铁，窗外海浪声，柔和暖光。"></textarea>
+          <div class="gen-prompt-field">
+            <textarea id="gen-prompt" rows="10" data-i18n-ph="prompt_placeholder" placeholder="例如：清晨的海边咖啡馆，镜头缓缓推近一杯拿铁，窗外海浪声，柔和暖光。"></textarea>
+            <div class="ai-plan-action">
+              <button type="button" id="gen-ai-plan" class="btn btn-small" data-i18n="ai_plan_button">不会写？让 AI 帮我构思</button>
+              <button type="button" id="gen-prompt-clear" class="btn prompt-clear" data-i18n="prompt_clear">清空</button>
+            </div>
+          </div>
           <p class="muted small" data-i18n="prompt_desc">用自然语言描述画面、镜头、动作与声音。</p>
         </section>
 
@@ -179,7 +184,7 @@
             </div>
           </div>
           <p id="gen-cost" class="muted small cost"></p>
-          <button type="button" id="gen-insufficient" class="link gen-insufficient" hidden data-i18n="credits_insufficient">积分不足 · 去充值</button>
+
           <p id="gen-error" class="error" hidden></p>
           <p class="muted small" data-i18n="cloud_note">提交后不会自动重复提交；刷新或关闭页面，任务仍在云端继续，可在「任务记录 / 恢复」里找回。</p>
         </section>
@@ -187,6 +192,7 @@
 
       <div class="col-right">
         <div class="col-right-stack">
+          <aside id="gen-insufficient" class="gen-insufficient" hidden role="status"><strong data-i18n="credits_insufficient">积分不足 · 去充值</strong><p id="gen-insufficient-body"></p><p id="gen-insufficient-suggest"></p><button type="button" id="gen-insufficient-topup" class="btn" data-i18n="credits_insufficient">积分不足 · 去充值</button></aside>
           <div class="gen-sticky-bar" id="gen-sticky-bar">
             <div class="gen-sticky-inner">
               <div class="actions gen-primary-actions">

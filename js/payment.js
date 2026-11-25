@@ -156,7 +156,7 @@
     function el(tag, text, parent) { var n = document.createElement(tag); if (text) n.textContent = text; (parent || dialog).appendChild(n); return n; }
     el('h2', 'Video Studio · ' + c[0]);
     var close = el('button', '×'); close.className = 'payment-close'; close.setAttribute('aria-label', c[8]); close.onclick = function () { dialog.close(); };
-    var select = {value: 'preset-5'}, channel = {value: 'limeng'};
+    var select = {value: options.suggestedAmount === 20 ? '22' : options.suggestedAmount === 50 ? '23' : 'preset-5'}, channel = {value: 'limeng'};
     var cards = el('div'); cards.className = 'payment-packages';
     var packageButtons = [];
     uiCards.forEach(function (card) {

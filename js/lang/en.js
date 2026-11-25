@@ -8,6 +8,11 @@ VSI18n.register('en', {
   htmlLang: 'en',      // <html lang>
   match: ['en']          // browser language prefixes that pick this language by default
 }, {
+  credits_insufficient: "Not enough credits · Top up",
+  credits_insufficient_tip: "Based on the local price list (about 1,000 credits = $1), this run is estimated at about %s credits; you currently have about %s. This is an estimate — the bill is authoritative. Your prompt is kept. After you top up, click Generate again; it will not start automatically.",
+  credits_insufficient_suggest: "Suggested package: $%s (about %s credits)",
+  prompt_clear: "Clear",
+
   chat_interview_draft: "Here’s your draft. We can shape it together.",
   chat_interview_refine: "What would you most like to develop or change in this draft?",
   chat_interview_start: "What would you like to film, and where does it take place?",
@@ -194,7 +199,6 @@ VSI18n.register('en', {
   list_sep: ', ',
   credits_btn: 'Credits · Top up',
   credits_balance: 'Credits %s · Top up',
-  credits_insufficient: 'Not enough credits · Top up',
   billing_url: 'https://powertokens.ai/billing',
   topup_btn: 'Top up ↗',
   spend_line: 'About $%s estimated for %d tasks on this device—billed per this estimate, no markup.',

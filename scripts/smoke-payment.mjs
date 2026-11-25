@@ -259,3 +259,12 @@ for (const returning of [true,false]) {
   context.VSAnalytics.track=original;
 }
 console.log('Reconfirm reasons, continuation and fail-open passed');
+
+// Opening from the Generate tip highlights the suggested fixed package; header stays $5.
+for (const [suggestedAmount, selection] of [[20,'22'],[50,'23'],[undefined,'preset-5']]) {
+  nodes.filter(n=>n.tag==='dialog').forEach(n=>n.close());
+  nodes.length=0;
+  P.show({lang:'en',suggestedAmount,login(){},refresh(){}});
+  assert.equal(nodes.find(n=>n['data-selection']===selection)['aria-pressed'],'true');
+}
+console.log('Generate-tip suggested cards and header default passed (no payment created).');

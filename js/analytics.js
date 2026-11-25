@@ -16,6 +16,7 @@
 
   var EVENTS = {
     payment_reconfirm_shown: true, payment_reconfirm_continue: true,
+    credit_gate_shown: true, credit_gate_blocked: true, prompt_clear: true, chat_entry_click: true, chat_plan_ready: true, chat_need_login_show: true,
     example_click: true, prompt_edited: true, login_return_unsigned: true,
     ai_plan_click: true, ai_plan_applied: true,
     app_open: true,
@@ -100,7 +101,7 @@
   var SAFE_INPUT_MODE = { t2v: true, i2v: true };
   var SAFE_LANGUAGES = { zh: true, en: true, es: true, pt: true, ja: true, ko: true };
   var SAFE_BILLING_SOURCE = {
-    dialog: true, header: true, account: true, quota: true, quota_tip: true, credits_chip: true, chat: true
+    dialog: true, header: true, account: true, quota: true, generate_tip: true, quota_tip: true, credits_chip: true, chat: true
   };
   var SAFE_DOWNLOAD_SOURCE = { cta: true, 'cta-windows': true, 'cta-mac': true, releases: true, redirect: true };
   var SESSION_MAX_MS = 12 * 60 * 60 * 1000;
@@ -207,7 +208,7 @@
       if (!Object.prototype.hasOwnProperty.call(src, key)) continue;
       if (FORBIDDEN[key] || !ALLOWED_PROPS[key]) continue;
       value = src[key];
-      if (key === 'reason' && !(event === 'payment_reconfirm_shown' && ['resume', 'signin'].includes(value))) continue;
+      if (key === 'reason' && !((event === 'payment_reconfirm_shown' && ['resume', 'signin'].includes(value)) || (event === 'prompt_clear' && (value === 'button' || (src.surface === 'generate' && value === 'example_deselect'))))) continue;
       if (key === 'auth_reason' && (event !== 'login_failed' || !['state_mismatch', 'missing_verifier', 'missing_code', 'token_exchange_failed', 'userinfo_failed', 'invalid_grant', 'invalid_request', 'unauthorized_client', 'pkce_unsupported', 'access_denied', 'network', 'timeout', 'unavailable'].includes(value))) continue;
       var diagnosticEnums = {fail_stage:['transport','response','checkout'], message_category:['absent','authentication','other-redacted'], redirect_protocol:['https','http','other','invalid'], redirect_host:['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai','www.paypal.com','paypal.com','unlisted','invalid']};
       if (Object.prototype.hasOwnProperty.call(diagnosticEnums, key)) {
@@ -219,7 +220,7 @@
       } else if (key === 'pending_checkout') {
         if (event !== 'payment_dialog_closed' || typeof value !== 'boolean') continue;
       } else if (key === 'selection') {
-        if (event !== 'payment_package_select' || !['preset-5','preset-20','preset-50','custom'].includes(value)) continue;
+        if (!(event === 'payment_package_select' && ['preset-5','preset-20','preset-50','custom'].includes(value)) && !(event === 'credit_gate_shown' && ['preset-5','preset-20','preset-50'].includes(value))) continue;
       } else if (key === 'example_id') { if (["shopping", "canyon", "seal", "locker"].indexOf(value) < 0) continue; } else if (key === 'return_reason') { if (["back", "reopen", "missing_code"].indexOf(value) < 0) continue; } else if (key === 'device_class') { if (["phone", "tablet", "desktop"].indexOf(value) < 0) continue; } else if (key === 'os') { if (["ios", "android", "macos", "windows", "linux", "other"].indexOf(value) < 0) continue; } else if (key === 'browser') { if (["safari", "chrome", "firefox", "edge", "other"].indexOf(value) < 0) continue; } else if (key === 'text_len_bucket') { if (["b0_20", "b21_50", "b51_100", "b101_200", "b201_plus"].indexOf(value) < 0) continue; } else if (key === 'from_example' || key === 'prompt_edited' || key === 'prompt_matches_example' || key === 'is_repeat' || key === 'after_success' || key === 'is_pwa' || key === 'is_in_app_browser') { if (typeof value !== 'boolean') continue; } else if (key === 'quota_spent' || key === 'quota_estimate') { if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 1000000) continue; } else if (/^(initial_)?utm_/.test(key)) {
         value = safeUtm(value);
         if (!value) continue;
@@ -245,7 +246,9 @@
         if (!SAFE_INPUT_MODE[value]) continue;
       } else if (key === 'source') {
         value = String(value || '').trim().toLowerCase();
-        if (!((['ai_plan_click', 'ai_plan_applied', 'generation_start', 'generation_success', 'generation_failed'].indexOf(event) >= 0 && ['generate', 'chat', 'ai_plan'].indexOf(value) >= 0) || SAFE_BILLING_SOURCE[value] || SAFE_DOWNLOAD_SOURCE[value] || (event === 'login_start' && ['generate','billing','other'].indexOf(value) >= 0))) continue;
+        if (event === 'chat_entry_click' && !['generate_banner','tab','panel_show'].includes(value)) continue;
+        if (event === 'chat_need_login_show' && value !== 'send') continue;
+        if (!((event === 'chat_entry_click' && ['generate_banner','tab','panel_show'].includes(value)) || (event === 'chat_need_login_show' && value === 'send') || (['ai_plan_click', 'ai_plan_applied', 'generation_start', 'generation_success', 'generation_failed'].indexOf(event) >= 0 && ['generate', 'chat', 'ai_plan'].indexOf(value) >= 0) || SAFE_BILLING_SOURCE[value] || SAFE_DOWNLOAD_SOURCE[value] || (event === 'login_start' && ['generate','billing','other'].indexOf(value) >= 0))) continue;
       } else if (key === 'requested_duration_s') {
         value = parseInt(value, 10);
         if (!isFinite(value) || value < 0 || value > 3600) continue;

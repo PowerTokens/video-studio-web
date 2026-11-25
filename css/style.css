@@ -482,11 +482,6 @@ select option, select optgroup {
 /* Title-only chips: blurbs made the cards tall and left empty space. */
 #gen-example-chips .preset-blurb { display: none; }
 
-#gen-prompt {
-  min-height: 220px;
-  max-height: 60vh;
-  line-height: 1.5;
-}
 .batch-sample-note { margin-top: 10px; }
 /* ---------- compare ---------- */
 .check-list { display: grid; gap: 2px; }
@@ -770,17 +765,10 @@ select option, select optgroup {
   .gen-primary-actions { width: 100%; }
   .gen-primary-actions .btn { width: 100%; min-width: 0; }
 }
-.gen-insufficient {
-  cursor: pointer;
-  text-align: left;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font: inherit;
-  display: block;
-  margin: 4px 0 10px;
-}
-.gen-insufficient:hover { text-decoration: underline; }
+.gen-insufficient { padding: 16px; margin: 12px 0; border: 1px solid #d8b579; border-radius: 12px; background: #fff8eb; color: #513d20; width: 100%; box-sizing: border-box; line-height: 1.6; }
+.gen-insufficient p { margin: 8px 0; }
+.gen-insufficient .btn { min-height: 44px; white-space: normal; }
+.prompt-clear { min-height: 44px; margin: 0; flex: 0 0 auto; }
 
 .ff-card-details > summary {
   list-style: none;
@@ -1435,11 +1423,114 @@ dialog.payment-picker:focus, dialog.payment-picker:focus-visible { outline:none;
 
 .payment-picker button:focus-visible { outline:3px solid #419f92; outline-offset:2px; }
 
-.ai-plan-action { display: flex; justify-content: flex-end; margin: 0 0 10px; }
-.ai-plan-action .btn { color: var(--accent, #0f766e); white-space: normal; text-align: left; }
-.ai-plan-notice { padding: 12px 14px; border: 1px solid #5aafa3; border-radius: 10px; background: rgba(45, 160, 143, .10); color: inherit; font-size: 14px; }
+/* In-field prompt: one shared outline for textarea + slim footer toolbar. */
+.gen-prompt-field {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-width: 0;
+}
+.gen-prompt-field:hover { border-color: #b7d9d1; }
+.gen-prompt-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(83, 178, 165, .18);
+}
+.gen-prompt-field:has(#gen-prompt.ai-plan-filled) {
+  border-color: #369e90;
+  background-color: rgba(45, 160, 143, .08);
+  box-shadow: 0 0 0 2px rgba(45, 160, 143, .18);
+}
+.gen-prompt-field #gen-prompt.ai-plan-filled {
+  border: 0 !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+#gen-prompt,
+.gen-prompt-field #gen-prompt {
+  min-height: 220px;
+  max-height: 60vh;
+  line-height: 1.5;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 10px 12px 12px;
+  resize: none; /* keep the hairline footer clean; height is already auto-fit */
+}
+.gen-prompt-field #gen-prompt:hover,
+.gen-prompt-field #gen-prompt:focus {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+/* Slim in-field footer toolbar with text actions. */
+.ai-plan-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  margin: 0;
+  padding: 0 8px 0 10px;
+  min-height: 44px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  box-shadow: none;
+}
+.ai-plan-action .btn,
+.ai-plan-action #gen-ai-plan,
+.ai-plan-action .prompt-clear {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 10px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.ai-plan-action #gen-ai-plan {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: left;
+  justify-content: flex-start;
+}
+.ai-plan-action #gen-ai-plan:hover,
+.ai-plan-action #gen-ai-plan:active {
+  color: var(--accent-active);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  text-decoration: underline;
+}
+.ai-plan-action #gen-ai-plan:active { color: var(--accent-pressed); }
+.ai-plan-action .prompt-clear {
+  min-width: 44px;
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.ai-plan-action .prompt-clear:hover,
+.ai-plan-action .prompt-clear:active {
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  text-decoration: underline;
+}
+.ai-plan-action .prompt-clear:active { color: var(--ink); }
+.ai-plan-action .btn:focus-visible { outline: 2px solid var(--accent-active); outline-offset: 2px; }
+.ai-plan-notice { margin: 0 0 10px; padding: 12px 14px; border: 1px solid #5aafa3; border-radius: 10px; background: rgba(45, 160, 143, .10); color: inherit; font-size: 14px; }
+.ai-plan-notice[hidden] { display: none; }
 .ai-plan-filled, .cselect.ai-plan-filled .cselect-trigger { border-color: #369e90 !important; background-color: rgba(45, 160, 143, .10) !important; box-shadow: 0 0 0 2px rgba(45, 160, 143, .18); }
-@media (max-width: 600px) { .ai-plan-action { justify-content: flex-start; } }
 
 .chat-login-confirm { display:block; margin-top:12px; min-height:44px; padding:10px 18px; white-space:normal; }
 .payment-auth-notice:not([hidden]) { display:block; padding:14px; margin:24px 0 12px; border:1px solid #b9dcd5; border-radius:10px; background:#eaf6f2; color:#234c45; line-height:1.5; }
