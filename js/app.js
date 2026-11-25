@@ -707,8 +707,6 @@
   function onNeedLoginForChat(source) {
     toast(t('chat_need_login'));
     pulseLoginCta();
-    // Keep the chat tip on screen briefly, then open the PowerTokens login flow.
-    window.setTimeout(function () { startOauthLogin('chat'); }, 700);
   }
 
   function startOauthLogin(source) {
@@ -754,7 +752,17 @@
     else toast(msg);
     var profile = O && O.getProfile ? O.getProfile() : null;
     if (!profile) {
-      startOauthLogin('generate');
+      var target = errEl || $('gen-error') || $('oauth-error');
+      if (target) {
+        target.textContent = t('generate_need_login');
+        show(target, true);
+        var confirm = document.createElement('button');
+        confirm.type = 'button';
+        confirm.className = 'btn btn-accent chat-login-confirm';
+        confirm.textContent = t('chat_login_confirm');
+        confirm.addEventListener('click', function () { startOauthLogin('generate'); });
+        target.appendChild(confirm);
+      }
       return;
     }
     setTab('account', true);
@@ -796,6 +804,7 @@
 
   function bindOauth() {
     if (!O) return;
+    window.addEventListener('pageshow', function () { setOauthBusy(false); renderOauthAccount(); });
     var headerLogin = $('header-oauth-login');
     var panelLogin = $('oauth-login-btn');
     var headerLogout = $('oauth-logout');

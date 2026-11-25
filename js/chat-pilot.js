@@ -903,13 +903,16 @@
 
   function requireLoginForChat(source) {
     if (deps.isLoggedIn && deps.isLoggedIn()) return true;
-    appendBubble('assistant', t('chat_need_login'));
-    track('chat_need_login_show', { source: source || 'send' });
-    // Tip first; open login shortly after so the reminder is visible (not an instant full-page jump).
-    if (deps.onNeedLogin) deps.onNeedLogin(source || 'send');
-    else if (deps.promptLogin) {
-      setTimeout(function () { deps.promptLogin(); }, 700);
+    saveBridgeDraft();
+    var tip = appendBubble('assistant', t('chat_need_login'));
+    if (tip && deps.promptLogin) {
+      var confirm = el('button', 'btn btn-accent chat-login-confirm', t('chat_login_confirm'));
+      confirm.type = 'button';
+      confirm.addEventListener('click', function () { saveBridgeDraft(); deps.promptLogin(); });
+      tip.bubble.appendChild(confirm);
     }
+    track('chat_need_login_show', { source: source || 'send' });
+    if (deps.onNeedLogin) deps.onNeedLogin(source || 'send');
     return false;
   }
 
@@ -938,6 +941,9 @@
     if (busy) return;
     // A local plan skips Flash, but it is still a chat turn. Gate it like Send
     // before any user bubble, ready reply, plan card, or model call.
+    if (deps.isLoggedIn && !deps.isLoggedIn()) {
+      $('chat-input').value = ($('chat-input').value ? $('chat-input').value + '\n\n' : '') + t('example_' + id + '_label') + '\n' + (planPromptForExample(id) || t('example_' + id + '_prompt'));
+    }
     if (!requireLoginForChat('example')) return;
     ensureSession();
     if (root.VSAnalytics) root.VSAnalytics.notifyExampleClick('chat', id);

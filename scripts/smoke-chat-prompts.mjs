@@ -84,10 +84,13 @@ const document = {
   addEventListener() {}
 };
 
+const timers = [];
+const storedDrafts = {};
 const context = {
+  sessionStorage: { setItem(k,v) { storedDrafts[k]=v; }, getItem(k) { return storedDrafts[k] || null; } },
   console,
   URLSearchParams,
-  setTimeout: function (fn) { return setImmediate(fn); },
+  setTimeout: function (fn) { timers.push(fn); return setImmediate(fn); },
   location: { search: '' },
   document,
   navigator: { language: 'zh-CN', languages: ['zh-CN'] }
@@ -115,6 +118,7 @@ let lang = 'zh';
 let loggedIn = true;
 let apiKey = '';
 const loginCalls = [];
+let oauthStarts = 0;
 const I = context.VSI18n;
 const pilot = context.VSChatPilot;
 pilot.init({
@@ -126,6 +130,7 @@ pilot.init({
   getKey: function () { return apiKey; },
   getCredits: function () { return null; },
   isLoggedIn: function () { return loggedIn; },
+  promptLogin: function () { oauthStarts++; },
   onNeedLogin: function (source) { loginCalls.push(source || ''); }
 });
 
@@ -392,6 +397,75 @@ assert.deepEqual(loginCalls.slice(-1), ['send'], 'Send stays behind the same log
 assert.equal(document.getElementById('chat-input').value, 'a cat on a windowsill', 'Send keeps the draft when login is required');
 assert.ok(!walkText(document.getElementById('chat-thread')).includes('a cat on a windowsill'));
 assert.equal(flashCalls, 0, 'logged-out Send does not call Flash');
+while (timers.length) timers.shift()();
+assert.equal(oauthStarts, 0, 'Send and examples never start OAuth, even after timers run');
+const confirms = [];
+eachNode(document.getElementById('chat-thread'), node => {
+  if (String(node.className).split(' ').includes('chat-login-confirm')) confirms.push(node);
+});
+assert.equal(confirms.length, 5, 'each Send/example tip has a confirmation');
+for (const button of confirms) {
+  button.click();
+}
+assert.equal(oauthStarts, 5, 'only confirmation starts login');
+assert.equal(storedDrafts['vsw.chat.bridgeDraft'], 'a cat on a windowsill');
+for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) {
+  assert.notEqual(I.t(code, 'chat_login_confirm'), 'chat_login_confirm');
+  assert.ok(I.t(code, 'chat_need_login').includes('PowerTokens'));
+}
+
+// The app hint itself cannot start OAuth, including a deferred start.
+const appSource = fs.readFileSync('js/app.js', 'utf8');
+const hint = appSource.match(/  function onNeedLoginForChat\(source\) \{[\s\S]*?\n  \}/)[0];
+const appTimers = [];
+let appStarts = 0;
+const appContext = { toast() {}, t: k => k, pulseLoginCta() {},
+  startOauthLogin() { appStarts++; }, window: { setTimeout(fn) { appTimers.push(fn); } } };
+vm.runInNewContext(hint + '; onNeedLoginForChat("send"); onNeedLoginForChat("example");', appContext);
+while (appTimers.length) appTimers.shift()();
+assert.equal(appStarts, 0);
+
+// BFCache Back clears header/account busy state; those clicks remain immediate.
+const bind = appSource.match(/  function bindOauth\(\) \{[\s\S]*?\n  \}/)[0];
+const pageHandlers = {};
+const oauthButtons = {};
+let oauthBusy = true;
+let accountRenders = 0;
+const starts = [];
+vm.runInNewContext(bind + '; bindOauth();', {
+  O: {}, window: { addEventListener(k, fn) { pageHandlers[k] = fn; } },
+  $: id => ({ addEventListener(k, fn) { oauthButtons[id] = fn; } }),
+  setOauthBusy(on) { oauthBusy = on; }, renderOauthAccount() { accountRenders++; },
+  startOauthLogin(source) { starts.push(source); }, doOauthLogout() {}
+});
+pageHandlers.pageshow({ persisted: true });
+assert.equal(oauthBusy, false);
+assert.equal(accountRenders, 1);
+oauthButtons['header-oauth-login'](); oauthButtons['oauth-login-btn']();
+assert.deepEqual(starts, ['header', 'account']);
+assert.notEqual(document.getElementById('chat-send').disabled, true);
+
+// Simulate full-page return: restore exact whitespace, then allow manual sending.
+document.getElementById('chat-input').value = '';
+pilot.init({ t: key => I.t('en', key), isLoggedIn: () => false });
+assert.equal(document.getElementById('chat-input').value, 'a cat on a windowsill');
+
+// Fallback integration has no onNeedLogin hint hook.
+pilot.init({ t: key => I.t('en', key), isLoggedIn: () => false,
+  promptLogin() { oauthStarts++; } });
+document.getElementById('chat-send').click();
+while (timers.length) timers.shift()();
+assert.equal(oauthStarts, 5, 'fallback does not auto-login');
+let fallbackConfirm;
+eachNode(document.getElementById('chat-thread'), node => {
+  if (String(node.className).split(' ').includes('chat-login-confirm')) fallbackConfirm = node;
+});
+fallbackConfirm.click();
+assert.equal(oauthStarts, 6, 'fallback confirmation starts login');
+// Restore dependencies for the remaining signed-in checks.
+pilot.init({ t: key => I.t(lang, key), isLoggedIn: () => loggedIn,
+  getKey: () => apiKey, getLang: () => lang, getCredits: () => null, onNeedLogin: source => loginCalls.push(source) });
+
 
 loggedIn = true;
 apiKey = 'should-not-be-sent';

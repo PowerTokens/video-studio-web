@@ -92,16 +92,17 @@
   }
 
   function ssGet(k) {
-    try { return root.sessionStorage.getItem(k); } catch (e) { return null; }
+    try { return root.localStorage.getItem(k); } catch (e) { return null; }
   }
   function ssSet(k, v) {
-    try { root.sessionStorage.setItem(k, v); return true; } catch (e) { return false; }
+    try { root.localStorage.setItem(k, v); return true; } catch (e) { return false; }
   }
   function ssRemove(k) {
-    try { root.sessionStorage.removeItem(k); } catch (e) { /* ignore */ }
+    try { root.localStorage.removeItem(k); } catch (e) { /* ignore */ }
   }
 
   function clearPendingLogin() {
+    ssRemove('vsw.oauth.started');
     ssRemove(SS_STATE);
     ssRemove(SS_VERIFIER);
   }
@@ -187,13 +188,16 @@
   function notifyLoginFailed(code) {
     try {
       if (root.VSAnalytics && root.VSAnalytics.notifyLoginFailed) {
-        root.VSAnalytics.notifyLoginFailed({ errorCode: mapLoginError(code) });
+        root.VSAnalytics.notifyLoginFailed({ errorCode: mapLoginError(code), authReason: code });
       }
     } catch (e) { /* never break login */ }
   }
 
   function startLogin(opts) {
     opts = opts || {};
+    var started = Number(ssGet('vsw.oauth.started'));
+    if (started && Date.now() - started < 15 * 60 * 1000 && ssGet(SS_STATE)) return Promise.resolve({ pending: true });
+    clearPendingLogin();
     notifyLoginStart(opts.source);
     if (!root.crypto || !root.crypto.subtle) {
       notifyLoginFailed('pkce_unsupported');
@@ -201,8 +205,14 @@
     }
     var verifier = makeVerifier();
     var state = randomHex(16);
+    ssSet('vsw.oauth.started', String(Date.now()));
+    ssSet('vsw.oauth.standalone', String(!!((root.navigator && root.navigator.standalone) || (root.matchMedia && root.matchMedia('(display-mode: standalone)').matches))));
     ssSet(SS_VERIFIER, verifier);
-    ssSet(SS_STATE, state);
+    if (!ssSet(SS_STATE, state) || ssGet(SS_VERIFIER) !== verifier) {
+      clearPendingLogin();
+      notifyLoginFailed('unavailable');
+      return Promise.reject(new Error('unavailable'));
+    }
     ssSet(SS_RETURN, opts.returnHash || 'generate');
     return sha256Base64Url(verifier).then(function (challenge) {
       var uri = redirectUri();
@@ -318,6 +328,16 @@
    */
   function handleCallback(search) {
     var params = new URLSearchParams(search || root.location.search || '');
+    try {
+      var clean = new URL(root.location.href);
+      ['code', 'state', 'error', 'error_description'].forEach(function (k) { clean.searchParams.delete(k); });
+      if (root.history) root.history.replaceState(null, '', clean.href);
+    } catch (e) {}
+    var consumed = {};
+    try { consumed = JSON.parse(ssGet('vsw.oauth.consumed') || '{}'); } catch (e) {}
+    Object.keys(consumed).forEach(function (k) { if (Date.now() - consumed[k] > 15 * 60 * 1000) delete consumed[k]; });
+    ssSet('vsw.oauth.consumed', JSON.stringify(consumed));
+    if (isLoggedIn() || consumed[params.get('state')]) return Promise.resolve({ ok: true, alreadySignedIn: true });
     var err = params.get('error');
     if (err) {
       notifyLoginFailed(err);
@@ -332,9 +352,12 @@
     var state = params.get('state');
     if (!code || !state) {
       try { if (root.VSAnalytics) root.VSAnalytics.notifyLoginReturnUnsigned('missing_code'); } catch (e) {}
+      notifyLoginFailed('missing_code');
       clearPendingLogin();
       return Promise.resolve({ ok: false, error: 'missing_code' });
     }
+    var pendingSince = Number(ssGet('vsw.oauth.started'));
+    if (pendingSince && Date.now() - pendingSince >= 15 * 60 * 1000) clearPendingLogin();
     var expected = ssGet(SS_STATE);
     var verifier = ssGet(SS_VERIFIER);
     if (!expected || state !== expected) {
@@ -372,6 +395,8 @@
         }
         var info = ui.body;
         saveSession(tok.body, info);
+        consumed[state] = Date.now();
+        ssSet('vsw.oauth.consumed', JSON.stringify(consumed));
         var keyApplied = false;
         var apiKey = typeof info.key === 'string' ? info.key : '';
         // Strip accidental Bearer prefix without logging the value.
@@ -416,7 +441,7 @@
             });
           }
         } catch (ignoreAnalytics) { /* never break login */ }
-        return { ok: true, profile: profile, keyApplied: keyApplied, credits: profile && profile.credits };
+        return { ok: true, profile: profile, keyApplied: keyApplied, credits: profile && profile.credits, returnToStandalone: ssGet('vsw.oauth.standalone') === 'true' };
       });
     }, function () {
       notifyLoginFailed('network');

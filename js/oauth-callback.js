@@ -18,9 +18,10 @@
   title.textContent = I.t(lang, 'oauth_callback_returning');
   msg.textContent = title.textContent;
   backButton.textContent = I.t(lang, 'oauth_callback_return');
+  var returnHash;
   backButton.addEventListener('click', function () {
     // Stay in this tab and restore the saved app tab when available.
-    var hash = O && O.consumeReturnHash();
+    var hash = returnHash || (O && O.consumeReturnHash());
     window.location.replace(O ? O.homeUrl(hash || 'chat') : '../');
   });
 
@@ -45,7 +46,15 @@
       return;
     }
     var hash = O.consumeReturnHash() || 'chat';
+    returnHash = hash;
     msg.textContent = I.t(lang, 'oauth_callback_returning');
+    if (result.returnToStandalone) {
+      document.getElementById('progress').hidden = true;
+      msg.textContent = I.t(lang, 'oauth_standalone_return');
+      msg.hidden = false;
+      back.hidden = false;
+      return;
+    }
     window.location.replace(O.homeUrl(hash));
   }, showError);
 })();

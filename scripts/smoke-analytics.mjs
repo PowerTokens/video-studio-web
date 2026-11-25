@@ -791,7 +791,7 @@ for (const search of ['', '?error=access_denied', '?code=x&state=wrong', '?code=
   const events=[];
   const handlers={};
   const sandbox={URL,URLSearchParams,Promise,location:{href:'https://example.com/',pathname:'/',search:''},
-    sessionStorage:{getItem:k=>pending[k],setItem:(k,v)=>pending[k]=v,removeItem:k=>delete pending[k]},
+    localStorage:{getItem:k=>pending[k],setItem:(k,v)=>pending[k]=v,removeItem:k=>delete pending[k]},
     addEventListener:(k,fn)=>handlers[k]=fn,
     VSAnalytics:{notifyLoginFailed:()=>{},notifyLoginReturnUnsigned:r=>events.push(r)}};
   sandbox.window=sandbox;
@@ -816,3 +816,6 @@ for (const event of ['generation_start', 'generation_success', 'generation_faile
   assert.equal(A.sanitize(event, {source:'ai_plan'}).source, 'ai_plan');
   assert.equal(A.sanitize(event, {source:'secret prompt'}).source, undefined);
 }
+
+assert.equal(A.sanitize('login_failed', {auth_reason:'invalid_grant'}).auth_reason, 'invalid_grant');
+assert.equal(A.sanitize('login_failed', {auth_reason:'raw fake@example.test'}).auth_reason, undefined);

@@ -24,7 +24,7 @@ async function run(lang, outcome, returnHash = 'tasks', missingModule = false) {
   const pending = { 'vsw.oauth.return_hash': returnHash };
   const context = vm.createContext({
     URL, URLSearchParams, console,
-    localStorage: { getItem() { if (lang === '"blocked"') throw new Error('blocked'); return lang; } },
+    localStorage: { getItem(key) { if (lang === '"blocked"') throw new Error('blocked'); return key === 'vsw.lang' ? lang : pending[key] || null; }, removeItem(key) { delete pending[key]; }, setItem(key,value) { pending[key]=value; } },
     sessionStorage: {
       getItem: (key) => pending[key] || null,
       removeItem: (key) => { delete pending[key]; },

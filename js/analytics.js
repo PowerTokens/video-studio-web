@@ -49,7 +49,7 @@
   var ALLOWED_PROPS = {
     example_id: true, return_reason: true, device_class: true, os: true, browser: true, text_len_bucket: true, from_example: true, prompt_edited: true, prompt_matches_example: true, is_repeat: true, after_success: true, is_pwa: true, is_in_app_browser: true, quota_spent: true, quota_estimate: true,
     platform: true, app_version: true, session_id: true, install_id: true,
-    surface: true, model: true, duration_ms: true, error_code: true,
+    surface: true, model: true, duration_ms: true, error_code: true, auth_reason: true,
     generation_id: true, requested_duration_s: true, key_applied: true,
     environment: true, test_run_id: true, chat_id: true,
     cta_kind: true, active_ms: true, source: true, language: true,
@@ -205,6 +205,7 @@
       if (!Object.prototype.hasOwnProperty.call(src, key)) continue;
       if (FORBIDDEN[key] || !ALLOWED_PROPS[key]) continue;
       value = src[key];
+      if (key === 'auth_reason' && (event !== 'login_failed' || !['state_mismatch', 'missing_verifier', 'missing_code', 'token_exchange_failed', 'userinfo_failed', 'invalid_grant', 'invalid_request', 'unauthorized_client', 'pkce_unsupported', 'access_denied', 'network', 'timeout', 'unavailable'].includes(value))) continue;
       var diagnosticEnums = {fail_stage:['transport','response','checkout'], message_category:['absent','authentication','other-redacted'], redirect_protocol:['https','http','other','invalid'], redirect_host:['gateway.powerwinpay.com','powertokens.ai','www.powertokens.ai','www.paypal.com','paypal.com','unlisted','invalid']};
       if (Object.prototype.hasOwnProperty.call(diagnosticEnums, key)) {
         if (event !== 'payment_failed' || !diagnosticEnums[key].includes(value)) continue;
@@ -757,7 +758,7 @@
 
   function notifyLoginFailed(opts) {
     opts = opts || {};
-    return track('login_failed', { error_code: normalizeErrorCode(opts.errorCode) });
+    return track('login_failed', { error_code: normalizeErrorCode(opts.errorCode), auth_reason: opts.authReason });
   }
 
   function notifyLogout() {
