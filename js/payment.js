@@ -227,6 +227,7 @@
     var confirm = el('button', '', notice); confirm.type = 'button'; confirm.className = 'payment-confirm';
     function reconfirm() {
       var returning = !!O.getProfile();
+      try { if (root.VSAnalytics) root.VSAnalytics.track('payment_reconfirm_shown', {reason: returning ? 'resume' : 'signin'}); } catch (_) {}
       noticeText.textContent = c[returning ? 17 : 19];
       confirm.textContent = c[returning ? 18 : 20]; buy.hidden = true; notice.hidden = false;
     }
@@ -238,6 +239,7 @@
         intent.custom_amount = value;
       }
       try { localStorage.setItem(intentKey, JSON.stringify(intent)); } catch (_) {}
+      try { if (root.VSAnalytics) root.VSAnalytics.track('payment_reconfirm_continue', {}); } catch (_) {}
       options.login();
     };
     var manual = el('button', c[7]); manual.className = 'payment-check';

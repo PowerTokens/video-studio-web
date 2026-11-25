@@ -242,3 +242,10 @@ Official paid status emits success even if profile refresh fails. Credits can su
 Contract checked against the public [official billing frontend](https://powertokens.ai/billing): its [API module](https://powertokens.ai/_next/static/chunks/49ec20af22da258a.js) uses POST `/finance/get-order-info` and numeric envelope success code 200; its [billing caller](https://powertokens.ai/_next/static/chunks/a7c6502a076586cc.js) passes `{order_no}`, recognizes status 1 as paid and status 2 as terminal failure. These assets were inspected without credentials or live order requests.
 
 Offline validation: `node scripts/smoke-payment-outcomes.mjs`, `node scripts/smoke-payment.mjs`, `node scripts/smoke-analytics.mjs`, `node scripts/smoke-api-client.mjs`. The outcome smoke covers closed-dialog paid/cancelled, repeated return events, reload recovery, expiry, failed profile refresh, status precedence and both events reaching analytics transport without private fields.
+
+## Unshipped analytics additions
+
+- `payment_reconfirm_shown`: `reason=resume`.
+- `payment_reconfirm_continue`: .
+
+Reconfirm shown reasons: resume for an existing profile, signin otherwise. Continue carries no event-specific properties and fires immediately before login after validation. No profile data is captured. Both hooks fail open.
