@@ -35,7 +35,8 @@ Object.assign(context, {
   sessionStorage:{getItem:()=>null,setItem(){},removeItem(){}},
   fetch:async(url,opts)=>{requests.push({url,opts});return {ok:true,json:async()=>url.endsWith('/v1/payment/create')?{code:200,data:{orderNo:'mock-order',redirectUrl:'https://powertokens.ai/test'}}:{code:200,data:{status:1}}};}
 });
-P.show({lang:'en',login:()=>logged++,refresh(){}});assert.equal(logged,1);assert.equal(nodes.length,0);
+P.show({lang:'en',login:()=>logged++,refresh(){}});assert.equal(logged,0);assert.ok(nodes.length);
+nodes.find(n=>n.tag==='dialog').close(); nodes.length=0;
 loggedIn=true;
 P.show({lang:'en',login(){},refresh(){}});
 assert.equal(context.VSAnalytics.pending().filter(x=>['payment_package_select','payment_channel_select'].includes(x.event)).length,0);
