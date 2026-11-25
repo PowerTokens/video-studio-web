@@ -773,7 +773,7 @@ select option, select optgroup {
 .gen-insufficient { padding: 16px; margin: 12px 0; border: 1px solid #d8b579; border-radius: 12px; background: #fff8eb; color: #513d20; width: 100%; box-sizing: border-box; line-height: 1.6; }
 .gen-insufficient p { margin: 8px 0; }
 .gen-insufficient .btn { min-height: 44px; white-space: normal; }
-.prompt-clear { min-height: 44px; margin: 0 0 8px; }
+.prompt-clear { min-height: 44px; margin: 0; flex: 0 0 auto; }
 
 .ff-card-details > summary {
   list-style: none;
@@ -1428,10 +1428,10 @@ dialog.payment-picker:focus, dialog.payment-picker:focus-visible { outline:none;
 
 .payment-picker button:focus-visible { outline:3px solid #419f92; outline-offset:2px; }
 
-.ai-plan-action { display: flex; justify-content: flex-end; margin: 0 0 10px; }
-.ai-plan-action .btn { color: var(--accent, #0f766e); white-space: normal; text-align: left; }
+.ai-plan-action { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: nowrap; margin: 0 0 10px; }
+.ai-plan-action #gen-ai-plan { color: var(--accent, #0f766e); white-space: normal; text-align: right; min-height: 44px; flex: 1 1 auto; min-width: 0; }
 .ai-plan-notice { padding: 12px 14px; border: 1px solid #5aafa3; border-radius: 10px; background: rgba(45, 160, 143, .10); color: inherit; font-size: 14px; }
+.ai-plan-notice[hidden] { display: none; }
 .ai-plan-filled, .cselect.ai-plan-filled .cselect-trigger { border-color: #369e90 !important; background-color: rgba(45, 160, 143, .10) !important; box-shadow: 0 0 0 2px rgba(45, 160, 143, .18); }
-@media (max-width: 600px) { .ai-plan-action { justify-content: flex-start; } }
 
 .chat-login-confirm { display:block; margin-top:12px; min-height:44px; padding:10px 18px; white-space:normal; }
