@@ -220,7 +220,7 @@
     clearIntent();
     updateSelection();
     var message = el('p', active ? c[6] : ''); message.className = 'payment-status'; message.setAttribute('role','status');
-    var buy = el('button', c[5]); buy.className = 'payment-buy'; buy.disabled = !!active;
+    var buy = el('button', c[5]); buy.className = 'payment-buy'; buy.hidden = false; buy.disabled = !!active;
     var notice = el('div'); notice.className = 'payment-auth-notice'; notice.hidden = true;
     notice.setAttribute('role', 'status');
     var noticeText = el('p', '', notice);
@@ -228,7 +228,7 @@
     function reconfirm() {
       var returning = !!O.getProfile();
       noticeText.textContent = c[returning ? 17 : 19];
-      confirm.textContent = c[returning ? 18 : 20]; notice.hidden = false;
+      confirm.textContent = c[returning ? 18 : 20]; buy.hidden = true; notice.hidden = false;
     }
     confirm.onclick = function () {
       var intent = {selection:select.value, channel:channel.value, at:Date.now()};

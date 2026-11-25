@@ -14,7 +14,7 @@ const pick=k=>nodes.filter(n=>n['data-selection']===k).at(-1);
 for (const prior of [null,{name:'Fake'}]) {
  profile=prior;c.VSPayment.show(opts);assert.ok(last('payment-picker').open);assert.equal(login,0);
  pick('22').onclick();nodes.filter(n=>n['data-channel']==='paypal').at(-1).onclick();
- await last('payment-buy').onclick();assert.equal(calls.length,0);assert.equal(opens,0);assert.equal(last('payment-auth-notice').hidden,false);
+ await last('payment-buy').onclick();assert.equal(calls.length,0);assert.equal(opens,0);assert.equal(last('payment-auth-notice').hidden,false);assert.equal(last('payment-buy').hidden,true);assert.equal(last('payment-auth-notice').role,'status');
  assert.equal(last('payment-confirm').textContent,prior?'Confirm sign-in':'Continue to sign in');
  last('payment-confirm').onclick();assert.equal(login,1);const intent=JSON.parse(data.get('vsw.topup_intent'));assert.deepEqual(Object.keys(intent).sort(),['at','channel','selection']);assert.equal(intent.selection,'22');assert.equal(intent.channel,'paypal');
  assert.ok(!data.get('vsw.topup_intent').includes('token'));last('payment-picker').close();login=0;
@@ -25,10 +25,10 @@ for(const selection of ['22','custom']) {
  valid=true;profile={name:'Fake'};data.set('vsw.topup_intent',JSON.stringify({selection,channel:'paypal',custom_amount:17,at:Date.now()}));
  const count=nodes.length;c.VSPayment.resumeIntent(opts);assert.ok(nodes.length>count);assert.equal(pick(selection)['aria-pressed'],'true');assert.equal(nodes.filter(n=>n['data-channel']==='paypal').at(-1).checked,true);
  if(selection==='custom') assert.equal(Number(last('payment-custom').children[1].value),17);
- assert.equal(data.has('vsw.topup_intent'),false);assert.equal(calls.length,0);const once=nodes.length;c.VSPayment.resumeIntent(opts);assert.equal(nodes.length,once);last('payment-picker').close();
+ assert.equal(last('payment-buy').hidden,false);assert.equal(last('payment-auth-notice').hidden,true);assert.equal(data.has('vsw.topup_intent'),false);assert.equal(calls.length,0);const once=nodes.length;c.VSPayment.resumeIntent(opts);assert.equal(nodes.length,once);last('payment-picker').close();
 }
 for(const value of [{selection:'22',channel:'paypal',at:Date.now()-900001},{at:Date.now()},'bad']) {data.set('vsw.topup_intent',JSON.stringify(value));const count=nodes.length;c.VSPayment.resumeIntent(opts);assert.equal(nodes.length,count);assert.equal(data.has('vsw.topup_intent'),false);}
-c.VSPayment.show(opts);auth=true;await last('payment-buy').onclick();assert.equal(last('payment-auth-notice').hidden,false);assert.equal(failed.at(-1).error_code,'AUTH');assert.equal(opens,0);
+c.VSPayment.show(opts);auth=true;await last('payment-buy').onclick();assert.equal(last('payment-auth-notice').hidden,false);assert.equal(last('payment-buy').hidden,true);assert.equal(last('payment-auth-notice').role,'status');assert.equal(failed.at(-1).error_code,'AUTH');assert.equal(opens,0);
 assert.deepEqual(Object.keys(JSON.parse(calls[0].opts.body)).sort(),['amount','package_id','payment_channel']);assert.deepEqual(Object.keys(calls[0].opts.headers).sort(),['Authorization','Content-Type']);
 const app=read('app'), extract=name=>app.slice(app.indexOf('  function '+name+'('),app.indexOf('\n  function ',app.indexOf('  function '+name+'(')+1));
 const header={};c.$=id=>header[id]??=(element('div'));c.O=c.VSOauth;c.show=(n,on)=>n.hidden=!on;c.t=k=>k;c.localeNum=String;c.renderNokeyBanner=()=>{};c.renderGenCost=()=>{};
