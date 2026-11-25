@@ -107,15 +107,28 @@
     ssRemove(SS_VERIFIER);
   }
 
+  // Only the window that started this flow may retry it after returning.
+  var ownedState = '';
+  try { ownedState = root.sessionStorage.getItem(SS_STATE) || ''; } catch (e) {}
+  var retryable = false;
+  var wasHidden = false;
+  function markLoginReturn() {
+    if (ownedState && ownedState === ssGet(SS_STATE) && !isLoggedIn()) retryable = true;
+  }
+
   function notifyPendingReturn(reason) {
     try {
       if (ssGet(SS_STATE) && ssGet(SS_VERIFIER) && !getAccessToken() && root.VSAnalytics) root.VSAnalytics.notifyLoginReturnUnsigned(reason);
     } catch (e) { /* analytics fails open */ }
   }
   if (root.addEventListener) {
-    root.addEventListener('pageshow', function (event) { if (event.persisted) notifyPendingReturn('back'); });
+    root.addEventListener('pageshow', function (event) { markLoginReturn(); if (event.persisted) notifyPendingReturn('back'); });
+    if (root.document && root.document.addEventListener) root.document.addEventListener('visibilitychange', function () {
+      if (root.document.hidden) wasHidden = true;
+      else if (wasHidden) { wasHidden = false; markLoginReturn(); }
+    });
     root.addEventListener('load', function () {
-      if (!/oauth\/callback/.test(root.location.pathname || '')) notifyPendingReturn('reopen');
+      if (!/oauth\/callback/.test(root.location.pathname || '')) { markLoginReturn(); notifyPendingReturn('reopen'); }
     });
   }
 
@@ -196,7 +209,10 @@
   function startLogin(opts) {
     opts = opts || {};
     var started = Number(ssGet('vsw.oauth.started'));
-    if (started && Date.now() - started < 15 * 60 * 1000 && ssGet(SS_STATE)) return Promise.resolve({ pending: true });
+    if (started && Date.now() - started < 15 * 60 * 1000 && ssGet(SS_STATE) && !retryable) {
+      if (ownedState !== ssGet(SS_STATE) || Date.now() - started < 1500) return Promise.resolve({ pending: true });
+    }
+    retryable = false;
     clearPendingLogin();
     notifyLoginStart(opts.source);
     if (!root.crypto || !root.crypto.subtle) {
@@ -213,6 +229,8 @@
       notifyLoginFailed('unavailable');
       return Promise.reject(new Error('unavailable'));
     }
+    ownedState = state;
+    try { root.sessionStorage.setItem(SS_STATE, state); } catch (e) {}
     ssSet(SS_RETURN, opts.returnHash || 'generate');
     return sha256Base64Url(verifier).then(function (challenge) {
       var uri = redirectUri();
@@ -240,6 +258,7 @@
         q.set('utm_content', 'web.oauth_authorize');
       }
       root.location.assign(AUTHORIZE_URL + '?' + q.toString());
+      return { navigating: true };
     });
   }
 
@@ -352,7 +371,6 @@
     var state = params.get('state');
     if (!code || !state) {
       try { if (root.VSAnalytics) root.VSAnalytics.notifyLoginReturnUnsigned('missing_code'); } catch (e) {}
-      notifyLoginFailed('missing_code');
       clearPendingLogin();
       return Promise.resolve({ ok: false, error: 'missing_code' });
     }

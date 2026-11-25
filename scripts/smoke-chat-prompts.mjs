@@ -411,7 +411,18 @@ assert.equal(oauthStarts, 5, 'only confirmation starts login');
 assert.equal(storedDrafts['vsw.chat.bridgeDraft'], 'a cat on a windowsill');
 for (const code of ['zh', 'en', 'es', 'pt', 'ja', 'ko']) {
   assert.notEqual(I.t(code, 'chat_login_confirm'), 'chat_login_confirm');
-  assert.ok(I.t(code, 'chat_need_login').includes('PowerTokens'));
+  const meaning = {
+    zh: ['离开此页', '登录或注册', '草稿会保留'],
+    en: ['leave this page', 'sign in or register', 'draft stays'],
+    es: ['salir de esta página', 'iniciar sesión o registrarte', 'borrador se guarda'],
+    pt: ['sair desta página', 'entrar ou se cadastrar', 'rascunho fica salvo'],
+    ja: ['このページを離れて', 'ログインまたは登録', '下書きは保存'],
+    ko: ['페이지를 떠나', '로그인하거나 가입', '초안은 보관']
+  };
+  for (const phrase of meaning[code]) assert.ok(I.t(code, 'chat_need_login').includes(phrase));
+  for (const key of ['chat_need_login', 'generate_need_login', 'chat_login_confirm']) {
+    assert.doesNotMatch(I.t(code, key), /官网|official site|sitio oficial|site oficial|公式サイト|공식 사이트/i);
+  }
 }
 
 // The app hint itself cannot start OAuth, including a deferred start.

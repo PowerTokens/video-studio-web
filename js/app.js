@@ -719,7 +719,9 @@
     }
     setOauthBusy(true);
     // Return to the tab the user left (Chat when the URL has no hash).
-    O.startLogin({ source: source, returnHash: currentTabName() }).catch(function (e) {
+    O.startLogin({ source: source, returnHash: currentTabName() }).then(function (result) {
+      if (!result || !result.navigating) setOauthBusy(false);
+    }).catch(function (e) {
       setOauthBusy(false);
       var code = (e && e.message) || 'error';
       var msg = oauthFailMessage(code);
