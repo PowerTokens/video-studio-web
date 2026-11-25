@@ -22,7 +22,7 @@ for (const page of ['index.html', 'oauth/callback.html']) {
   const first = I.load('ja');
   const duplicate = I.load('ja');
   assert.equal(requests.length, 1);
-  assert.equal(requests[0].src, 'https://example.com/site/js/lang/ja.js?v=20261118-i18n');
+  assert.equal(requests[0].src, 'https://example.com/site/js/lang/ja.js?v=20261125-credit');
   vm.runInContext(read('js/lang/ja.js'), ctx);
   requests[0].onload();
   await Promise.all([first, duplicate]);
