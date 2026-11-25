@@ -122,9 +122,33 @@
     });
     root.addEventListener('load', resume);
   }
+  // UI keys are distinct from official package ids.
+  var uiCards = [
+    {key:'preset-5', packageId:35, amount:5, credits:5000, recommended:true},
+    {key:'22', packageId:22},
+    {key:'23', packageId:23},
+    {key:'custom', packageId:33, custom:true}
+  ];
+  var intentKey = 'vsw.topup_intent', intentTTL = 15 * 60 * 1000;
+  function clearIntent() { try { localStorage.removeItem(intentKey); } catch (_) {} }
+  function readIntent() {
+    try {
+      var value = JSON.parse(localStorage.getItem(intentKey));
+      if (!value) { clearIntent(); return null; }
+      if (!Number.isFinite(value.at) || value.at > Date.now() || Date.now() - value.at > intentTTL ||
+          !['limeng', 'paypal'].includes(value.channel) || !uiCards.some(function (card) { return card.key === value.selection; }) ||
+          (value.selection === 'custom' && (!Number.isInteger(value.custom_amount) || value.custom_amount < 5 || value.custom_amount > 2000))) { clearIntent(); return null; }
+      return {selection:value.selection, channel:value.channel, customAmount:value.custom_amount};
+    } catch (_) { clearIntent(); return null; }
+  }
+  function resumeIntent(options) {
+    var intent = readIntent();
+    if (!intent || !root.VSOauth || !root.VSOauth.isLoggedIn()) return;
+    clearIntent();
+    show(Object.assign({}, options, {preselect:intent}));
+  }
   function show(options) {
     var O = root.VSOauth;
-    if (!O.isLoggedIn()) { options.login(); return; }
     if (dialog && dialog.open) return;
     var token = O.getAccessToken(), c = root.VSPaymentCopy[options.lang] || root.VSPaymentCopy.en;
     restore();
@@ -132,16 +156,9 @@
     function el(tag, text, parent) { var n = document.createElement(tag); if (text) n.textContent = text; (parent || dialog).appendChild(n); return n; }
     el('h2', 'Video Studio · ' + c[0]);
     var close = el('button', '×'); close.className = 'payment-close'; close.setAttribute('aria-label', c[8]); close.onclick = function () { dialog.close(); };
-    var select = {value: 'preset-5'}, channel = {value: 'limeng'};
+    var select = {value: options.suggestedAmount === 20 ? '22' : options.suggestedAmount === 50 ? '23' : 'preset-5'}, channel = {value: 'limeng'};
     var cards = el('div'); cards.className = 'payment-packages';
     var packageButtons = [];
-    // UI keys are distinct from official package ids.
-    var uiCards = [
-      {key:'preset-5', packageId:35, amount:5, credits:5000, recommended:true},
-      {key:'22', packageId:22},
-      {key:'23', packageId:23},
-      {key:'custom', packageId:33, custom:true}
-    ];
     uiCards.forEach(function (card) {
       var p = root.VSPaymentPackages.find(function (p) { return p.id === card.packageId; });
       var b = el('button', '', cards); b.type = 'button'; b.className = 'payment-card'; b.setAttribute('data-package', p.id); b.setAttribute('data-selection', card.key);
@@ -193,14 +210,42 @@
       methodButtons.forEach(function (x) { x.button.checked = x.id === channel.value; });
       custom.hidden = select.value !== 'custom';
     }
+    var preselect = options.preselect;
+    if (preselect && uiCards.some(function (card) { return card.key === preselect.selection; }) &&
+        ['limeng', 'paypal'].includes(preselect.channel) &&
+        (preselect.selection !== 'custom' || (Number.isInteger(preselect.customAmount) && preselect.customAmount >= 5 && preselect.customAmount <= 2000))) {
+      select.value = preselect.selection; channel.value = preselect.channel;
+      if (select.value === 'custom') { amount.value = preselect.customAmount; amount.oninput(); }
+    }
+    clearIntent();
     updateSelection();
     var message = el('p', active ? c[6] : ''); message.className = 'payment-status'; message.setAttribute('role','status');
-    var buy = el('button', c[5]); buy.className = 'payment-buy'; buy.disabled = !!active;
+    var buy = el('button', c[5]); buy.className = 'payment-buy'; buy.hidden = false; buy.disabled = !!active;
+    var notice = el('div'); notice.className = 'payment-auth-notice'; notice.hidden = true;
+    notice.setAttribute('role', 'status');
+    var noticeText = el('p', '', notice);
+    var confirm = el('button', '', notice); confirm.type = 'button'; confirm.className = 'payment-confirm';
+    function reconfirm() {
+      var returning = !!O.getProfile();
+      try { if (root.VSAnalytics) root.VSAnalytics.track('payment_reconfirm_shown', {reason: returning ? 'resume' : 'signin'}); } catch (_) {}
+      noticeText.textContent = c[returning ? 17 : 19];
+      confirm.textContent = c[returning ? 18 : 20]; buy.hidden = true; notice.hidden = false;
+    }
+    confirm.onclick = function () {
+      var intent = {selection:select.value, channel:channel.value, at:Date.now()};
+      if (select.value === 'custom') {
+        var value = Number(amount.value);
+        if (!Number.isInteger(value) || value < 5 || value > 2000) { message.textContent = c[12]; return; }
+        intent.custom_amount = value;
+      }
+      try { localStorage.setItem(intentKey, JSON.stringify(intent)); } catch (_) {}
+      try { if (root.VSAnalytics) root.VSAnalytics.track('payment_reconfirm_continue', {}); } catch (_) {}
+      options.login();
+    };
     var manual = el('button', c[7]); manual.className = 'payment-check';
     var links = el('div'); links.className = 'payment-links';
     var history = el('a', c[13], links); history.href = 'https://powertokens.ai/billing'; history.target = '_blank'; history.rel = 'noopener';
     var feedback = el('a', c[14] + ': service@powertokens.ai', links); feedback.href = 'mailto:service@powertokens.ai';
-    function current() { return O.isLoggedIn() && O.getAccessToken() === token; }
     update = function (outcome) {
       if (outcome) message.textContent = outcome === 'success' ? c[9] : c[10];
       buy.disabled = !!active;
@@ -208,7 +253,9 @@
     };
     manual.onclick = function () { clearTimeout(timer); check(); };
     buy.onclick = async function () {
-      if (busy || active || !current()) return;
+      if (busy || active) return;
+      if (!O.isLoggedIn() || !O.getAccessToken()) { reconfirm(); return; }
+      token = O.getAccessToken();
       var body;
       try { var card = uiCards.find(function (card) { return card.key === select.value; }); body = payload(card.packageId, card.custom ? amount.value : card.amount, channel.value); } catch (_) { message.textContent = c[12]; return; }
       // Reserve a tab synchronously so mobile popup blockers allow checkout.
@@ -231,12 +278,12 @@
         if (checkout) checkout.location.replace(data.redirectUrl);
         notify('checkout_opened', funnel);
         timer = setTimeout(check, 2500);
-      } catch (error) { notify('failed', funnel, error.paymentDiagnostics || {error_code:'UNKNOWN'}); if (checkout) checkout.close(); message.textContent = c[11]; buy.disabled = false; }
+      } catch (error) { notify('failed', funnel, error.paymentDiagnostics || {error_code:'UNKNOWN'}); if (checkout) checkout.close(); if (error.paymentDiagnostics && error.paymentDiagnostics.error_code === 'AUTH') reconfirm(); else message.textContent = c[11]; buy.disabled = false; }
       finally { busy = false; }
     };
-    dialog.addEventListener('close', function () { notify('dialog_closed', {}, {pending_checkout:!!active}); dialog.remove(); });
+    dialog.addEventListener('close', function () { clearIntent(); notify('dialog_closed', {}, {pending_checkout:!!active}); dialog.remove(); });
     document.body.appendChild(dialog); dialog.showModal();
     if (active) check();
   }
-  root.VSPayment = {show:show, payload:payload, validRedirect:validRedirect};
+  root.VSPayment = {show:show, resumeIntent:resumeIntent, payload:payload, validRedirect:validRedirect};
 })(globalThis);

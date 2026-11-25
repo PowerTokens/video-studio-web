@@ -4,8 +4,10 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 const read = f => fs.readFileSync(new URL('../js/' + f, import.meta.url), 'utf8');
 for (const fallback of [false, true]) for (const manual of ['none', 'before', 'after', 'other']) {
-  const data = new Map(), session = new Map([
+  const data = new Map([
     ['vsw.oauth.state', 'fake-state'], ['vsw.oauth.code_verifier', 'fake-verifier']]);
+  const session = new Map([
+    ['vsw.oauth.state', 'fake-state']]);
   const storage = map => ({getItem: k => map.get(k) ?? null, setItem: (k,v) => map.set(k,v), removeItem: k => map.delete(k)});
   let submits = 0;
   const c = vm.createContext({URL, URLSearchParams, setTimeout, clearTimeout, AbortController,

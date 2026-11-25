@@ -46,7 +46,10 @@ assert.equal(failures.length,1); // Only the real state_mismatch above.
 const app=fs.readFileSync('js/app.js','utf8');
 const gate=app.match(/  function promptForKeyOrLogin\(errEl\) \{[\s\S]*?\n  \}/)[0];
 let clicked, count=0;const target={textContent:'',appendChild(){}};
-const c={O:{getProfile:()=>null},t:k=>k,show(){},toast(){},$:()=>target,document:{createElement:()=>({addEventListener:(k,f)=>clicked=f})},startOauthLogin:s=>{assert.equal(s,'generate');count++;},setTab(){}};
+const c={O:{getProfile:()=>null,isLoggedIn:()=>false},t:k=>k,show(){},toast(){},$:()=>target,document:{createElement:()=>({addEventListener:(k,f)=>clicked=f})},startOauthLogin:s=>{assert.equal(s,'generate');count++;},setTab(){}};
+vm.runInNewContext(gate+';promptForKeyOrLogin();',c);assert.equal(count,0);clicked();assert.equal(count,1);
+// Expired token with a cached profile is signed out too: confirm first, never jump to Account.
+c.O={getProfile:()=>({name:'cached'}),isLoggedIn:()=>false};count=0;clicked=null;
 vm.runInNewContext(gate+';promptForKeyOrLogin();',c);assert.equal(count,0);clicked();assert.equal(count,1);
 assert.match(app,/login: function \(\) \{ startOauthLogin\('billing'\)/);
 assert.match(fs.readFileSync('js/oauth-callback.js','utf8'),/result.returnToStandalone/);

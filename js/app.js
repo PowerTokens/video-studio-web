@@ -504,7 +504,7 @@
     return n.toLocaleString(I.meta(lang) ? I.meta(lang).htmlLang : undefined);
   }
   function oauthCredits() {
-    if (!O || !O.getProfile) return null;
+    if (!O || !O.getProfile || !O.isLoggedIn || !O.isLoggedIn()) return null;
     var p = O.getProfile();
     return p && typeof p.credits === 'number' && isFinite(p.credits) ? p.credits : null;
   }
@@ -519,13 +519,11 @@
   }
   function refreshBalance() {
     var oc = oauthCredits();
-    if (typeof oc === 'number') balance = oc;
     if (!A.balanceEnabled()) { renderCredits(); return; }
     var key = A.getKey();
     if (!key) { if (typeof oc !== 'number') balance = null; renderCredits(); return; }
     A.fetchBalance(key).then(function (v) {
       if (typeof v === 'number') balance = v;
-      else if (typeof oc === 'number') balance = oc;
       renderCredits();
       renderKeyState();
     });
@@ -628,13 +626,7 @@
     var panelLogout = $('oauth-logout-btn');
     var status = $('oauth-status');
     var profile = O && O.getProfile ? O.getProfile() : null;
-    var loggedIn = !!(profile && O && O.getAccessToken && O.getAccessToken());
-    if (!loggedIn && profile && O && !O.getAccessToken()) {
-      // Token expired: keep profile credits for display but treat as logged out for revoke UI.
-      loggedIn = false;
-    }
-    // Soft login: profile present counts as signed-in for UI even if token near expiry.
-    var signed = !!profile;
+    var signed = !!(O && O.isLoggedIn && O.isLoggedIn());
     if (box) show(box, signed);
     if (loginBtn) show(loginBtn, !signed);
     if (panelLogin) show(panelLogin, !signed);
@@ -753,7 +745,7 @@
     if (errEl) { errEl.textContent = msg; show(errEl, true); }
     else toast(msg);
     var profile = O && O.getProfile ? O.getProfile() : null;
-    if (!profile) {
+    if (!O || !O.isLoggedIn()) {
       var target = errEl || $('gen-error') || $('oauth-error');
       if (target) {
         target.textContent = t('generate_need_login');
@@ -779,10 +771,10 @@
     }
   });
 
-  function openInAppPayment(source) {
+  function openInAppPayment(source, suggested) {
     notifyBillingClick(source);
     if (window.VSPayment && typeof window.VSPayment.show === 'function') {
-      window.VSPayment.show({lang: lang, login: function () { startOauthLogin('billing'); }, refresh: renderCredits});
+      window.VSPayment.show({lang: lang, login: function () { startOauthLogin('billing'); }, suggestedAmount: suggested, refresh: function () { renderCredits(); renderGenCost(); }});
     }
   }
 
@@ -836,8 +828,6 @@
         toast(msg);
         return false;
       }
-      var oc = oauthCredits();
-      if (typeof oc === 'number') balance = oc;
       renderOauthAccount();
       renderCredits();
       renderKeyState();
@@ -933,7 +923,12 @@
   }
 
   // ---------------- generate form ----------------
-  var gen = A.store.get('gen_form', null) || {};
+  var savedGenForm = A.store.get('gen_form', null);
+  var allowDefaultPreset = savedGenForm === null;
+  var gen = savedGenForm || {};
+  var intended = A.store.get('intended_generate', null);
+  if (intended && Date.now() - intended.at < 2 * 60 * 60 * 1000) gen = intended.form || gen;
+  else A.store.remove('intended_generate');
   gen = {
     model: M.MODELS[gen.model] ? gen.model : M.DEFAULT_MODEL_ID,
     duration: gen.duration || 5,
@@ -945,7 +940,9 @@
   var genImage = null; // {dataUrl, bytes}
   var openDetails = {};
 
-  function saveGen() { A.store.set('gen_form', gen); }
+  function saveGen() { savedGenForm = gen; A.store.set('gen_form', gen); if (A.store.get('intended_generate', null)) rememberIntendedGenerate(); }
+  function rememberIntendedGenerate() { A.store.set('intended_generate', {at: Date.now(), form: gen}); }
+  var suggestedPackage = 5;
 
   // Desktop layout: 模型 combobox, one-line summary + 详情 link, full description and links on demand.
   function renderGenModels() {
@@ -1116,8 +1113,14 @@
       btn.title = insuff ? t('credits_insufficient') : '';
     }
     if (hint) {
+      var newlyVisible = insuff && hint.hidden;
       show(hint, !!insuff);
-      if (insuff) hint.textContent = t('credits_insufficient');
+      if (insuff) {
+        suggestedPackage = creditsNeeded - oc <= 5000 ? 5 : creditsNeeded - oc <= 20000 ? 20 : 50;
+        if (newlyVisible) { try { if (window.VSAnalytics) window.VSAnalytics.track('credit_gate_shown', {surface: 'generate', selection: 'preset-' + suggestedPackage}); } catch (_) {} }
+        $('gen-insufficient-body').textContent = t('credits_insufficient_tip', localeNum(creditsNeeded), localeNum(oc));
+        $('gen-insufficient-suggest').textContent = t('credits_insufficient_suggest', suggestedPackage, localeNum(suggestedPackage * 1000));
+      }
     }
   }
 
@@ -1187,7 +1190,7 @@
       b.setAttribute('data-target', 'gen');
       if (family) b.setAttribute('data-family', family);
       b.setAttribute('aria-pressed', 'false');
-      b.addEventListener('click', function () { if (window.VSAnalytics) window.VSAnalytics.notifyExampleClick('generate', id); applyExample(id, 'gen', b); });
+      b.addEventListener('click', function () { applyExample(id, 'gen', b); });
       box.appendChild(b);
     });
     // Keep Generate chip selected across i18n re-renders.
@@ -1301,7 +1304,8 @@
   }
   function applyExample(id, target, btn, opts) {
     opts = opts || {};
-    if (btn && btn.classList.contains('active')) return;
+    if (btn && btn.classList.contains('active')) { clearGenPrompt('example_deselect'); return; }
+    if (window.VSAnalytics) window.VSAnalytics.notifyExampleClick('generate', id);
     clearAiPlanReview();
     aiPlanSource = false;
     var prompt = examplePrompt(id);
@@ -1319,6 +1323,15 @@
     // Match duration / ratio / resolution to the preset; leave the current model (default Seedance 2.0 Mini) alone.
     applyExampleSpecs(id, target);
     if (!opts.skipScroll) scrollPreviewIntoView();
+  }
+
+  function clearGenPrompt(reason) {
+    allowDefaultPreset = false;
+    $('gen-prompt').value = ''; gen.prompt = ''; saveGen();
+    previewPresetId = null; setExampleActive('gen', null);
+    $('gen-preset-preview').hidden = true;
+    clearAiPlanReview(); aiPlanSource = false; fitGenPrompt($('gen-prompt'));
+    try { if (window.VSAnalytics) window.VSAnalytics.track('prompt_clear', {surface: 'generate', reason: reason === 'example_deselect' ? reason : 'button'}); } catch (_) {}
   }
 
   function showPresetPreview(box, id) {
@@ -1359,6 +1372,8 @@
   function maybeDefaultGenPreset() {
     var p = (gen.prompt || '').trim();
     if (!p) {
+      if (!allowDefaultPreset) return;
+      allowDefaultPreset = false;
       var id = EXAMPLE_IDS[0];
       var btn = document.querySelector('#gen-example-chips .example-chip[data-example="' + id + '"]');
       if (btn) applyExample(id, 'gen', btn, { skipScroll: true });
@@ -1460,6 +1475,7 @@
       node.addEventListener('change', function () { clearAiPlanReview(field); });
     });
     var prompt = $('gen-prompt');
+    $('gen-prompt-clear').addEventListener('click', clearGenPrompt);
     prompt.value = gen.prompt;
     fitGenPrompt(prompt);
     prompt.addEventListener('input', function () { if (window.VSAnalytics) window.VSAnalytics.notifyPromptEdited('generate'); gen.prompt = prompt.value; saveGen(); fitGenPrompt(prompt); });
@@ -1483,10 +1499,11 @@
     syncStopVisibility();
     var insuff = $('gen-insufficient');
     if (insuff) {
-      insuff.addEventListener('click', function (e) {
+      $('gen-insufficient-topup').addEventListener('click', function (e) {
         e.preventDefault();
         focusBillingChip();
-        openInAppPayment('quota');
+        rememberIntendedGenerate();
+        openInAppPayment('generate_tip', suggestedPackage);
       });
     }
 
@@ -1579,6 +1596,7 @@
       var need = M.estimateCreditsFromUsd(preCost.total);
       var have = oauthCredits();
       if (typeof need === 'number' && typeof have === 'number' && need > have) {
+        try { if (window.VSAnalytics) window.VSAnalytics.track('credit_gate_blocked', {surface: 'generate'}); } catch (_) {}
         errBox.textContent = t('credits_insufficient');
         show(errBox, true);
         focusBillingChip();
@@ -1600,7 +1618,9 @@
     } catch (e) {
       errBox.textContent = errorText(e.code); show(errBox, true); return;
     }
-    var cost = M.estimateCost(gen.duration, gen.resolution, gen.model).total;
+    var cost = null;
+    try { cost = M.estimateCost(gen.duration, gen.resolution, gen.model).total; } catch (ignoreFinalCost) { /* estimate unavailable */ }
+    A.store.remove('intended_generate');
     genBusy = true;
     var btn = $('gen-submit');
     btn.disabled = true;
@@ -1965,7 +1985,17 @@
   }
 
   // ---------------- boot ----------------
+  var lastAuthState;
+  function syncAuthValidity() {
+    var signed = !!(O && O.isLoggedIn && O.isLoggedIn());
+    if (signed === lastAuthState) return;
+    lastAuthState = signed;
+    renderKeyState(); renderCredits();
+  }
+  window.addEventListener('pageshow', syncAuthValidity);
+  document.addEventListener('visibilitychange', syncAuthValidity);
   function tick() {
+    syncAuthValidity();
     document.querySelectorAll('[data-elapsed]').forEach(function (n) {
       var rec = A.getTask(n.getAttribute('data-elapsed'));
       if (rec) n.textContent = t('elapsed', elapsedText(rec));
@@ -2078,8 +2108,9 @@
       renderOauthAccount();
       maybeHandleOauthQuery();
       if (window.VSAnalytics && window.VSAnalytics.boot) {
-        window.VSAnalytics.boot({ appVersion: 'web-1.20' });
+        window.VSAnalytics.boot({ appVersion: 'web-1.21' });
       }
+      if (window.VSPayment) window.VSPayment.resumeIntent({lang:lang, login:function () { startOauthLogin('billing'); }, refresh:renderCredits});
       setInterval(tick, 1000);
     } catch (err) {
       try { if (window.console && console.error) console.error('Video Studio boot failed', err); } catch (e) { /* ignore */ }

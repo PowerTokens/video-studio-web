@@ -223,7 +223,7 @@ assert.ok(thrower.A.pending().length >= 1);
     storage: sandbox.localStorage,
     transport: null,
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.20',
+    appVersion: 'web-1.21',
   });
   E.setConsent(true);
   E.flush();
@@ -381,7 +381,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.20',
+    appVersion: 'web-1.21',
   });
   S.setConsent(true);
   S.flush();
@@ -463,7 +463,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.20',
+    appVersion: 'web-1.21',
     isVisible: () => visible,
   });
   S.setConsent(true);
@@ -525,7 +525,7 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     storage: sandbox.localStorage,
     transport: (item) => sent.push(item),
     setTimeout: (fn) => { fn(); return 0; },
-    appVersion: 'web-1.20',
+    appVersion: 'web-1.21',
     isVisible: () => visible,
   });
   S.setConsent(true);
@@ -580,12 +580,12 @@ assert.ok(sent.some((x) => x.event === 'video_download'));
     if (reset) {
       S.resetForTests({
         now: () => clock, storage, transport: (item) => sentArr.push(item),
-        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.20', isVisible: () => true,
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.21', isVisible: () => true,
       });
     } else {
       S.boot({
         now: () => clock, storage, transport: (item) => sentArr.push(item),
-        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.20', isVisible: () => true,
+        setTimeout: (fn) => { fn(); return 0; }, appVersion: 'web-1.21', isVisible: () => true,
       });
     }
     return S;
@@ -820,3 +820,9 @@ for (const event of ['generation_start', 'generation_success', 'generation_faile
 
 assert.equal(A.sanitize('login_failed', {auth_reason:'invalid_grant'}).auth_reason, 'invalid_grant');
 assert.equal(A.sanitize('login_failed', {auth_reason:'raw fake@example.test'}).auth_reason, undefined);
+
+{ const {A, sent} = load();
+const cases={"payment_reconfirm_shown": {"reason": "resume"}, "payment_reconfirm_continue": {}, "credit_gate_shown": {"surface": "generate", "selection": "preset-5"}, "credit_gate_blocked": {"surface": "generate"}, "prompt_clear": {"surface": "chat", "reason": "button"}, "chat_entry_click": {"source": "generate_banner"}, "chat_plan_ready": {"surface": "chat"}, "chat_need_login_show": {"source": "send"}};
+for (const [event,props] of Object.entries(cases)) { const clean=A.sanitize(event,{...props,email:"private",amount:1,credits:1,balance:1,prompt:"private",token:"private",url:"private"}); assert.ok(clean); for(const [k,v] of Object.entries(props)) assert.equal(clean[k],v); for(const k of ["email","amount","credits","balance","prompt","token","url"]) assert.ok(!(k in clean)); A.track(event,props); assert.ok(sent.some(x=>x.event===event) || A.pending().some(x=>x.event===event)); }
+for (const event of ["payment_reconfirm_shown","prompt_clear"]) assert.ok(!("reason" in A.sanitize(event,{reason:"private"})));
+}

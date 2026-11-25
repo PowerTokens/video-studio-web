@@ -8,6 +8,11 @@ VSI18n.register('ja', {
   htmlLang: "ja",
   match: ["ja"]
 }, {
+  credits_insufficient: "クレジット不足 · チャージ",
+  credits_insufficient_tip: "ローカルの料金表（目安は 1000 クレジット = $1）では、今回は約 %s クレジット、残高の目安は約 %s です。これは見積もりで、実際の請求が優先されます。プロンプトは残ります。チャージのあと、もう一度「生成」を押してください。自動では始まりません。",
+  credits_insufficient_suggest: "おすすめ: $%s（約 %s クレジット）",
+  prompt_clear: "クリア",
+
   chat_interview_draft: "こちらが下書きです。一緒に内容を整えていきましょう。",
   chat_interview_refine: "この下書きで、具体化したい点や変えたい点はありますか？",
   chat_interview_start: "何を撮りたいですか？場所はどこをイメージしていますか？",
@@ -194,7 +199,6 @@ VSI18n.register('ja', {
   list_sep: "、",
   credits_btn: "クレジット · チャージ",
   credits_balance: "クレジット %s · チャージ",
-  credits_insufficient: "クレジット不足 · チャージ",
   billing_url: "https://powertokens.ai/billing",
   topup_btn: "チャージ ↗",
   spend_line: "この端末で約 $%s（%d 件）の見積もりです。見積もりどおりの請求で、上乗せはありません。",

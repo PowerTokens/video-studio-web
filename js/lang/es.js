@@ -6,6 +6,11 @@ VSI18n.register('es', {
   htmlLang: "es",
   match: ["es"]
 }, {
+  credits_insufficient: "Créditos insuficientes · Recargar",
+  credits_insufficient_tip: "Según la lista de precios local (unas 1000 créditos = $1), esta generación se estima en unos %s créditos; ahora tienes unos %s. Es una estimación; la factura es la referencia. Se conserva el texto. Cuando vuelvas de recargar, pulsa Generar otra vez; no se iniciará solo.",
+  credits_insufficient_suggest: "Paquete sugerido: $%s (unos %s créditos)",
+  prompt_clear: "Vaciar",
+
   chat_interview_draft: "Este es tu borrador. Podemos darle forma juntos.",
   chat_interview_refine: "¿Qué te gustaría desarrollar o cambiar en este borrador?",
   chat_interview_start: "¿Qué te gustaría filmar y dónde ocurre la escena?",
@@ -192,7 +197,6 @@ VSI18n.register('es', {
   list_sep: ", ",
   credits_btn: "Créditos · Recargar",
   credits_balance: "Créditos %s · Recargar",
-  credits_insufficient: "Créditos insuficientes · Recargar",
   billing_url: "https://powertokens.ai/billing",
   topup_btn: "Recargar ↗",
   spend_line: "Unos $%s estimados en %d tareas de este dispositivo—se cobra según esta estimación, sin margen.",

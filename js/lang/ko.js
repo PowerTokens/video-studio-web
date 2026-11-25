@@ -8,6 +8,11 @@ VSI18n.register('ko', {
   htmlLang: "ko",
   match: ["ko"]
 }, {
+  credits_insufficient: "크레딧 부족 · 충전",
+  credits_insufficient_tip: "로컬 요금표(약 1000크레딧 = $1) 기준으로 이번 생성은 약 %s크레딧이 필요하고, 현재 잔액은 약 %s입니다. 이는 추정치이며 실제 청구가 기준입니다. 프롬프트는 그대로 유지됩니다. 충전이 끝난 뒤 생성을 다시 누르세요. 자동으로 시작되지 않습니다.",
+  credits_insufficient_suggest: "추천 패키지: $%s (약 %s크레딧)",
+  prompt_clear: "지우기",
+
   chat_interview_draft: "작성하신 초안이에요. 함께 구체화해 볼게요.",
   chat_interview_refine: "이 초안에서 더 구체화하거나 바꾸고 싶은 부분은 무엇인가요?",
   chat_interview_start: "무엇을 촬영하고 싶으세요? 배경은 어디인가요?",
@@ -194,7 +199,6 @@ VSI18n.register('ko', {
   list_sep: ", ",
   credits_btn: "크레딧 · 충전",
   credits_balance: "크레딧 %s · 충전",
-  credits_insufficient: "크레딧 부족 · 충전",
   billing_url: "https://powertokens.ai/billing",
   topup_btn: "충전 ↗",
   spend_line: "이 기기에서 약 $%s(%d건)로 예상됩니다. 예상 금액대로 청구되며 가산은 없습니다.",
