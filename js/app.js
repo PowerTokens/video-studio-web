@@ -1123,9 +1123,11 @@
       btn.title = insuff ? t('credits_insufficient') : '';
     }
     if (hint) {
+      var newlyVisible = insuff && hint.hidden;
       show(hint, !!insuff);
       if (insuff) {
         suggestedPackage = creditsNeeded - oc <= 5000 ? 5 : creditsNeeded - oc <= 20000 ? 20 : 50;
+        if (newlyVisible) { try { if (window.VSAnalytics) window.VSAnalytics.track('credit_gate_shown', {surface: 'generate', selection: 'preset-' + suggestedPackage}); } catch (_) {} }
         $('gen-insufficient-body').textContent = t('credits_insufficient_tip', localeNum(creditsNeeded), localeNum(oc));
         $('gen-insufficient-suggest').textContent = t('credits_insufficient_suggest', suggestedPackage, localeNum(suggestedPackage * 1000));
       }
@@ -1312,7 +1314,7 @@
   }
   function applyExample(id, target, btn, opts) {
     opts = opts || {};
-    if (btn && btn.classList.contains('active')) { clearGenPrompt(); return; }
+    if (btn && btn.classList.contains('active')) { clearGenPrompt('example_deselect'); return; }
     if (window.VSAnalytics) window.VSAnalytics.notifyExampleClick('generate', id);
     clearAiPlanReview();
     aiPlanSource = false;
@@ -1333,13 +1335,13 @@
     if (!opts.skipScroll) scrollPreviewIntoView();
   }
 
-  function clearGenPrompt() {
+  function clearGenPrompt(reason) {
     allowDefaultPreset = false;
     $('gen-prompt').value = ''; gen.prompt = ''; saveGen();
     previewPresetId = null; setExampleActive('gen', null);
     $('gen-preset-preview').hidden = true;
     clearAiPlanReview(); aiPlanSource = false; fitGenPrompt($('gen-prompt'));
-    if (window.VSAnalytics) window.VSAnalytics.notifyPromptEdited('generate');
+    try { if (window.VSAnalytics) window.VSAnalytics.track('prompt_clear', {surface: 'generate', reason: reason === 'example_deselect' ? reason : 'button'}); } catch (_) {}
   }
 
   function showPresetPreview(box, id) {
@@ -1511,7 +1513,7 @@
         e.preventDefault();
         focusBillingChip();
         rememberIntendedGenerate();
-        openInAppPayment('quota', suggestedPackage);
+        openInAppPayment('generate_tip', suggestedPackage);
       });
     }
 
@@ -1604,6 +1606,7 @@
       var need = M.estimateCreditsFromUsd(preCost.total);
       var have = oauthCredits();
       if (typeof need === 'number' && typeof have === 'number' && need > have) {
+        try { if (window.VSAnalytics) window.VSAnalytics.track('credit_gate_blocked', {surface: 'generate'}); } catch (_) {}
         errBox.textContent = t('credits_insufficient');
         show(errBox, true);
         focusBillingChip();

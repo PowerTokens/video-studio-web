@@ -820,3 +820,9 @@ for (const event of ['generation_start', 'generation_success', 'generation_faile
 
 assert.equal(A.sanitize('login_failed', {auth_reason:'invalid_grant'}).auth_reason, 'invalid_grant');
 assert.equal(A.sanitize('login_failed', {auth_reason:'raw fake@example.test'}).auth_reason, undefined);
+
+{ const {A, sent} = load();
+const cases={"credit_gate_shown": {"surface": "generate", "selection": "preset-5"}, "credit_gate_blocked": {"surface": "generate"}, "prompt_clear": {"surface": "chat", "reason": "button"}, "chat_entry_click": {"source": "generate_banner"}, "chat_plan_ready": {"surface": "chat"}, "chat_need_login_show": {"source": "send"}};
+for (const [event,props] of Object.entries(cases)) { const clean=A.sanitize(event,{...props,email:"private",amount:1,credits:1,balance:1,prompt:"private",token:"private",url:"private"}); assert.ok(clean); for(const [k,v] of Object.entries(props)) assert.equal(clean[k],v); for(const k of ["email","amount","credits","balance","prompt","token","url"]) assert.ok(!(k in clean)); A.track(event,props); assert.ok(sent.some(x=>x.event===event) || A.pending().some(x=>x.event===event)); }
+assert.ok(!("reason" in A.sanitize(Object.keys(cases)[0],{reason:"private"})));
+}

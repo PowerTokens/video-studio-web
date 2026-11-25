@@ -101,7 +101,7 @@
       if (typeof root.gtag === 'function') root.gtag('event', eventName, payload);
     } catch (e1) { /* ignore */ }
     try {
-      // Critical PostHog events are allowlisted in VSAnalytics; chat_* names are dropped.
+      // Only allowlisted user-facing events reach PostHog.
       if (root.VSAnalytics && typeof root.VSAnalytics.track === 'function') {
         root.VSAnalytics.track(eventName, payload);
       }
@@ -809,6 +809,7 @@
   function renderPlanCard(plan, opts) {
     opts = opts || {};
     if (!plan) return;
+    if (lastPlan !== plan) track('chat_plan_ready', {surface: 'chat'});
     lastPlan = plan;
     persistConversation();
     var thread = $('chat-thread');
@@ -1551,20 +1552,20 @@
     }
     var reset = $('chat-reset');
     if (reset) reset.addEventListener('click', function () {
-      track('chat_session_reset', {});
+      track('prompt_clear', {surface: 'chat', reason: 'button'});
       resetConversation();
     });
     var entry = $('chat-pilot-entry');
     if (entry) {
       entry.addEventListener('click', function () {
-        track('chat_entry_click', { from: 'generate_banner' });
+        track('chat_entry_click', { source: 'generate_banner' });
         if (deps.gotoChat) deps.gotoChat();
       });
     }
     var tab = document.querySelector('.tabs [data-tab="chat"]');
     if (tab) {
       tab.addEventListener('click', function () {
-        track('chat_entry_click', { from: 'tab' });
+        track('chat_entry_click', { source: 'tab' });
       });
     }
   }
@@ -1627,9 +1628,9 @@
 
   function onShow() {
     if (!isEnabled()) return;
-    if (!sessionStarted) {
+    if (!sessionStarted && !planningInterview) {
       // Greeting already in resetConversation; mark entry when panel opens first time
-      track('chat_entry_click', { from: 'panel_show' });
+      track('chat_entry_click', { source: 'panel_show' });
     }
     scrollThread();
   }
