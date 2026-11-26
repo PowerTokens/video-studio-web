@@ -1342,7 +1342,7 @@ body.pilot-chat-on .page:has(#panel-chat:not([hidden])) { padding-bottom: 0; --c
   padding: 6px 4px; border: 0; border-radius: 0;
   background: transparent; font-size: 16px; line-height: 24px;
 }
-.chat-composer textarea:focus { outline: none; }
+.chat-composer textarea:focus { outline: none; box-shadow: none; border-color: transparent; }
 .chat-composer textarea::placeholder { color: #647e79; opacity: 1; }
 .chat-send { min-width: 64px; height: 46px; border-radius: 13px; font-weight: 700; }
 .chat-footnote { display: none; }
@@ -1361,6 +1361,58 @@ body.pwa-banner-on .chat-dock { bottom: auto; }
 
 body:has(#panel-chat:not([hidden])) .desktop-cta,
 body:has(#panel-chat:not([hidden])) .phone-cta { display: none; }
+
+/* Phone chat + keyboard: lock the room to the visual viewport, collapse
+   chrome, and keep the composer just above the keyboard. Desktop and wide
+   layouts are unchanged. */
+@media (max-width: 640px) {
+  html.chat-keyboard-open,
+  body.chat-keyboard-open {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+  body.chat-keyboard-open .app-header,
+  body.chat-keyboard-open .tabs {
+    display: none !important;
+  }
+  body.chat-keyboard-open .chat-top {
+    display: none !important;
+  }
+  body.chat-keyboard-open .page {
+    padding: 0;
+    margin: 0;
+    max-width: none;
+  }
+  body.chat-keyboard-open .panel-chat {
+    padding: 0;
+    margin: 0;
+  }
+  body.chat-keyboard-open .chat-shell {
+    position: fixed;
+    top: var(--chat-vv-top, 0px);
+    left: var(--chat-vv-left, 0px);
+    width: var(--chat-vv-width, 100%);
+    height: var(--chat-vv-height, var(--chat-room-height, 100dvh));
+    max-width: none;
+    margin: 0;
+    z-index: 30;
+    background: var(--page);
+    padding: 8px 12px 0;
+    box-sizing: border-box;
+  }
+  body.chat-keyboard-open .chat-scroll {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  body.chat-keyboard-open .chat-dock {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    padding: 8px 0 8px;
+  }
+}
+
 
 /* In-app payment picker */
 /* Anonymous usage-stats notice — compact, non-blocking */
