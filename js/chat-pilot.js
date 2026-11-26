@@ -590,7 +590,11 @@
       };
       var run = wait ? sleep(wait).then(function () { return chatCompletionsOnce(apiMessages, model, onceOpts); })
         : chatCompletionsOnce(apiMessages, model, onceOpts);
-      return run.then(function (res) {
+      return run.catch(function (err) {
+        // Preserve the model of the failing attempt, including paid fallbacks.
+        return { ok: false, kind: 'THROW', model: model,
+          http: err && (err.status || err.http), detail: String(err && err.message || err) };
+      }).then(function (res) {
         if (res.ok) {
           if (modelIndex > 0) {
             track('chat_flash_fallback_ok', { model: model, from: models[0], attempt: attemptOnModel });
@@ -1214,12 +1218,18 @@
     return plan;
   }
 
+  function isBillingQuotaFailure(detail, http) {
+    return Number(http) === 402 || /\bHTTP\s*402\b|insufficient_user_quota|pre[-_ ]?consume|(?:balance|credits?|quota).{0,40}(?:insufficient|shortfall|not enough|low|exhausted)|(?:insufficient|not enough).{0,40}(?:balance|credits?|quota)|余额不足|积分不足/i.test(String(detail || ''));
+  }
+
   function showError(detail, opts) {
     opts = opts || {};
     var busyCap = isBusyCapacityDetail(detail, opts.http);
     var msg = busyCap
       ? t('chat_flash_busy')
-      : t('chat_flash_error', detail || t('chat_flash_unknown'));
+      : textModelIsFree(opts.model) && isBillingQuotaFailure(detail, opts.http)
+        ? t('chat_flash_free_down')
+        : t('chat_flash_error', detail || t('chat_flash_unknown'));
     appendBubble('assistant', msg);
     var mount = $('chat-plan-mount');
     if (!mount) return;
