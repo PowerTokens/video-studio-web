@@ -25,6 +25,7 @@ function element(tag) {
   const n = {tag, children:[], value:'', open:false, appendChild(c){this.children.push(c); if(tag==='select' && !this.value)this.value=c.value;}, setAttribute(k,v){this[k]=String(v);}, listeners:{}, addEventListener(k,f){this.listeners[k]=f;}, showModal(){this.open=true;}, close(){this.open=false; this.listeners.close?.();}, remove(){}};
   nodes.push(n); return n;
 }
+let orderCounter=0;
 const requests=[]; let accessToken='mock-token'; let loggedIn=false, logged=0, profile={sub:'test',credits:100};
 Object.assign(context, {
   VSPaymentCopy:{en:Array.from({length:17},(_,i)=>'copy'+i)},
@@ -33,7 +34,7 @@ Object.assign(context, {
   window:{open:()=>({location:{replace(){}},close(){}})},
   AbortSignal:{timeout:()=>null},setTimeout:()=>1,clearTimeout(){},
   sessionStorage:{getItem:()=>null,setItem(){},removeItem(){}},
-  fetch:async(url,opts)=>{requests.push({url,opts});return {ok:true,json:async()=>url.endsWith('/v1/payment/create')?{code:200,data:{orderNo:'mock-order',redirectUrl:'https://powertokens.ai/test'}}:{code:200,data:{status:1}}};}
+  fetch:async(url,opts)=>{requests.push({url,opts});return {ok:true,json:async()=>url.endsWith('/v1/payment/create')?{code:200,data:{orderNo:'ORDER_TEST_'+(++orderCounter),redirectUrl:'https://powertokens.ai/test'}}:{code:200,data:{status:1}}};}
 });
 P.show({lang:'en',login:()=>logged++,refresh(){}});assert.equal(logged,0);assert.ok(nodes.length);
 nodes.find(n=>n.tag==='dialog').close(); nodes.length=0;
@@ -76,7 +77,7 @@ await new Promise(resolve=>setImmediate(resolve));
 assert.equal(requests.length,2);
 assert.equal(requests[1].url,'https://powertokens.ai/api/finance/get-order-info');
 assert.equal(requests[1].opts.headers.Authorization,'Bearer mock-token');
-assert.equal(JSON.parse(requests[1].opts.body).order_no,'mock-order');
+assert.equal(JSON.parse(requests[1].opts.body).order_no,'ORDER_TEST_1');
 assert.equal(nodes.find(n=>n.tag==='p').textContent,'copy9');
 console.log('OAuth gate, create, CORS headers, status and refresh passed (mock network).');
 
@@ -146,7 +147,7 @@ for (const mode of ['rejected','redirect','network']) {
   P.show({lang:'en',login(){},refresh(){}});
   context.fetch = async()=>{
     if (mode==='network') throw Error('private exception');
-    return {status:mode==='rejected'?400:200,ok:mode!=='rejected',json:async()=>({code:200,data:{orderNo:'mock-order',redirectUrl:'https://untrusted.invalid'}})};
+    return {status:mode==='rejected'?400:200,ok:mode!=='rejected',json:async()=>({code:200,data:{orderNo:'ORDER_TEST_'+(++orderCounter),redirectUrl:'https://untrusted.invalid'}})};
   };
   await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
 }
@@ -154,7 +155,7 @@ let failures = context.VSAnalytics.pending().filter(x=>x.event==='payment_failed
 assert.equal(failures[0].fail_stage,'response'); assert.equal(failures[0].http_status,400); assert.equal(failures[0].api_status,200); assert.equal(failures[0].error_code,'UNKNOWN');
 assert.equal(failures[1].fail_stage,'checkout'); assert.equal(failures[1].error_code,'VALIDATION'); assert.equal(failures[1].redirect_ok,false); assert.equal(failures[1].redirect_host,'unlisted'); assert.equal(failures[1].has_payment_ref,true);
 assert.equal(failures[2].fail_stage,'transport'); assert.equal(failures[2].error_code,'NETWORK'); assert.ok(!('http_status' in failures[2]));
-const queued = context.VSAnalytics.pending();
+const queued = [...events, ...context.VSAnalytics.pending()];
 const paymentEvents = queued.filter(item=>item.event.startsWith('payment_'));
 assert.equal(paymentEvents.filter(x=>x.event==='payment_start').length,11);
 assert.equal(paymentEvents.filter(x=>x.event==='payment_checkout_opened').length,8);
@@ -184,14 +185,14 @@ assert.ok(queued.some(x=>x.event==='payment_channel_select' && x.properties.chan
 nodes.filter(n=>n.tag==='dialog').at(-1).close();
 assert.equal(context.VSAnalytics.pending().at(-1).properties.pending_checkout,false);
 P.show({lang:'en',login(){},refresh(){}});
-context.fetch=async url=>({ok:true,status:200,json:async()=>url.endsWith('/create')?{code:200,data:{orderNo:'private-order',redirectUrl:'https://powertokens.ai/test'}}:{code:200,data:{status:2}}});
+context.fetch=async url=>({ok:true,status:200,json:async()=>url.endsWith('/create')?{code:200,data:{orderNo:'ORDER_TEST_CANCEL',redirectUrl:'https://powertokens.ai/test'}}:{code:200,data:{status:2}}});
 await nodes.filter(n=>n.className==='payment-buy').at(-1).onclick();
 nodes.filter(n=>n.tag==='dialog').at(-1).close();
 assert.equal(context.VSAnalytics.pending().at(-1).properties.pending_checkout,true);
-const failedCount=context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').length;
+const failedCount=[...events,...context.VSAnalytics.pending()].filter(x=>x.event==='payment_failed').length;
 for(let i=0;i<2;i++) { await nodes.filter(n=>n.className==='payment-check').at(-1).onclick(); await new Promise(resolve=>setImmediate(resolve)); }
-assert.equal(context.VSAnalytics.pending().filter(x=>x.event==='payment_cancelled').length,1);
-assert.equal(context.VSAnalytics.pending().filter(x=>x.event==='payment_failed').length,failedCount);
+assert.equal([...events,...context.VSAnalytics.pending()].filter(x=>x.event==='payment_cancelled').length,1);
+assert.equal([...events,...context.VSAnalytics.pending()].filter(x=>x.event==='payment_failed').length,failedCount);
 console.log('Selection, closure, cancellation and diagnostic assertions passed.');
 
 for (const [key, bad] of Object.entries({fail_stage:'secret', http_status:600, api_status:'401', message_category:'raw', has_payment_ref:1, redirect_ok:'false', redirect_protocol:'ftp', redirect_host:'secret.example'})) {
