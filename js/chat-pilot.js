@@ -794,8 +794,11 @@
   function focusComposer() {
     var input = $('chat-input');
     if (!input) return;
-    try { input.focus(); } catch (e) { /* ignore */ }
-    try { input.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e2) { /* ignore */ }
+    try { input.focus({ preventScroll: true }); } catch (e) {
+      try { input.focus(); } catch (e2) { /* ignore */ }
+    }
+    // Keep the document still; scroll the thread so the latest turn sits above the composer.
+    scrollThread();
   }
 
   function isBusyCapacityDetail(detail, http) {
@@ -1619,7 +1622,7 @@
     if (!input) return;
     input.value = '';
     saveBridgeDraft();
-    input.focus();
+    focusComposer();
   }
 
   function saveBridgeDraft() {
