@@ -413,6 +413,7 @@
         }
         var info = ui.body;
         saveSession(tok.body, info);
+        try { if (root.VSPayment && root.VSPayment.resume) root.VSPayment.resume(); } catch (_) {}
         consumed[state] = Date.now();
         ssSet('vsw.oauth.consumed', JSON.stringify(consumed));
         var keyApplied = false;

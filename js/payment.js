@@ -57,66 +57,117 @@
     if (!r.ok || (path === '/v1/payment/create' ? data.code !== 200 : data.code !== undefined && data.code !== 200)) throw failure(details);
     return {body:data, diagnostics:details};
   }
-  // Only the minimal pending reference is stored; never the raw API response or token.
+  var pendingPrefix = 'vs-payment.pending.', donePrefix = 'vs-payment.done.';
+  var retention = 48 * 60 * 60 * 1000, orders = Object.create(null);
+  function ownerId() {
+    var profile = root.VSOauth && root.VSOauth.getProfile() || {};
+    return profile.sub || profile.user_id || '';
+  }
+  function key(prefix, order) { return prefix + encodeURIComponent(order); }
   function remember() {
-    try {
-      if (active) sessionStorage.setItem('vs-payment', JSON.stringify({owner:active.owner, order:active.order,
-        baseline:active.baseline, package_id:active.package_id, channel:active.channel, deadline:active.deadline}));
-      else sessionStorage.removeItem('vs-payment');
-    } catch (_) {}
+    if (!active) return;
+    try { localStorage.setItem(key(pendingPrefix, active.order), JSON.stringify(active)); } catch (_) {}
   }
   function restore() {
-    var O = root.VSOauth;
-    if (!O || !O.isLoggedIn()) return;
-    var token = O.getAccessToken(), profile = O.getProfile() || {}, owner = profile.sub || profile.email;
-    if (active && active.token !== token) active = null;
-    if (!active && owner) {
-      try {
-        var saved = JSON.parse(sessionStorage.getItem('vs-payment'));
-        if (saved && saved.owner === owner && saved.order && Number.isFinite(saved.deadline) && saved.deadline > Date.now()) {
-          active = Object.assign({}, saved, {token:token});
-        } else if (saved) sessionStorage.removeItem('vs-payment');
-      } catch (_) {}
-    }
+    // Legacy session references may contain email owners; do not copy them.
+    try { sessionStorage.removeItem('vs-payment'); } catch (_) {}
+    try {
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.indexOf(donePrefix) === 0) {
+          if (Number(localStorage.getItem(k)) <= Date.now()) localStorage.removeItem(k);
+          return;
+        }
+        if (k.indexOf(pendingPrefix) !== 0) return;
+        var saved;
+        try { saved = JSON.parse(localStorage.getItem(k)); } catch (_) {}
+        if (!saved || !saved.order || !saved.owner || !Number.isFinite(saved.created_at) ||
+            saved.created_at > Date.now() || Date.now() - saved.created_at >= retention ||
+            localStorage.getItem(key(donePrefix, saved.order))) {
+          localStorage.removeItem(k); return;
+        }
+        orders[saved.order] = saved;
+      });
+    } catch (_) {}
+    Object.keys(orders).forEach(function (id) {
+      var p = orders[id];
+      if (Date.now() - p.created_at >= retention) {
+        delete orders[id];
+        try { localStorage.removeItem(key(pendingPrefix, id)); } catch (_) {}
+      }
+    });
+    active = Object.keys(orders).map(function (id) { return orders[id]; })
+      .filter(function (p) { return p.owner === ownerId(); })
+      .sort(function (a, b) { return b.created_at - a.created_at; })[0] || null;
   }
-  async function check() {
-    restore();
-    var pending = active, O = root.VSOauth;
-    if (!pending || busy || !O || !O.isLoggedIn() || O.getAccessToken() !== pending.token) return;
+  function check() {
+    // Serialize recovery across tabs where Web Locks is available.
+    if (root.navigator && root.navigator.locks) {
+      return root.navigator.locks.request('vs-payment-recovery', {ifAvailable:true}, function (lock) {
+        if (lock) return checkOrders();
+        timer = setTimeout(check, 4000);
+      });
+    }
+    return checkOrders();
+  }
+  async function checkOrders() {
+    if (busy) return;
     clearTimeout(timer);
-    if (Date.now() >= pending.deadline) { active = null; remember(); update(); return; }
+    restore();
+    var O = root.VSOauth;
+    if (!O || !O.isLoggedIn() || !O.getAccessToken()) return;
     busy = true;
     try {
-      var status;
-      try {
-        var response = await post('/finance/get-order-info', {order_no:pending.order}, pending.token);
-        var value = (response.body.data || response.body).status;
-        if ([0, 1, 2, '0', '1', '2'].includes(value)) status = Number(value);
-      } catch (_) { /* Profile fallback only when official status cannot be read. */ }
-      if (active !== pending || !O.isLoggedIn() || O.getAccessToken() !== pending.token) return;
-      var outcome = status === 1 ? 'success' : status === 2 ? 'cancelled' : null;
-      if (!outcome && status === undefined) {
+      var list = Object.keys(orders).map(function (id) { return orders[id]; });
+      for (var pending of list) {
+        if (pending.owner !== ownerId()) continue;
+        var token = O.getAccessToken();
+        if (!O.isLoggedIn() || !token) break;
+        var status;
         try {
-          var info = await O.refreshProfile();
-          if (Number.isFinite(pending.baseline) && info && Number.isFinite(info.credits) && info.credits > pending.baseline) outcome = 'success';
-        } catch (_) {}
+          var response = await post('/finance/get-order-info', {order_no:pending.order}, token);
+          var value = (response.body.data || response.body).status;
+          if ([0, 1, 2, '0', '1', '2'].includes(value)) status = Number(value);
+        } catch (error) {
+          if (error.paymentDiagnostics && error.paymentDiagnostics.error_code === 'AUTH') continue;
+        }
+        if (!O.isLoggedIn() || O.getAccessToken() !== token || ownerId() !== pending.owner) continue;
+        var outcome = status === 1 ? 'success' : status === 2 ? 'cancelled' : null;
+        if (!outcome) {
+          try {
+            var refreshed = await O.refreshProfile();
+            var info = refreshed && typeof refreshed === 'object' ? refreshed : O.getProfile();
+            if (refreshed && Number.isFinite(pending.baseline) && info && Number.isFinite(info.credits) && info.credits > pending.baseline) outcome = 'success';
+          } catch (_) {}
+        }
+        if (!O.isLoggedIn() || O.getAccessToken() !== token || ownerId() !== pending.owner || Date.now() - pending.created_at >= retention) continue;
+        if (outcome) {
+          var completed = false;
+          try {
+            completed = !!localStorage.getItem(key(donePrefix, pending.order));
+            localStorage.setItem(key(donePrefix, pending.order), String(pending.created_at + retention));
+          } catch (_) {}
+          if (!completed) {
+            notify(outcome, pending);
+            try { if (root.VSAnalytics && root.VSAnalytics.flush) root.VSAnalytics.flush(); } catch (_) {}
+          }
+          delete orders[pending.order];
+          try { localStorage.removeItem(key(pendingPrefix, pending.order)); } catch (_) {}
+          active = null;
+          update(outcome);
+        }
       }
-      if (active !== pending || !O.isLoggedIn() || O.getAccessToken() !== pending.token) return;
-      if (outcome) {
-        active = null; remember();
-        notify(outcome, pending);
-        if (outcome === 'success') { try { await O.refreshProfile(); } catch (_) {} }
-        update(outcome);
-      }
-    } catch (_) { /* Network and UI failures must not stop bounded polling. */ }
+    } catch (_) { /* Recovery remains available after transient failures. */ }
     finally {
       busy = false;
-      if (active === pending && Date.now() < pending.deadline) timer = setTimeout(check, 4000);
+      restore();
+      update();
+      if (active) timer = setTimeout(check, 4000);
     }
   }
   function resume() { check(); }
   if (root.addEventListener) {
     root.addEventListener('pageshow', resume);
+    root.addEventListener('focus', resume);
     if (root.document && root.document.addEventListener) root.document.addEventListener('visibilitychange', function () {
       if (!root.document.hidden) resume();
     });
@@ -142,6 +193,7 @@
     } catch (_) { clearIntent(); return null; }
   }
   function resumeIntent(options) {
+    resume();
     var intent = readIntent();
     if (!intent || !root.VSOauth || !root.VSOauth.isLoggedIn()) return;
     clearIntent();
@@ -261,6 +313,7 @@
       // Reserve a tab synchronously so mobile popup blockers allow checkout.
       var checkout = window.open('about:blank', '_blank'); if (checkout) checkout.opener = null;
       busy = true; buy.disabled = true;
+      var checkoutBaseline = (O.getProfile() || {}).credits, checkoutOwner = ownerId();
       var funnel = {package_id: body.package_id, channel: body.payment_channel};
       notify('start', funnel);
       try {
@@ -271,7 +324,8 @@
         diagnostic(redirectShape);
         diagnostic({stage:'checkout', hasOrderNumber:!!data.orderNo, acceptedCode:result.code === 200});
         if (!data.orderNo || !passed) throw failure(Object.assign({}, response.diagnostics, {fail_stage:'checkout', has_payment_ref:!!data.orderNo, redirect_ok:passed, redirect_protocol:redirectShape.protocol.replace(':',''), redirect_host:redirectShape.hostname}));
-        active = {owner:(O.getProfile() || {}).sub || (O.getProfile() || {}).email, token: token, order: data.orderNo, baseline: (O.getProfile() || {}).credits, package_id:body.package_id, channel:body.payment_channel, deadline:Date.now() + 300000};
+        active = {owner:checkoutOwner, order: data.orderNo, baseline: checkoutBaseline, package_id:body.package_id, channel:body.payment_channel, created_at:Date.now()};
+        orders[active.order] = active;
         remember();
         message.textContent = c[6];
         var link = el('a', c[5]); link.href = data.redirectUrl; link.target = '_blank'; link.rel = 'noopener';
@@ -285,5 +339,5 @@
     document.body.appendChild(dialog); dialog.showModal();
     if (active) check();
   }
-  root.VSPayment = {show:show, resumeIntent:resumeIntent, payload:payload, validRedirect:validRedirect};
+  root.VSPayment = {show:show, resumeIntent:resumeIntent, resume:resume, payload:payload, validRedirect:validRedirect};
 })(globalThis);
