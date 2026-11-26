@@ -364,6 +364,7 @@ VSI18n.register('ko', {
   chat_draft_title: "펼친 초안 프롬프트",
   chat_draft_summary: "오프라인에서 펼친 초안입니다. 생성 전에 촬영 가능한 프롬프트인지 확인하세요.",
   chat_draft_ready: "도우미가 바빠서 요청을 촬영용 프롬프트로 펼쳤습니다. 대화로 다듬거나, 마음에 들면 복사하세요.",
+  chat_flash_free_down: "지금 무료 대화에 연결하지 못했습니다. 다시 시도하거나 전체 초안 프롬프트를 펼쳐 편집을 계속할 수 있습니다.",
   chat_flash_error: "도우미가 잠시 실패했습니다: %s. 다시 시도하거나, 초안을 펼치거나, 대화를 이어 갈 수 있습니다.",
   chat_flash_stream_cut: "답변이 중간에 끊겼습니다. 다시 시도하세요.",
   chat_flash_unknown: "알 수 없는 오류",

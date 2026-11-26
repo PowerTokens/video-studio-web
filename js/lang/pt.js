@@ -362,6 +362,7 @@ VSI18n.register('pt', {
   chat_credits_insufficient: "Depois, ao gerar: este plano precisa de ~%s créditos (você tem ~%s).",
   chat_topup: "Recarregar",
   chat_goto_classic: "Gerar clássico",
+  chat_flash_free_down: "O chat gratuito não conseguiu conectar agora. Tente novamente ou expanda o rascunho completo para continuar editando.",
   chat_flash_error: "O assistente falhou um instante: %s. Você pode tentar de novo, usar um rascunho ou continuar conversando.",
   chat_flash_stream_cut: "A resposta cortou no meio. Tente de novo.",
   chat_flash_unknown: "Erro desconhecido",

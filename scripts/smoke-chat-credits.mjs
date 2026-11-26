@@ -131,7 +131,7 @@ function loadChatPilot(doc) {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   createContext(sandbox);
-  runInContext(readFileSync(join(rootDir, 'js/chat-pilot.js'), 'utf8'), sandbox, { filename: 'js/chat-pilot.js' });
+  runInContext(readFileSync(join(rootDir, 'js/chat-pilot.js'), 'utf8').replace('  root.VSChatPilot = {', '  root.__testChat = { runFlash: runFlash, showError: showError, seed: function () { messages = [{role: \'user\', content: \'A cat in a garden\'}]; } }; root.VSChatPilot = {'), sandbox, { filename: 'js/chat-pilot.js' });
   return sandbox;
 }
 
@@ -256,3 +256,29 @@ assert.match(html, /id="gen-insufficient"/);
 assert.match(html, /data-i18n="credits_insufficient"/);
 
 console.log('smoke-chat-credits ok');
+
+// Force real request/error rendering with a fake upstream billing rejection.
+const zhSource = readFileSync(join(rootDir, 'js/lang/zh.js'), 'utf8');
+const quiet = /chat_flash_free_down: "([^"]+)"/.exec(zhSource)[1];
+pilot.init({ t(key, detail) { return key === 'chat_flash_free_down' ? quiet : key + (detail ? '|' + detail : ''); }, getKey() { return 'fake-fixture'; } });
+sandbox.VSApi = { api() { return Promise.resolve({code: 402, body: {error: {code: 'insufficient_user_quota', message: 'pre-consume FAKE_FIXTURE_ONLY'}}}); } };
+sandbox.__testChat.seed();
+mount.innerHTML = '';
+sandbox.__testChat.runFlash();
+await new Promise(resolve => setTimeout(resolve, 850));
+assert.ok(textsOf(mount).includes(quiet));
+assert.doesNotMatch(textsOf(mount), /HTTP 402|insufficient_user_quota|pre-consume|FAKE_FIXTURE_ONLY|积分不足/);
+for (const label of ['chat_retry', 'chat_use_draft', 'chat_goto_classic']) {
+  assert.ok(findButton(byId['chat-plan-mount'], label), label + ' remains available');
+}
+for (const model of ['glm-4.5-air', 'deepseek-flash']) {
+  mount.innerHTML = '';
+  sandbox.__testChat.showError('HTTP 402 · insufficient_user_quota: FAKE_FIXTURE_ONLY', {http: 402, model});
+  assert.match(textsOf(mount), /HTTP 402.*insufficient_user_quota/);
+}
+mount.innerHTML = '';
+sandbox.VSApi.api = () => Promise.reject(new Error('HTTP 402 preconsume FAKE_FIXTURE_ONLY'));
+sandbox.__testChat.runFlash();
+await new Promise(resolve => setTimeout(resolve, 850));
+assert.ok(textsOf(mount).includes(quiet), 'rejected free request retains its model');
+console.log('forced billing thread acceptance ok');

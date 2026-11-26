@@ -57,8 +57,8 @@
       display_name: 'Wan 3.0',
       display_name_zh: 'Wan 3.0',
       short_name: 'wan',
-      description_en: 'All-in-one Wan model for text-to-video, image-to-video (first / first-last frame), and reference-to-video with native audio. Up to 30 seconds at 480p–1080p — a solid default for product demos, talking-head clips, and everyday videos.',
-      description_zh: '全能型 Wan 模型：文生视频、图生视频（首帧 / 首尾帧）与参考生视频，带原生音频。最长 30 秒，支持 480p–1080p，适合产品展示、口播与日常成片，作为默认选项。',
+      description_en: 'All-in-one Wan model for text-to-video, image-to-video (first / first-last frame), and reference-to-video with native audio. Up to 30 seconds at 480p–1080p — well suited for product demos, talking-head clips, and everyday videos.',
+      description_zh: '全能型 Wan 模型：文生视频、图生视频（首帧 / 首尾帧）与参考生视频，带原生音频。最长 30 秒，支持 480p–1080p，适合产品展示、口播与日常成片。',
       family: 'wan',
       durations: range(2, 30),
       resolutions: ['480p', '720p', '1080p'],
@@ -218,11 +218,11 @@
 
   var DEFAULT_MODEL_ID = 'dreamina-seedance-2-0-mini-260615';
   var MODEL_ORDER = [
+    'dreamina-seedance-2-0-mini-260615',
     'wan3.0-video',
     'wan3.0-video-prime',
     'dreamina-seedance-2-0-260128',
     'dreamina-seedance-2-0-fast-260128',
-    'dreamina-seedance-2-0-mini-260615',
     'dreamina-seedance-2-5-260628',
     'MiniMax-H3',
     'MiniMax-Hailuo-2.3',

@@ -289,7 +289,7 @@ VSI18n.register('zh', {
   status_idle: "就绪",
   status_running: "就绪 · %d 个任务进行中",
   // Model descriptions (keep in sync with the desktop app's models.py)
-  model_desc_wan: "全能型 Wan 模型：文生视频、图生视频（首帧 / 首尾帧）与参考生视频，带原生音频。最长 30 秒，支持 480p–1080p，适合产品展示、口播与日常成片，作为默认选项。",
+  model_desc_wan: "全能型 Wan 模型：文生视频、图生视频（首帧 / 首尾帧）与参考生视频，带原生音频。最长 30 秒，支持 480p–1080p，适合产品展示、口播与日常成片。",
   model_desc_wan_prime: "能力与 Wan 3.0 相同（文生 / 图生 / 参考、最长 30 秒、480p–1080p、原生音频），端到端生成明显更快，适合更赶时间的出片。",
   model_desc_seedance_20: "Seedance 2.0 为完整画质版本：支持文生、图生与多模态参考，带原生音频。时长 4–15 秒，支持 480p、720p、1080p 与 4K。",
   model_desc_seedance_fast: "Seedance 2.0 Fast 侧重速度，适合草稿与预览：支持文生、图生与多模态参考，带原生音频。时长 4–15 秒，最高 720p（不支持 1080p）。",
@@ -373,6 +373,7 @@ VSI18n.register('zh', {
   chat_draft_title: "已展开的草稿提示词",
   chat_draft_summary: "离线展开草稿 — 生成前请再核对可拍提示词。",
   chat_draft_ready: "助手有点忙，我先把你的需求展开成完整可拍提示词。可以继续聊着改，满意后再复制。",
+  chat_flash_free_down: "免费对话这会儿没连上。可以再试一次，或先展开完整草稿提示词继续改。",
   chat_flash_error: "对话助手暂时不顺：%s。可重试、展开完整草稿提示词，或继续聊。",
   chat_flash_stream_cut: "回复传到一半断了。请再试一次。",
   chat_flash_unknown: "未知错误",
