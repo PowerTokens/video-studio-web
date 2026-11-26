@@ -284,7 +284,7 @@ VSI18n.register('en', {
   status_idle: "Ready",
   status_running: "Ready · %d tasks running",
   // Model descriptions (keep in sync with the desktop app's models.py)
-  model_desc_wan: "All-in-one Wan model for text-to-video, image-to-video (first / first-last frame), and reference-to-video with native audio. Up to 30 seconds at 480p–1080p — a solid default for product demos, talking-head clips, and everyday videos.",
+  model_desc_wan: "All-in-one Wan model for text-to-video, image-to-video (first / first-last frame), and reference-to-video with native audio. Up to 30 seconds at 480p–1080p — well suited for product demos, talking-head clips, and everyday videos.",
   model_desc_wan_prime: "Same capabilities as Wan 3.0 (text / image / reference, up to 30s, 480p–1080p, native audio), tuned for significantly faster end-to-end generation when you want quicker turnaround.",
   model_desc_seedance_20: "Seedance 2.0 is the full-quality model for text-to-video, image-to-video, and multimodal reference, with native audio. Clips are 4–15 seconds at 480p, 720p, 1080p, or 4K.",
   model_desc_seedance_fast: "Seedance 2.0 Fast prioritizes speed for drafts and previews: text-to-video, image-to-video, and multimodal reference, with native audio. Clips are 4–15 seconds and top out at 720p (no 1080p).",
